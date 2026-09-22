@@ -1,0 +1,452 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --paper: #f4efdf;
+  --ink: #121212;
+  --crimson: #ed3d2b;
+  --gold: #ffd438;
+  --muted: #777164;
+  --card: #fffdf4;
+  --input: #ffffff;
+  --shadow: #121212;
+  --line: rgba(18, 18, 18, 0.2);
+}
+
+body.dark {
+  --paper: #141109;
+  --ink: #f4efdf;
+  --crimson: #ff6a52;
+  --gold: #ffd438;
+  --muted: #a89f88;
+  --card: #201a10;
+  --input: #171208;
+  --shadow: #000000;
+  --line: rgba(244, 239, 223, 0.22);
+}
+
+body.dark img {
+  filter: brightness(0.92);
+}
+
+body {
+  background: var(--paper);
+  color: var(--ink);
+  font-family: "Space Grotesk", Arial, sans-serif;
+  transition: background 0.25s ease, color 0.25s ease;
+}
+
+::selection {
+  background: var(--gold);
+  color: #141109;
+}
+
+.masthead {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  border-bottom: 2px solid var(--ink);
+  padding: 0.7rem 3vw;
+  background: var(--paper);
+}
+
+.wordmark {
+  font-weight: 700;
+  font-size: 1.6rem;
+  letter-spacing: -0.06em;
+  text-decoration: none;
+  color: inherit;
+}
+
+.wordmark span {
+  color: var(--crimson);
+}
+
+.site-nav {
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+.site-nav a {
+  padding: 0.55rem 0.8rem;
+  border: 2px solid var(--ink);
+  font-family: "DM Mono", monospace;
+  font-size: 0.62rem;
+  letter-spacing: 0.06em;
+  text-decoration: none;
+  color: inherit;
+}
+
+.site-nav a:hover {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.btn-solid {
+  display: inline-block;
+  padding: 1rem 1.2rem;
+  color: var(--paper);
+  background: var(--ink);
+  border: 2px solid var(--ink);
+  font-family: "DM Mono", monospace;
+  font-size: 0.73rem;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.btn-solid:hover {
+  color: #141109;
+  background: var(--gold);
+}
+
+.btn-ghost {
+  display: inline-block;
+  padding: 1rem 1.2rem;
+  background: transparent;
+  border: 2px solid var(--ink);
+  font-family: "DM Mono", monospace;
+  font-size: 0.73rem;
+  text-decoration: none;
+  color: inherit;
+}
+
+.btn-ghost:hover {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.card {
+  border: 2px solid var(--ink);
+  background: var(--paper);
+  padding: 1.2rem;
+  box-shadow: 8px 8px 0 var(--shadow);
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+}
+
+.tier-badge {
+  font-family: "DM Mono", monospace;
+  font-size: 0.6rem;
+  background: #121212;
+  color: var(--gold);
+  padding: 0.45rem 0.6rem;
+  border: 1.5px solid var(--gold);
+  white-space: nowrap;
+}
+
+.tier-badge.t3 {
+  background: var(--crimson);
+  color: #fff;
+}
+
+.mono-label {
+  margin: 0;
+  font-family: "DM Mono", monospace;
+  font-size: 0.66rem;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+}
+
+.fine {
+  color: var(--muted);
+  font-family: "DM Mono", monospace;
+  font-size: 0.58rem;
+  line-height: 1.5;
+}
+
+.field {
+  flex: 1;
+  min-width: 140px;
+  padding: 0.7rem 0.9rem;
+  border: 2px solid var(--ink);
+  background: var(--input);
+  color: var(--ink);
+  font-family: "DM Mono", monospace;
+  font-size: 0.75rem;
+}
+
+.field:focus {
+  outline: 2px solid var(--gold);
+  outline-offset: 1px;
+}
+
+.field::placeholder {
+  color: var(--muted);
+}
+
+select.field option {
+  background: var(--input);
+  color: var(--ink);
+}
+
+.dropdown a,
+.dropdown button {
+  display: block;
+  width: 100%;
+  padding: 0.6rem 0.8rem;
+  font-family: "DM Mono", monospace;
+  font-size: 0.65rem;
+  text-align: left;
+  background: none;
+  border: 0;
+  border-bottom: 1px solid rgba(18, 18, 18, 0.15);
+  cursor: pointer;
+  color: inherit;
+  text-decoration: none;
+}
+
+.dropdown a:hover,
+.dropdown button:hover {
+  background: var(--gold);
+}
+
+.wallet-row {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  flex-wrap: wrap;
+  border: 2px solid var(--ink);
+  background: var(--card);
+  padding: 0.55rem 0.6rem;
+  margin-bottom: 0.6rem;
+}
+
+.wallet-addr {
+  font-family: "DM Mono", monospace;
+  font-size: 0.62rem;
+  background: #121212;
+  color: var(--gold);
+  padding: 0.45rem 0.55rem;
+  flex: 1;
+  min-width: 140px;
+  word-break: break-all;
+}
+
+.chain-badge {
+  font-family: "DM Mono", monospace;
+  font-size: 0.6rem;
+  background: #121212;
+  color: #fff;
+  padding: 0.45rem 0.55rem;
+}
+
+.chain-badge.sol {
+  background: #14f195;
+  color: #121212;
+}
+
+.chip {
+  padding: 0.6rem 0.9rem;
+  border: 2px solid var(--ink);
+  background: var(--paper);
+  font-family: "DM Mono", monospace;
+  font-size: 0.62rem;
+  cursor: pointer;
+}
+
+.chip.active,
+.chip:hover {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.gate-note {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  margin: 1.2rem 5vw 0;
+  padding: 1rem 1.2rem;
+  border: 2px solid var(--ink);
+  background: var(--gold);
+  color: #141109;
+  box-shadow: 6px 6px 0 var(--shadow);
+  font-family: "DM Mono", monospace;
+  font-size: 0.72rem;
+}
+
+.gate-note a {
+  color: inherit;
+}
+
+.btn-solid,
+.btn-ghost,
+.chip,
+.site-nav a {
+  transition: background 0.12s ease, color 0.12s ease, transform 0.12s ease;
+}
+
+.btn-solid:active,
+.btn-ghost:active,
+.chip:active {
+  transform: translate(2px, 2px);
+}
+
+.tag {
+  font-family: "DM Mono", monospace;
+  font-size: 0.58rem;
+  border: 1.5px solid var(--ink);
+  padding: 0.3rem 0.5rem;
+  background: var(--card);
+}
+
+.board-cell {
+  width: min(110px, 26vw);
+  height: min(110px, 26vw);
+  font-size: clamp(2rem, 8vw, 3rem);
+  line-height: 1;
+  background: var(--paper);
+  border: 0;
+  cursor: pointer;
+  color: var(--ink);
+  transition: background 0.12s ease;
+}
+
+.board-cell:hover:disabled {
+  cursor: default;
+}
+
+.board-cell:not(:disabled):hover {
+  background: var(--gold);
+  color: #141109;
+}
+
+.page {
+  padding: 2rem 5vw;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.grid-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 1rem;
+}
+
+.grid-cards .card {
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+}
+
+.grid-cards .card:hover {
+  transform: translate(-2px, -2px);
+  box-shadow: 10px 10px 0 var(--shadow);
+}
+
+.dropdown a:hover,
+.dropdown button:hover {
+  background: var(--gold);
+  color: #141109;
+}
+
+@media (max-width: 900px) {
+  .masthead {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+
+.token-card {
+  border: 2px solid var(--ink);
+  background: var(--card);
+  box-shadow: 4px 4px 0 var(--shadow);
+  padding: 0.7rem 0.8rem;
+  font-family: "DM Mono", monospace;
+  margin-top: 0.4rem;
+}
+
+.token-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.5rem;
+  margin-top: 0.6rem;
+}
+
+.token-grid > div {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  border-top: 1px solid rgba(18, 18, 18, 0.2);
+  padding-top: 0.4rem;
+}
+
+.token-grid span {
+  font-size: 0.55rem;
+  color: var(--muted);
+}
+
+.token-grid strong {
+  font-size: 0.72rem;
+}
+
+.chat-log {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  max-height: 420px;
+  overflow: auto;
+}
+
+.chat-log li.msg {
+  max-width: 88%;
+  padding: 0.6rem 0.8rem;
+  border: 2px solid var(--ink);
+  border-radius: 2px 12px 12px 12px;
+  font-family: "DM Mono", monospace;
+  font-size: 0.72rem;
+  background: var(--card);
+  align-self: flex-start;
+}
+
+.chat-log li.msg.me {
+  border-radius: 12px 2px 12px 12px;
+}
+
+.chat-log::-webkit-scrollbar {
+  width: 10px;
+}
+
+.chat-log::-webkit-scrollbar-thumb {
+  background: var(--ink);
+}
+
+.chat-log::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.chat-log li.msg.me {
+  align-self: flex-end;
+  background: var(--gold);
+}
+
+.chat-log li.msg.sys {
+  align-self: center;
+  background: var(--ink);
+  color: var(--paper);
+  font-size: 0.62rem;
+  text-align: center;
+}
+
+.dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #b9b2a2;
+  border: 1.5px solid var(--ink);
+  flex: none;
+}
+
+.dot.on {
+  background: #1a7f37;
+  box-shadow: 0 0 0 3px rgba(26, 127, 55, 0.18);
+}

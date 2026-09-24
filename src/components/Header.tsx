@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { api, clearToken, getToken, Profile } from "../lib/api";
+import { api, ApiError, clearToken, getToken, peekCache, Profile } from "../lib/api";
 import { disconnectSocket } from "../lib/ws";
 import ConnectPopup from "./ConnectPopup";
 
@@ -38,17 +38,26 @@ export default function Header() {
     }
     try {
       setProfile(await api<Profile>("/profile/user"));
-    } catch {
-      clearToken();
-      setProfile(null);
+    } catch (e) {
+      // 401 clears the token centrally in api(); network blips keep the session + cached badge.
+      if (e instanceof ApiError && e.status === 401) setProfile(null);
     }
   }
 
   useEffect(() => {
+    if (getToken()) setProfile(peekCache<Profile>("/profile/user")); // instant paint from cache
     load();
     const h = () => load();
+    const onCache = (e: Event) => {
+      const d = (e as CustomEvent<{ path?: string; data?: Profile }>).detail;
+      if (d?.path === "/profile/user" && d.data && getToken()) setProfile(d.data);
+    };
     window.addEventListener("sixfigs-auth", h);
-    return () => window.removeEventListener("sixfigs-auth", h);
+    window.addEventListener("sixfigs-cache", onCache);
+    return () => {
+      window.removeEventListener("sixfigs-auth", h);
+      window.removeEventListener("sixfigs-cache", onCache);
+    };
   }, []);
 
   function authed() {

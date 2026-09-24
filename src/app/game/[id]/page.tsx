@@ -50,17 +50,25 @@ export default function GamePage() {
     if (!game) return;
     const s = connectSocket();
     sock.current = s;
-    s.emit("joinGame", { gameId: id });
-    s.emit("joinScope", { scope: "dm", scopeId: game.matchId });
+    const joinAll = () => {
+      s.emit("joinGame", { gameId: id }, (ack: { error?: string; state?: GameState }) => {
+        if (ack?.state) setGame((g) => mergeState(g, ack.state as GameState));
+      });
+      s.emit("joinScope", { scope: "dm", scopeId: game.matchId });
+    };
+    joinAll();
     const onState = (st: GameState) => setGame((g) => mergeState(g, st));
-    const onChat = (p: { message: ChatMessage }) => setMsgs((m) => [...m, p.message]);
+    const onChat = (p: { message: ChatMessage }) =>
+      setMsgs((m) => (m.some((x) => x.id === p.message.id) ? m : [...m, p.message]));
     s.on("gameState", onState);
     s.on("chatMessage", onChat);
+    s.io.on("reconnect", joinAll); // new socket id = old rooms gone; rejoin
     // load dm history with the real match id
     api<{ items: ChatMessage[] }>(`/chat/dm/${game.matchId}?limit=50`).then((h) => setMsgs(h.items)).catch(() => {});
     return () => {
       s.off("gameState", onState);
       s.off("chatMessage", onChat);
+      s.io.off("reconnect", joinAll);
     };
   }, [game?.matchId, id]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -84,9 +92,17 @@ export default function GamePage() {
     if (!draft.trim() || !game) return;
     const body = draft;
     setDraft("");
-    sock.current?.emit("sendMessage", { scope: "dm", scopeId: game.matchId, body }, (ack: { error?: string }) => {
-      if (ack?.error) setErr(ack.error);
-    });
+    sock.current?.emit(
+      "sendMessage",
+      { scope: "dm", scopeId: game.matchId, body },
+      (ack: { error?: string; message?: ChatMessage }) => {
+        if (ack?.error) setErr(ack.error);
+        else if (ack?.message) {
+          const msg = ack.message;
+          setMsgs((m) => (m.some((x) => x.id === msg.id) ? m : [...m, msg]));
+        }
+      },
+    );
   }
 
   if (!ready) return <section style={{ padding: "2rem 5vw" }}><p className="mono-label">LOADING…</p></section>;

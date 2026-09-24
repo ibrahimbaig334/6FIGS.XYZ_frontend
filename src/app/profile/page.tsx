@@ -2,7 +2,7 @@
 
 import { Suspense, useCallback, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { api, clearToken, getToken, getTiers, isDevnet, Profile, TierInfo } from "../../lib/api";
+import { api, ApiError, clearToken, getToken, getTiers, isDevnet, peekCache, Profile, TierInfo } from "../../lib/api";
 import { disconnectSocket } from "../../lib/ws";
 import ConnectPopup from "../../components/ConnectPopup";
 
@@ -21,6 +21,21 @@ function ProfileInner() {
   useEffect(() => {
     setReady(true);
     getTiers().then((t) => setTiers(t.tiers));
+    // Instant paint from the 24h client cache; load() revalidates in background.
+    const cached = getToken() ? peekCache<Profile>("/profile/user") : null;
+    if (cached) {
+      setProfile(cached);
+      setHandle(cached.handle ?? "");
+    }
+    const onCache = (e: Event) => {
+      const d = (e as CustomEvent<{ path?: string; data?: Profile }>).detail;
+      if (d?.path === "/profile/user" && d.data && getToken()) {
+        setProfile(d.data);
+        setHandle(d.data.handle ?? "");
+      }
+    };
+    window.addEventListener("sixfigs-cache", onCache);
+    return () => window.removeEventListener("sixfigs-cache", onCache);
   }, []);
 
   const load = useCallback(async () => {
@@ -32,8 +47,13 @@ function ProfileInner() {
       const p = await api<Profile>("/profile/user");
       setProfile(p);
       setHandle(p.handle ?? "");
+      setErr("");
     } catch (e) {
-      setErr(e instanceof Error ? e.message : "Load failed");
+      if (e instanceof ApiError && e.status === 0) {
+        setErr("Server unreachable — showing last saved data.");
+      } else {
+        setErr(e instanceof Error ? e.message : "Load failed");
+      }
     }
   }, []);
 

@@ -2,10 +2,11 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useParams, useSearchParams } from "next/navigation";
-import { api, ChatMessage, extractTickers, GameState, getToken, Profile, RoomMember } from "../../../lib/api";
+import { api, ChatMessage, copyText, extractTickers, GameState, getToken, Profile, RoomMember, RoomMeta } from "../../../lib/api";
 import { connectSocket } from "../../../lib/ws";
 import TokenCard from "../../../components/TokenCard";
 import ConnectPopup from "../../../components/ConnectPopup";
+import InviteDialog from "../../../components/InviteDialog";
 
 export default function RoomPage() {
   const { id } = useParams<{ id: string }>();
@@ -15,12 +16,19 @@ export default function RoomPage() {
   const [draft, setDraft] = useState("");
   const [err, setErr] = useState("");
   const [me, setMe] = useState<Profile | null>(null);
+  const [meta, setMeta] = useState<RoomMeta | null>(null);
+  const [needCode, setNeedCode] = useState(false);
   const [inviteCode, setInviteCode] = useState("");
   const [game, setGame] = useState<GameState | null>(null);
   const [gameErr, setGameErr] = useState("");
   const [ready, setReady] = useState(false);
   const [popup, setPopup] = useState(false);
   const sock = useRef<ReturnType<typeof connectSocket> | null>(null);
+  const gameRef = useRef<GameState | null>(null);
+
+  useEffect(() => {
+    gameRef.current = game;
+  }, [game]);
 
   useEffect(() => {
     setReady(true);
@@ -29,38 +37,50 @@ export default function RoomPage() {
   const load = useCallback(async () => {
     if (!getToken()) return;
     try {
+      setErr("");
       // Invite-link flow: ?code=CODE auto-joins, then drops the code from the URL.
       const code = search.get("code");
-      if (code) {
+      let m = await api<RoomMeta>(`/rooms/${id}/meta`, { cache: false });
+      if (!m.isMember && code) {
         try {
           await api(`/rooms/${id}/join`, { method: "POST", body: { code } });
+          m = await api<RoomMeta>(`/rooms/${id}/meta`, { cache: false });
         } catch (e) {
-          setErr(e instanceof Error ? e.message : "Join failed");
+          setErr(e instanceof Error ? e.message : "Wrong invite code");
         }
         const url = new URL(window.location.href);
         url.searchParams.delete("code");
         window.history.replaceState({}, "", url.toString());
       }
+      setMeta(m);
+      if (!m.isMember) {
+        if (m.accessType === "invite" && code) setNeedCode(true); // wrong ?code — let them retry in the dialog
+        return;
+      }
+      setNeedCode(false);
       setInviteCode(sessionStorage.getItem(`invite:${id}`) ?? "");
-      setMembers(await api<RoomMember[]>(`/rooms/${id}/members`));
-      const h = await api<{ items: ChatMessage[] }>(`/chat/room/${id}?limit=50`);
+      const [mem, h] = await Promise.all([
+        api<RoomMember[]>(`/rooms/${id}/members`, { cache: false }),
+        api<{ items: ChatMessage[] }>(`/chat/room/${id}?limit=50`),
+      ]);
+      setMembers(mem);
       setMsgs(h.items);
+      // (re)join the socket room — covers first load and post-join refresh
+      sock.current?.emit("joinScope", { scope: "room", scopeId: id });
       try {
-        const g = await api<{ gameId: string }>(`/rooms/${id}/game`);
+        const g = await api<{ gameId: string }>(`/rooms/${id}/game`, { cache: false });
         const full = await api<GameState>(`/games/${g.gameId}`);
         setGame(full);
       } catch (e) {
         setGameErr(e instanceof Error ? e.message : "No game yet");
       }
-      if (getToken()) {
-        try {
-          setMe(await api<Profile>("/profile/user"));
-        } catch {
-          setMe(null);
-        }
+      try {
+        setMe(await api<Profile>("/profile/user"));
+      } catch {
+        setMe(null);
       }
     } catch (e) {
-      setErr(e instanceof Error ? e.message : "Load failed (join the room first)");
+      setErr(e instanceof Error ? e.message : "Load failed");
     }
   }, [id, search]);
 
@@ -68,18 +88,45 @@ export default function RoomPage() {
     load();
   }, [load]);
 
+  // Poll while in the room: refreshes member presence and picks up the 1v1 game
+  // as soon as the peer joins (the first player used to wait forever on a 400).
+  useEffect(() => {
+    if (!ready || !getToken() || !meta?.isMember) return;
+    const t = setInterval(() => {
+      api<RoomMember[]>(`/rooms/${id}/members`, { cache: false })
+        .then(setMembers)
+        .catch(() => {});
+      if (!gameRef.current) {
+        api<{ gameId: string }>(`/rooms/${id}/game`, { cache: false })
+          .then((g) => api<GameState>(`/games/${g.gameId}`))
+          .then((full) => {
+            setGameErr("");
+            setGame(full);
+          })
+          .catch((e) => setGameErr(e instanceof Error ? e.message : "Waiting for peer…"));
+      }
+    }, 2500);
+    return () => clearInterval(t);
+  }, [ready, id, meta?.isMember]);
+
   useEffect(() => {
     const s = connectSocket();
     sock.current = s;
-    s.emit("joinScope", { scope: "room", scopeId: id });
-    if (game) s.emit("joinGame", { gameId: game.id });
-    const onChat = (p: { message: ChatMessage }) => setMsgs((m) => [...m, p.message]);
+    const joinAll = () => {
+      s.emit("joinScope", { scope: "room", scopeId: id });
+      if (gameRef.current) s.emit("joinGame", { gameId: gameRef.current.id });
+    };
+    joinAll();
+    const onChat = (p: { message: ChatMessage }) =>
+      setMsgs((m) => (m.some((x) => x.id === p.message.id) ? m : [...m, p.message]));
     const onState = (st: GameState) => setGame((g) => (g ? { ...st, opponent: g.opponent } : st));
     s.on("chatMessage", onChat);
     s.on("gameState", onState);
+    s.io.on("reconnect", joinAll); // socket.io rooms die with the old socket id
     return () => {
       s.off("chatMessage", onChat);
       s.off("gameState", onState);
+      s.io.off("reconnect", joinAll);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id, game?.id]);
@@ -106,9 +153,39 @@ export default function RoomPage() {
     if (!draft.trim()) return;
     const body = draft;
     setDraft("");
-    sock.current?.emit("sendMessage", { scope: "room", scopeId: id, body }, (ack: { error?: string }) => {
-      if (ack?.error) setErr(ack.error);
-    });
+    sock.current?.emit(
+      "sendMessage",
+      { scope: "room", scopeId: id, body },
+      (ack: { error?: string; message?: ChatMessage }) => {
+        if (ack?.error) setErr(ack.error);
+        else if (ack?.message) {
+          // append from ack — the WS echo may be missed if joinScope is still in flight
+          const msg = ack.message;
+          setMsgs((m) => (m.some((x) => x.id === msg.id) ? m : [...m, msg]));
+        }
+      },
+    );
+  }
+
+  async function joinWithCode(code: string) {
+    setErr("");
+    try {
+      await api(`/rooms/${id}/join`, { method: "POST", body: { code } });
+      setNeedCode(false);
+      await load();
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : "Wrong invite code");
+    }
+  }
+
+  async function joinTier() {
+    setErr("");
+    try {
+      await api(`/rooms/${id}/join`, { method: "POST", body: {} });
+      await load();
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : "Join failed");
+    }
   }
 
   const peer = members.find((m) => m.id !== me?.id) ?? null;
@@ -133,6 +210,35 @@ export default function RoomPage() {
     );
   }
 
+  // Join gate: non-members get the proper code prompt / tier button (never a dead end).
+  if (meta && !meta.isMember) {
+    return (
+      <section style={{ padding: "2rem 5vw" }}>
+        <div className="card" style={{ maxWidth: "480px" }}>
+          <p className="mono-label">{meta.accessType === "invite" ? "🔒 INVITE-ONLY ROOM" : `✓ ${meta.minTier} ROOM`}</p>
+          <h3 style={{ margin: "0.3rem 0" }}>{meta.name}</h3>
+          <p className="fine">{meta.memberCount}/2 MEMBERS · 1V1 ONLY</p>
+          {meta.accessType === "tier" ? (
+            <>
+              <p className="fine">Requires {meta.minTier} to enter.</p>
+              <button className="btn-solid" style={{ marginTop: "0.6rem" }} onClick={joinTier}>
+                JOIN {meta.minTier} ROOM ↗
+              </button>
+            </>
+          ) : (
+            <button className="btn-solid" style={{ marginTop: "0.6rem" }} onClick={() => setNeedCode(true)}>
+              ENTER INVITE CODE ↗
+            </button>
+          )}
+          {err && <p style={{ color: "var(--crimson)", fontSize: "0.7rem" }}>{err}</p>}
+        </div>
+        {needCode && (
+          <InviteDialog roomName={meta.name} onSubmit={joinWithCode} onClose={() => setNeedCode(false)} error={err} />
+        )}
+      </section>
+    );
+  }
+
   return (
     <section style={{ padding: "2rem 5vw", display: "grid", gridTemplateColumns: "220px 1fr", gap: "1rem" }}>
       <div>
@@ -145,6 +251,7 @@ export default function RoomPage() {
         {inviteCode && (
           <div className="invite-box" style={{ margin: "0.6rem 0" }}>
             INVITE LINK: <a href={`${location.origin}/rooms/${id}?code=${inviteCode}`}>{`${location.origin}/rooms/${id}?code=${inviteCode}`}</a>
+            <button className="chip" style={{ marginLeft: "0.4rem" }} onClick={() => copyText(`${location.origin}/rooms/${id}?code=${inviteCode}`)}>COPY</button>
           </div>
         )}
         <p className="mono-label">MEMBERS ({members.length})</p>

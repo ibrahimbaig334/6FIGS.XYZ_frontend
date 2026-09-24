@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { api, getToken, Room, RoomList } from "../../lib/api";
+import { api, copyText, getToken, Room, RoomList } from "../../lib/api";
 import ConnectPopup from "../../components/ConnectPopup";
 import InviteDialog from "../../components/InviteDialog";
 
@@ -50,6 +50,11 @@ export default function RoomsPage() {
   }
 
   function askJoin(r: Room) {
+    if (r.isMember) {
+      // Already inside (creator/previous join) — never re-prompt for a password.
+      location.href = `/rooms/${r.id}`;
+      return;
+    }
     if (r.accessType === "invite") setInviteFor(r);
     else join(r);
   }
@@ -110,7 +115,7 @@ export default function RoomsPage() {
       {inviteLink && (
         <div className="invite-box">
           INVITE LINK (share it — shown once): <a href={inviteLink}>{inviteLink}</a>
-          <button className="chip" style={{ marginLeft: "0.6rem" }} onClick={() => { navigator.clipboard?.writeText(inviteLink).catch(() => {}); }}>COPY</button>
+            <button className="chip" style={{ marginLeft: "0.6rem" }} onClick={() => { copyText(inviteLink); }}>COPY</button>
         </div>
       )}
       <div style={{ display: "flex", gap: "0.5rem", alignItems: "center", flexWrap: "wrap" }}>
@@ -158,7 +163,9 @@ export default function RoomsPage() {
               <span className="fine">{r.memberCount}/2 MEMBERS</span>
             </div>
             <h3 style={{ margin: "0.5rem 0" }}>{r.name}</h3>
-            <button className="btn-solid" style={{ padding: "0.6rem 0.9rem" }} onClick={() => askJoin(r)}>JOIN 1V1 ↗</button>
+            <button className="btn-solid" style={{ padding: "0.6rem 0.9rem" }} onClick={() => askJoin(r)}>
+              {r.isMember ? "ENTER ↗" : "JOIN 1V1 ↗"}
+            </button>
           </div>
         ))}
       </div>

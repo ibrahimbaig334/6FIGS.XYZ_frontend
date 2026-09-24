@@ -37,7 +37,7 @@ export default function Header() {
       return;
     }
     try {
-      setProfile(await api<Profile>("/profile/me"));
+      setProfile(await api<Profile>("/profile/user"));
     } catch {
       clearToken();
       setProfile(null);

@@ -11,7 +11,6 @@ interface Card {
   mcap?: number | null;
   vol24h?: number | null;
   change24h?: number | null;
-  holders?: number | null;
 }
 
 function compact(n: number | null | undefined): string {
@@ -70,13 +69,12 @@ export default function TokenCard({ symbol }: { symbol: string }) {
           {card.status === "stale" ? " · STALE" : ""}
         </span>
       </div>
-      <div className="token-grid">
+      <div className="token-grid cols-3">
         <div><span>PRICE</span><strong>{price(card.price)}</strong></div>
         <div><span>MKT CAP</span><strong>{card.mcap ? "$" + compact(card.mcap) : "—"}</strong></div>
         <div><span>VOL 24H</span><strong>{card.vol24h ? "$" + compact(card.vol24h) : "—"}</strong></div>
-        <div><span>HOLDERS</span><strong>—</strong></div>
       </div>
-      <p className="fine">Data: CoinGecko · server-cached 5 min · holders n/a on free API</p>
+      <p className="fine">Data: CoinGecko · server-cached 5 min</p>
     </div>
   );
 }

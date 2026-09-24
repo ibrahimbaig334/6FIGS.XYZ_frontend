@@ -2,7 +2,7 @@
 
 import { Suspense, useCallback, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { api, clearToken, getToken, isDevnet, Profile } from "../../lib/api";
+import { api, clearToken, getToken, getTiers, isDevnet, Profile, TierInfo } from "../../lib/api";
 import { disconnectSocket } from "../../lib/ws";
 import ConnectPopup from "../../components/ConnectPopup";
 
@@ -15,11 +15,12 @@ function ProfileInner() {
   const [popup, setPopup] = useState(false);
   const [err, setErr] = useState("");
   const [handle, setHandle] = useState("");
-  const [mockEdits, setMockEdits] = useState<Record<string, string>>({});
   const [ready, setReady] = useState(false);
+  const [tiers, setTiers] = useState<TierInfo[]>([]);
 
   useEffect(() => {
     setReady(true);
+    getTiers().then((t) => setTiers(t.tiers));
   }, []);
 
   const load = useCallback(async () => {
@@ -28,7 +29,7 @@ function ProfileInner() {
       return;
     }
     try {
-      const p = await api<Profile>("/profile/me");
+      const p = await api<Profile>("/profile/user");
       setProfile(p);
       setHandle(p.handle ?? "");
     } catch (e) {
@@ -52,7 +53,7 @@ function ProfileInner() {
 
   async function saveVis(visMode: string) {
     try {
-      await api("/profile/me", { method: "PATCH", body: { visMode } });
+      await api("/profile/user", { method: "PATCH", body: { visMode } });
       await load();
     } catch (e) {
       setErr(e instanceof Error ? e.message : "Save failed");
@@ -61,18 +62,9 @@ function ProfileInner() {
 
   async function saveHandle() {
     try {
-      await api("/profile/me", { method: "PATCH", body: { handle } });
+      await api("/profile/user", { method: "PATCH", body: { handle } });
       await load();
       window.dispatchEvent(new Event("sixfigs-auth"));
-    } catch (e) {
-      setErr(e instanceof Error ? e.message : "Save failed");
-    }
-  }
-
-  async function saveMock(id: string) {
-    try {
-      await api(`/wallet/${id}/mock`, { method: "PATCH", body: { value: Number(mockEdits[id] ?? 0) } });
-      await load();
     } catch (e) {
       setErr(e instanceof Error ? e.message : "Save failed");
     }
@@ -121,51 +113,55 @@ function ProfileInner() {
 
   const elig = profile.eligibility;
 
+  const primary = profile.wallets[0];
+
   return (
-    <section style={{ padding: "2rem 5vw", display: "flex", flexDirection: "column", gap: "1rem" }}>
-      <div style={{ display: "flex", gap: "0.5rem" }}>
-        {TABS.map((t) => (
-          <button key={t} className={tab === t ? "chip active" : "chip"} onClick={() => setTab(t)}>
-            {t.toUpperCase()}
-          </button>
-        ))}
-        <span className="tier-badge" style={{ marginLeft: "auto", alignSelf: "center" }}>
-          {elig.tier ?? "BELOW $100K"} · ${elig.total.toLocaleString()}
-        </span>
+    <section style={{ padding: "2rem 5vw" }}>
+      <div className="topline">
+        <div>
+          <p className="mono-label">PROFILE PAGE</p>
+          <h2 style={{ margin: "0.3rem 0 0" }}>
+            {primary ? primary.display : "—"} · ${elig.total.toLocaleString()}{" "}
+            <span className="tier-badge">{elig.tier ?? "UNVERIFIED"}</span>
+          </h2>
+        </div>
+        <button className="btn-ghost" style={{ padding: "0.7rem 1rem" }} onClick={() => setPopup(true)}>
+          CONNECT MORE WALLETS +
+        </button>
       </div>
       {err && <p style={{ color: "var(--crimson)", fontFamily: '"DM Mono", monospace', fontSize: "0.7rem" }}>{err}</p>}
+      <div style={{ display: "grid", gridTemplateColumns: "200px 1fr", gap: "1.2rem", alignItems: "start" }}>
+        <nav className="side-tabs" aria-label="Profile sections">
+          {TABS.map((t) => (
+            <button key={t} className={tab === t ? "active" : ""} onClick={() => setTab(t)}>
+              {t.toUpperCase()}
+            </button>
+          ))}
+        </nav>
+        <div style={{ display: "flex", flexDirection: "column", gap: "1rem", minWidth: 0 }}>
 
       {tab === "wallets" && (
         <div className="card">
           <p className="mono-label">1 / CONNECTED WALLETS (EVM + SOLANA + BTC)</p>
-          {profile.wallets.map((w) => (
-            <div key={w.id} className="wallet-row">
-              <span className={w.chain === "SOL" ? "chain-badge sol" : "chain-badge"}>{w.chain}</span>
-              <code className="wallet-addr">{w.address}</code>
-              {isDevnet ? (
-                <>
-                  <input
-                    className="field"
-                    style={{ maxWidth: "130px" }}
-                    type="number"
-                    min={0}
-                    placeholder={String(w.mockUsd ?? 0)}
-                    value={mockEdits[w.id] ?? ""}
-                    onChange={(e) => setMockEdits({ ...mockEdits, [w.id]: e.target.value })}
-                  />
-                  <button className="chip" onClick={() => saveMock(w.id)}>SET ${Number(mockEdits[w.id] ?? w.mockUsd ?? 0).toLocaleString()}</button>
-                </>
-              ) : (
-                <span className="mono-label">${(w.mockUsd ?? 0).toLocaleString()}</span>
-              )}
-              <button className="chip" onClick={() => removeWallet(w.id)}>✕</button>
-            </div>
-          ))}
+          {profile.wallets.map((w) => {
+            const live = elig.balances.find((b) => b.walletId === w.id);
+            return (
+              <div key={w.id} className="wallet-row">
+                <span className={w.chain === "SOL" ? "chain-badge sol" : "chain-badge"}>{w.chain}</span>
+                <code className="wallet-addr">{w.address}</code>
+                <span className="mono-label">${Math.round(live?.usd ?? 0).toLocaleString()} LIVE</span>
+                <button className="chip" onClick={() => removeWallet(w.id)}>✕</button>
+              </div>
+            );
+          })}
           <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap", marginTop: "0.6rem" }}>
             <button className="btn-solid" style={{ padding: "0.7rem 1rem" }} onClick={() => setPopup(true)}>+ ADD WALLET</button>
             <button className="btn-ghost" style={{ padding: "0.7rem 1rem" }} onClick={recheck}>PROVE COMBINED TOTAL ↗</button>
           </div>
-          <p className="fine">Tiers — I &gt; $100K · II &gt; $500K · III &gt; $1M. {isDevnet ? "Devnet: set mock USD per wallet, then prove." : "Balances arrive via ZKP later."}</p>
+          <p className="fine">
+            Tiers — {tiers.map((t) => `${t.name} > $${t.min.toLocaleString()}`).join(" · ") || "loading…"}.
+            Balances read live onchain (Sepolia / Solana devnet) × cached USD prices.
+          </p>
         </div>
       )}
 
@@ -218,6 +214,8 @@ function ProfileInner() {
         </div>
       )}
       {popup && <ConnectPopup onClose={() => setPopup(false)} onDone={() => { load(); window.dispatchEvent(new Event("sixfigs-auth")); }} />}
+        </div>
+      </div>
     </section>
   );
 }

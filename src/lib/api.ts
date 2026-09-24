@@ -35,15 +35,41 @@ export interface Wallet {
   chain: string;
   address: string;
   display: string;
-  mockUsd: number | null;
+}
+
+export interface WalletBalance {
+  walletId: string;
+  chain: string;
+  usd: number;
 }
 
 export interface Eligibility {
   tier: string | null;
   total: number;
   assetPct: Record<string, number>;
+  balances: WalletBalance[];
   expiresAt: string | null;
   walletCount: number;
+}
+
+export interface TierInfo {
+  name: string;
+  min: number;
+}
+
+export async function getTiers(): Promise<{ chainMode: string; tiers: TierInfo[] }> {
+  try {
+    return await api<{ chainMode: string; tiers: TierInfo[] }>("/tiers", { auth: false });
+  } catch {
+    return {
+      chainMode: "prod",
+      tiers: [
+        { name: "TIER I", min: 100000 },
+        { name: "TIER II", min: 500000 },
+        { name: "TIER III", min: 1000000 },
+      ],
+    };
+  }
 }
 
 export interface Profile {
@@ -61,7 +87,6 @@ export interface Peer {
   tier: string;
   visMode: string;
   tags: string[];
-  isBot: boolean;
   online: boolean;
   lastSeenAt: string | null;
 }
@@ -69,7 +94,6 @@ export interface Peer {
 export interface RoomMember {
   id: string;
   handle: string;
-  isBot: boolean;
   online: boolean;
   lastSeenAt: string | null;
 }
@@ -83,7 +107,7 @@ export interface GameState {
   winner: string | null;
   youAre: string;
   oppId: string;
-  opponent: { id: string; handle: string; visMode: string; isBot: boolean } | null;
+  opponent: { id: string; handle: string; visMode: string } | null;
 }
 
 export interface Room {
@@ -94,6 +118,13 @@ export interface Room {
   minTier: string | null;
   memberCount: number;
   createdAt: string;
+}
+
+export interface RoomList {
+  items: Room[];
+  total: number;
+  page: number;
+  limit: number;
 }
 
 export interface ChatMessage {
@@ -115,6 +146,18 @@ export function extractTickers(text: string): string[] {
     if (!out.includes(s)) out.push(s);
   }
   return out.slice(0, 3);
+}
+
+export function timeAgo(iso: string | null): string {
+  if (!iso) return "long ago";
+  const s = Math.max(1, Math.floor((Date.now() - new Date(iso).getTime()) / 1000));
+  if (s < 60) return `${s}s ago`;
+  const m = Math.floor(s / 60);
+  if (m < 60) return `${m}m ago`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `${h}h ago`;
+  const d = Math.floor(h / 24);
+  return `${d}d ago`;
 }
 
 /** Must match backend loginMessage() byte-for-byte. */

@@ -2,9 +2,10 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useParams } from "next/navigation";
-import { api, ChatMessage, extractTickers, GameState, Peer } from "../../../lib/api";
+import { api, ChatMessage, extractTickers, GameState, getToken, Peer } from "../../../lib/api";
 import { connectSocket } from "../../../lib/ws";
 import TokenCard from "../../../components/TokenCard";
+import ConnectPopup from "../../../components/ConnectPopup";
 
 export default function GamePage() {
   const { id } = useParams<{ id: string }>();
@@ -13,13 +14,20 @@ export default function GamePage() {
   const [draft, setDraft] = useState("");
   const [err, setErr] = useState("");
   const [oppOnline, setOppOnline] = useState(false);
+  const [ready, setReady] = useState(false);
+  const [popup, setPopup] = useState(false);
   const sock = useRef<ReturnType<typeof connectSocket> | null>(null);
 
   function mergeState(prev: GameState | null, st: GameState): GameState {
     return { ...st, opponent: prev?.opponent ?? st.opponent ?? null };
   }
 
+  useEffect(() => {
+    setReady(true);
+  }, []);
+
   const load = useCallback(async () => {
+    if (!getToken()) return;
     try {
       const g = await api<GameState>(`/games/${id}`);
       setGame(g);
@@ -81,6 +89,18 @@ export default function GamePage() {
     });
   }
 
+  if (!ready) return <section style={{ padding: "2rem 5vw" }}><p className="mono-label">LOADING…</p></section>;
+  if (!getToken()) {
+    return (
+      <section style={{ padding: "2rem 5vw" }}>
+        <div className="card">
+          <p className="mono-label">GAME — CONNECT FIRST</p>
+          <button className="btn-solid" onClick={() => setPopup(true)}>CONNECT WALLET ↗</button>
+        </div>
+        {popup && <ConnectPopup onClose={() => setPopup(false)} onDone={load} />}
+      </section>
+    );
+  }
   if (err && !game) return <section style={{ padding: "2rem 5vw" }}><div className="card"><p>{err}</p><a href="/play">← PLAY</a></div></section>;
   if (!game) return <section style={{ padding: "2rem 5vw" }}><p className="mono-label">LOADING…</p></section>;
 
@@ -94,7 +114,7 @@ export default function GamePage() {
         </h2>
         <p className="fine"><a href="/play">← PLAY</a> · <a href="/rooms">ROOMS</a></p>
         {game.status !== "open" && <p className="mono-label">{game.status === "draw" ? "DRAW" : `${game.winner} WINS`} — <button className="chip" onClick={rematch}>REMATCH</button></p>}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 110px)", gap: "4px", background: "var(--ink)", padding: "4px", width: "max-content", border: "2px solid var(--ink)" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, min(110px, 26vw))", gap: "4px", background: "var(--ink)", padding: "4px", width: "max-content", border: "2px solid var(--ink)", boxShadow: "8px 8px 0 var(--shadow)" }}>
           {game.board.split("").map((cell, i) => (
             <button
               key={i}

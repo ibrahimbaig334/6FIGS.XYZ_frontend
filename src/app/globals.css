@@ -15,7 +15,7 @@
 }
 
 body.dark {
-  --paper: #141109;
+  --paper: #202020;
   --ink: #f4efdf;
   --crimson: #ff6a52;
   --gold: #ffd438;
@@ -34,7 +34,45 @@ body {
   background: var(--paper);
   color: var(--ink);
   font-family: "Space Grotesk", Arial, sans-serif;
-  transition: background 0.25s ease, color 0.25s ease;
+  transition:
+    background 0.25s ease,
+    color 0.25s ease;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+body > main {
+  flex: 1;
+}
+
+.dialog-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(18, 18, 18, 0.55);
+  display: grid;
+  place-items: center;
+  z-index: 50;
+  animation: dialog-in 0.15s ease;
+}
+
+.dialog-box {
+  background: var(--paper);
+  border: 2px solid var(--ink);
+  box-shadow: 8px 8px 0 var(--shadow);
+  padding: 1.2rem;
+  width: min(420px, 90vw);
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  animation: dialog-in 0.18s ease;
+}
+
+@keyframes dialog-in {
+  from {
+    transform: translate(-3px, -3px);
+    opacity: 0;
+  }
 }
 
 ::selection {
@@ -127,7 +165,9 @@ body {
   background: var(--paper);
   padding: 1.2rem;
   box-shadow: 8px 8px 0 var(--shadow);
-  transition: transform 0.12s ease, box-shadow 0.12s ease;
+  transition:
+    transform 0.12s ease,
+    box-shadow 0.12s ease;
 }
 
 .tier-badge {
@@ -280,7 +320,10 @@ select.field option {
 .btn-ghost,
 .chip,
 .site-nav a {
-  transition: background 0.12s ease, color 0.12s ease, transform 0.12s ease;
+  transition:
+    background 0.12s ease,
+    color 0.12s ease,
+    transform 0.12s ease;
 }
 
 .btn-solid:active,
@@ -331,7 +374,9 @@ select.field option {
 }
 
 .grid-cards .card {
-  transition: transform 0.12s ease, box-shadow 0.12s ease;
+  transition:
+    transform 0.12s ease,
+    box-shadow 0.12s ease;
 }
 
 .grid-cards .card:hover {
@@ -352,6 +397,166 @@ select.field option {
   }
 }
 
+/* ---- handwritten-layout chrome: ticker, tabs, sidebar, blur, rows ---- */
+.ticker {
+  overflow: hidden;
+  background: var(--crimson);
+  color: #fff;
+  border-bottom: 2px solid var(--ink);
+  font-family: "DM Mono", monospace;
+  font-size: 0.67rem;
+  letter-spacing: 0.09em;
+  white-space: nowrap;
+}
+
+.ticker-inner {
+  display: inline-block;
+  width: max-content;
+  padding: 0.65rem 0;
+  animation: ticker-scroll 22s linear infinite;
+}
+
+@keyframes ticker-scroll {
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.tabs {
+  display: inline-flex;
+  border: 2px solid var(--ink);
+  background: var(--paper);
+}
+
+.tabs a {
+  padding: 0.7rem 1.4rem;
+  font-family: "DM Mono", monospace;
+  font-size: 0.7rem;
+  letter-spacing: 0.06em;
+  text-decoration: none;
+  color: inherit;
+  border-right: 2px solid var(--ink);
+}
+
+.tabs a:last-child {
+  border-right: 0;
+}
+
+.tabs a.active,
+.tabs a:hover {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.topline {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+  padding: 1.2rem 0;
+  border-bottom: 2px solid var(--ink);
+  margin-bottom: 1.2rem;
+}
+
+.hero {
+  position: relative;
+  overflow: hidden;
+  padding: clamp(2rem, 5vw, 4rem) 5vw;
+  border-bottom: 2px solid var(--ink);
+}
+
+.hero-giant {
+  position: absolute;
+  right: 2vw;
+  top: 50%;
+  transform: translateY(-50%) rotate(6deg);
+  font-size: clamp(14rem, 30vw, 24rem);
+  font-weight: 700;
+  line-height: 0.8;
+  color: var(--gold);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.hero > *:not(.hero-giant) {
+  position: relative;
+  z-index: 1;
+}
+
+.tier-strip {
+  display: flex;
+  flex-wrap: wrap;
+  border: 2px solid var(--ink);
+  background: var(--paper);
+  position: relative;
+  z-index: 1;
+}
+
+.tier-strip > div {
+  padding: 1rem 1.4rem;
+  border-right: 2px solid var(--ink);
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.side-tabs {
+  display: flex;
+  flex-direction: column;
+  border: 2px solid var(--ink);
+  background: var(--paper);
+  height: max-content;
+}
+
+.side-tabs button {
+  padding: 1rem 1.2rem;
+  background: none;
+  border: 0;
+  border-bottom: 2px solid var(--ink);
+  font-family: "DM Mono", monospace;
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+  text-align: left;
+  cursor: pointer;
+  color: inherit;
+}
+
+.side-tabs button:last-child {
+  border-bottom: 0;
+}
+
+.side-tabs button.active {
+  background: var(--gold);
+  color: #141109;
+}
+
+.locked-blur {
+  filter: blur(6px);
+  pointer-events: none;
+  user-select: none;
+}
+
+.peer-row {
+  display: flex;
+  gap: 0.8rem;
+  align-items: center;
+  flex-wrap: wrap;
+  border: 2px solid var(--ink);
+  background: var(--card);
+  padding: 0.7rem 0.9rem;
+  box-shadow: 4px 4px 0 var(--shadow);
+}
+
+.invite-box {
+  border: 2px dashed var(--ink);
+  background: var(--card);
+  padding: 0.8rem 1rem;
+  font-family: "DM Mono", monospace;
+  font-size: 0.7rem;
+  word-break: break-all;
+}
+
 .token-card {
   border: 2px solid var(--ink);
   background: var(--card);
@@ -366,6 +571,10 @@ select.field option {
   grid-template-columns: repeat(4, 1fr);
   gap: 0.5rem;
   margin-top: 0.6rem;
+}
+
+.token-grid.cols-3 {
+  grid-template-columns: repeat(3, 1fr);
 }
 
 .token-grid > div {

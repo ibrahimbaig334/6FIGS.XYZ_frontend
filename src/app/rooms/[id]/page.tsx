@@ -2,11 +2,12 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useParams, useSearchParams } from "next/navigation";
-import { api, ChatMessage, copyText, extractTickers, GameState, getToken, Profile, RoomMember, RoomMeta } from "../../../lib/api";
+import { api, ApiError, ChatMessage, copyText, extractTickers, GameState, getToken, Profile, RoomMember, RoomMeta } from "../../../lib/api";
 import { connectSocket } from "../../../lib/ws";
 import TokenCard from "../../../components/TokenCard";
 import ConnectPopup from "../../../components/ConnectPopup";
 import InviteDialog from "../../../components/InviteDialog";
+import DeleteRoomDialog from "../../../components/DeleteRoomDialog";
 
 export default function RoomPage() {
   const { id } = useParams<{ id: string }>();
@@ -18,6 +19,8 @@ export default function RoomPage() {
   const [me, setMe] = useState<Profile | null>(null);
   const [meta, setMeta] = useState<RoomMeta | null>(null);
   const [needCode, setNeedCode] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [roomGone, setRoomGone] = useState<"deleted" | "removed" | null>(null);
   const [inviteCode, setInviteCode] = useState("");
   const [game, setGame] = useState<GameState | null>(null);
   const [gameErr, setGameErr] = useState("");
@@ -30,6 +33,15 @@ export default function RoomPage() {
     gameRef.current = game;
   }, [game]);
 
+  // Room gone out from under us (owner deleted it, or we were removed).
+  useEffect(() => {
+    if (!roomGone) return;
+    const t = setTimeout(() => {
+      location.href = "/rooms";
+    }, 3500);
+    return () => clearTimeout(t);
+  }, [roomGone]);
+
   useEffect(() => {
     setReady(true);
   }, []);
@@ -40,7 +52,13 @@ export default function RoomPage() {
       setErr("");
       // Invite-link flow: ?code=CODE auto-joins, then drops the code from the URL.
       const code = search.get("code");
-      let m = await api<RoomMeta>(`/rooms/${id}/meta`, { cache: false });
+      let m: RoomMeta;
+      try {
+        m = await api<RoomMeta>(`/rooms/${id}/meta`, { cache: false });
+      } catch (e) {
+        if (e instanceof ApiError && e.status === 404) setRoomGone("deleted");
+        throw e;
+      }
       if (!m.isMember && code) {
         try {
           await api(`/rooms/${id}/join`, { method: "POST", body: { code } });
@@ -89,25 +107,41 @@ export default function RoomPage() {
   }, [load]);
 
   // Poll while in the room: refreshes member presence and picks up the 1v1 game
-  // as soon as the peer joins (the first player used to wait forever on a 400).
+  // as soon as the peer joins. Also notices when the room is deleted out from
+  // under us (owner deleted it) so the peer gets kicked to a notice, not a ghost.
   useEffect(() => {
-    if (!ready || !getToken() || !meta?.isMember) return;
-    const t = setInterval(() => {
-      api<RoomMember[]>(`/rooms/${id}/members`, { cache: false })
-        .then(setMembers)
-        .catch(() => {});
+    if (!ready || !getToken() || !meta?.isMember || roomGone) return;
+    const t = setInterval(async () => {
+      try {
+        setMembers(await api<RoomMember[]>(`/rooms/${id}/members`, { cache: false }));
+      } catch (e) {
+        if (e instanceof ApiError && (e.status === 403 || e.status === 404)) {
+          try {
+            await api<RoomMeta>(`/rooms/${id}/meta`, { cache: false });
+            setRoomGone("removed");
+          } catch (e2) {
+            setRoomGone(e2 instanceof ApiError && e2.status === 404 ? "deleted" : "removed");
+          }
+          return;
+        }
+      }
       if (!gameRef.current) {
-        api<{ gameId: string }>(`/rooms/${id}/game`, { cache: false })
-          .then((g) => api<GameState>(`/games/${g.gameId}`))
-          .then((full) => {
-            setGameErr("");
-            setGame(full);
-          })
-          .catch((e) => setGameErr(e instanceof Error ? e.message : "Waiting for peer…"));
+        try {
+          const g = await api<{ gameId: string }>(`/rooms/${id}/game`, { cache: false });
+          const full = await api<GameState>(`/games/${g.gameId}`);
+          setGameErr("");
+          setGame(full);
+        } catch (e) {
+          if (e instanceof ApiError && (e.status === 403 || e.status === 404)) {
+            setRoomGone("deleted");
+          } else {
+            setGameErr(e instanceof Error ? e.message : "Waiting for peer…");
+          }
+        }
       }
     }, 2500);
     return () => clearInterval(t);
-  }, [ready, id, meta?.isMember]);
+  }, [ready, id, meta?.isMember, roomGone]);
 
   useEffect(() => {
     const s = connectSocket();
@@ -188,6 +222,21 @@ export default function RoomPage() {
     }
   }
 
+  async function leaveRoom() {
+    setErr("");
+    try {
+      await api(`/rooms/${id}/leave`, { method: "POST" });
+      location.href = "/rooms";
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : "Leave failed");
+    }
+  }
+
+  async function deleteRoom() {
+    await api(`/rooms/${id}`, { method: "DELETE" });
+    location.href = "/rooms";
+  }
+
   const peer = members.find((m) => m.id !== me?.id) ?? null;
 
   if (!ready) {
@@ -239,10 +288,27 @@ export default function RoomPage() {
     );
   }
 
+  if (roomGone) {
+    return (
+      <section style={{ padding: "2rem 5vw" }}>
+        <div className="card" style={{ maxWidth: "480px" }}>
+          <p className="mono-label">{roomGone === "deleted" ? "ROOM DELETED" : "REMOVED FROM ROOM"}</p>
+          <p className="fine">
+            {roomGone === "deleted"
+              ? "The owner deleted this room. Taking you back to the lobby…"
+              : "You are no longer in this room. Taking you back to the lobby…"}
+          </p>
+          <a href="/rooms" className="btn-solid" style={{ padding: "0.7rem 1rem" }}>BACK TO ROOMS ↗</a>
+        </div>
+      </section>
+    );
+  }
+
   return (
     <section style={{ padding: "2rem 5vw", display: "grid", gridTemplateColumns: "220px 1fr", gap: "1rem" }}>
       <div>
         <p className="mono-label">1V1 ROOM · {members.length}/2</p>
+        {meta?.description && <p className="fine" style={{ margin: "0.2rem 0 0.4rem" }}>{meta.description}</p>}
         {peer && (
           <h3 style={{ display: "flex", gap: "0.5rem", alignItems: "center", margin: "0.4rem 0" }}>
             <span className={peer.online ? "dot on" : "dot"} /> {peer.handle}
@@ -260,6 +326,15 @@ export default function RoomPage() {
             <span className={m.online ? "dot on" : "dot"} title={m.online ? "Online" : "Offline"} /> {m.handle}
           </p>
         ))}
+        <div style={{ display: "flex", gap: "0.4rem", marginTop: "0.6rem", flexWrap: "wrap" }}>
+          <button className="chip" onClick={leaveRoom}>LEAVE ROOM</button>
+          {meta?.isOwner && (
+            <button className="chip" style={{ color: "var(--crimson)", borderColor: "var(--crimson)" }} onClick={() => setConfirmDelete(true)}>DELETE ROOM</button>
+          )}
+        </div>
+        {confirmDelete && meta && (
+          <DeleteRoomDialog roomName={meta.name} onClose={() => setConfirmDelete(false)} onConfirm={deleteRoom} />
+        )}
         <div className="card" style={{ marginTop: "0.8rem" }}>
           <p className="mono-label">1V1 GAME</p>
           {game ? (
@@ -290,7 +365,7 @@ export default function RoomPage() {
         <p className="mono-label">ROOM CHAT — $TICKERS UNFURL</p>
         <ol className="chat-log">
           {msgs.map((m) => (
-            <li key={m.id} className="msg">
+            <li key={m.id} className={m.senderId === me?.id ? "msg me" : "msg"}>
               <strong>{m.senderHandle}:</strong> {m.body}
               {extractTickers(m.body).map((t) => <TokenCard key={t} symbol={t} />)}
             </li>

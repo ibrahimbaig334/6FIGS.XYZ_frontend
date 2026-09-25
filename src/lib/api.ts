@@ -257,22 +257,49 @@ export interface GameState {
 export interface Room {
   id: string;
   name: string;
+  description: string | null;
   imageUrl: string | null;
   accessType: string;
   minTier: string | null;
   memberCount: number;
+  onlineCount: number;
   createdAt: string;
   isMember: boolean;
+  isOwner: boolean;
 }
 
 export interface RoomMeta {
   id: string;
   name: string;
+  description: string | null;
   imageUrl: string | null;
   accessType: string;
   minTier: string | null;
   memberCount: number;
+  onlineCount: number;
   isMember: boolean;
+  isOwner: boolean;
+}
+
+export interface Friend {
+  id: string;
+  handle: string;
+  tier: string | null;
+  visMode: string;
+  tags: string[];
+  online: boolean;
+  lastSeenAt: string | null;
+}
+
+export interface RoomRequestInfo {
+  id: string;
+  fromUserId: string;
+  toUserId: string;
+  fromHandle: string;
+  toHandle: string;
+  status: string;
+  roomId: string | null;
+  createdAt: string;
 }
 
 export interface RoomList {
@@ -280,6 +307,7 @@ export interface RoomList {
   total: number;
   page: number;
   limit: number;
+  ownedCount: number;
 }
 
 export interface ChatMessage {

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { api, ApiError, clearToken, getToken, peekCache, Profile } from "../lib/api";
-import { disconnectSocket } from "../lib/ws";
+import { connectSocket, disconnectSocket } from "../lib/ws";
 import ConnectPopup from "./ConnectPopup";
 
 const NAV = [
@@ -45,9 +45,18 @@ export default function Header() {
   }
 
   useEffect(() => {
-    if (getToken()) setProfile(peekCache<Profile>("/profile/user")); // instant paint from cache
+    if (getToken()) {
+      setProfile(peekCache<Profile>("/profile/user")); // instant paint from cache
+      connectSocket(); // online immediately on cached session — drives 1v1 presence
+    }
     load();
-    const h = () => load();
+    const h = () => {
+      load();
+      if (getToken()) {
+        disconnectSocket();
+        connectSocket(); // session changed → re-auth the socket
+      }
+    };
     const onCache = (e: Event) => {
       const d = (e as CustomEvent<{ path?: string; data?: Profile }>).detail;
       if (d?.path === "/profile/user" && d.data && getToken()) setProfile(d.data);

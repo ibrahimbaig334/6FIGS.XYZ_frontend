@@ -659,3 +659,67 @@ select.field option {
   background: #1a7f37;
   box-shadow: 0 0 0 3px rgba(26, 127, 55, 0.18);
 }
+
+/* Matchmaking: searching overlay locks the tab until matched/cancelled. */
+.search-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  align-items: center;
+  justify-content: center;
+  background: color-mix(in srgb, var(--paper) 88%, transparent);
+}
+
+.search-rings {
+  position: relative;
+  width: 120px;
+  height: 120px;
+}
+
+.search-rings span {
+  position: absolute;
+  inset: 0;
+  border: 3px solid var(--crimson);
+  border-radius: 50%;
+  animation: ping-ring 1.8s cubic-bezier(0.2, 0.6, 0.4, 1) infinite;
+}
+
+.search-rings span:nth-child(2) {
+  animation-delay: 0.6s;
+}
+
+.search-rings span:nth-child(3) {
+  animation-delay: 1.2s;
+}
+
+@keyframes ping-ring {
+  0% {
+    transform: scale(0.35);
+    opacity: 0.95;
+  }
+  100% {
+    transform: scale(1.15);
+    opacity: 0;
+  }
+}
+
+/* Incoming room-request banner pinned to the top. */
+.request-banner {
+  position: sticky;
+  top: 0.6rem;
+  z-index: 50;
+  display: flex;
+  gap: 0.8rem;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  background: var(--gold);
+  border: 2px solid var(--ink);
+  box-shadow: 4px 4px 0 var(--shadow);
+  padding: 0.7rem 1rem;
+  font-family: "DM Mono", monospace;
+  font-size: 0.75rem;
+}

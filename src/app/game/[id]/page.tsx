@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useParams } from "next/navigation";
-import { api, ChatMessage, extractTickers, GameState, getToken, Peer } from "../../../lib/api";
+import { api, ChatMessage, extractTickers, GameState, getToken, Peer, Profile } from "../../../lib/api";
 import { connectSocket } from "../../../lib/ws";
 import TokenCard from "../../../components/TokenCard";
 import ConnectPopup from "../../../components/ConnectPopup";
@@ -10,6 +10,7 @@ import ConnectPopup from "../../../components/ConnectPopup";
 export default function GamePage() {
   const { id } = useParams<{ id: string }>();
   const [game, setGame] = useState<GameState | null>(null);
+  const [me, setMe] = useState<Profile | null>(null);
   const [msgs, setMsgs] = useState<ChatMessage[]>([]);
   const [draft, setDraft] = useState("");
   const [err, setErr] = useState("");
@@ -31,6 +32,11 @@ export default function GamePage() {
     try {
       const g = await api<GameState>(`/games/${id}`);
       setGame(g);
+      try {
+        setMe(await api<Profile>("/profile/user"));
+      } catch {
+        setMe(null);
+      }
       try {
         const peers = await api<Peer[]>("/play/online");
         setOppOnline(peers.some((p) => p.id === g.oppId && p.online));
@@ -149,7 +155,7 @@ export default function GamePage() {
         <p className="mono-label">TABLE TALK — $TICKERS UNFURL</p>
         <ol className="chat-log">
           {msgs.map((m) => (
-            <li key={m.id} className="msg">
+            <li key={m.id} className={m.senderId === me?.id ? "msg me" : "msg"}>
               <strong>{m.senderHandle}:</strong> {m.body}
               {extractTickers(m.body).map((t) => <TokenCard key={t} symbol={t} />)}
             </li>

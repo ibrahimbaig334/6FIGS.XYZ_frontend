@@ -322,7 +322,7 @@ export default function RoomPage() {
         )}
         <p className="mono-label">MEMBERS ({members.length})</p>
         {members.map((m) => (
-          <p key={m.id} style={{ fontFamily: '"DM Mono", monospace', fontSize: "0.7rem", display: "flex", gap: "0.4rem", alignItems: "center" }}>
+          <p key={m.id} style={{ fontFamily: 'var(--font-dm-mono)', fontSize: "0.7rem", display: "flex", gap: "0.4rem", alignItems: "center" }}>
             <span className={m.online ? "dot on" : "dot"} title={m.online ? "Online" : "Offline"} /> {m.handle}
           </p>
         ))}

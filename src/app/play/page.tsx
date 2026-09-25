@@ -278,7 +278,7 @@ export default function PlayPage() {
           Random pairs you with another searching holder. Chat both ways to become friends,
           then invite friends to private rooms.
         </p>
-        {err && <p style={{ color: "var(--crimson)", fontFamily: '"DM Mono", monospace', fontSize: "0.7rem", textAlign: "center" }}>{err}</p>}
+        {err && <p style={{ color: "var(--crimson)", fontFamily: 'var(--font-dm-mono)', fontSize: "0.7rem", textAlign: "center" }}>{err}</p>}
       </div>
 
       <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap", alignItems: "center" }}>

@@ -42,7 +42,7 @@ export default function InviteDialog({
           />
           <button className="btn-solid" style={{ padding: "0.7rem 1rem" }} type="submit">JOIN ↗</button>
         </form>
-        {(err || error) && <p style={{ color: "var(--crimson)", fontFamily: '"DM Mono", monospace', fontSize: "0.7rem" }}>{err || error}</p>}
+        {(err || error) && <p style={{ color: "var(--crimson)", fontFamily: 'var(--font-dm-mono)', fontSize: "0.7rem" }}>{err || error}</p>}
         <button className="btn-ghost" style={{ padding: "0.5rem 0.8rem" }} onClick={onClose}>CANCEL</button>
       </div>
     </div>

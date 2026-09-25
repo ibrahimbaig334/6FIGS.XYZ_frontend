@@ -124,7 +124,7 @@ export default function RoomsPage() {
           + CREATE ROOM
         </button>
       </div>
-      {err && !inviteFor && <p style={{ color: "var(--crimson)", fontFamily: '"DM Mono", monospace', fontSize: "0.7rem" }}>{err}</p>}
+      {err && !inviteFor && <p style={{ color: "var(--crimson)", fontFamily: 'var(--font-dm-mono)', fontSize: "0.7rem" }}>{err}</p>}
       <div style={{ display: "flex", gap: "0.5rem", alignItems: "center", flexWrap: "wrap" }}>
         <input className="field" style={{ maxWidth: "200px" }} value={q} onChange={(e) => { setQ(e.target.value); setPage(1); }} placeholder="search…" />
         {["", "tier", "invite"].map((f) => (

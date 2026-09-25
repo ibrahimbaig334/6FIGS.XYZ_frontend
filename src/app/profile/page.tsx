@@ -120,7 +120,7 @@ function ProfileInner() {
       <section style={{ padding: "2rem 5vw" }}>
         <div className="card">
           <p className="mono-label">PROFILE — CONNECT FIRST</p>
-          <p style={{ fontFamily: '"DM Mono", monospace', fontSize: "0.75rem" }}>
+          <p style={{ fontFamily: 'var(--font-dm-mono)', fontSize: "0.75rem" }}>
             Link a wallet to open your profile. Below $100K you can still link more wallets here.
           </p>
           <button className="btn-solid" onClick={() => setPopup(true)}>CONNECT WALLET ↗</button>
@@ -149,7 +149,7 @@ function ProfileInner() {
           CONNECT MORE WALLETS +
         </button>
       </div>
-      {err && <p style={{ color: "var(--crimson)", fontFamily: '"DM Mono", monospace', fontSize: "0.7rem" }}>{err}</p>}
+      {err && <p style={{ color: "var(--crimson)", fontFamily: 'var(--font-dm-mono)', fontSize: "0.7rem" }}>{err}</p>}
       <div style={{ display: "grid", gridTemplateColumns: "200px 1fr", gap: "1.2rem", alignItems: "start" }}>
         <nav className="side-tabs" aria-label="Profile sections">
           {TABS.map((t) => (
@@ -190,12 +190,12 @@ function ProfileInner() {
           <div className="card">
             <p className="mono-label">2 / PROOF STATUS</p>
             {elig.tier ? (
-              <p style={{ fontFamily: '"DM Mono", monospace', fontSize: "0.75rem" }}>
+              <p style={{ fontFamily: 'var(--font-dm-mono)', fontSize: "0.75rem" }}>
                 ✓ {elig.tier} CLEARED — ${elig.total.toLocaleString()} across {elig.walletCount} wallet(s).
                 {elig.expiresAt ? ` Refreshes ${new Date(elig.expiresAt).toLocaleString()}.` : ""}
               </p>
             ) : (
-              <p style={{ fontFamily: '"DM Mono", monospace', fontSize: "0.75rem" }}>
+              <p style={{ fontFamily: 'var(--font-dm-mono)', fontSize: "0.75rem" }}>
                 ✕ ${elig.total.toLocaleString()} — below $100K. Link more wallets in the Wallets tab.
               </p>
             )}

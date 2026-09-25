@@ -29,7 +29,7 @@ export default function Home() {
           <br />
           <span style={{ color: "var(--crimson)" }}>BAGS.</span>
         </h1>
-        <p style={{ maxWidth: "460px", fontFamily: '"DM Mono", monospace', fontSize: "0.9rem", lineHeight: 1.6 }}>
+        <p style={{ maxWidth: "460px", fontFamily: 'var(--font-dm-mono)', fontSize: "0.9rem", lineHeight: 1.6 }}>
           Proof &gt; $100K net worth (zero-knowledge).<br />
           Nobody — not even us — can see your address or balance.
         </p>
@@ -40,12 +40,12 @@ export default function Home() {
         <div className="tier-strip" style={{ marginTop: "2rem" }}>
           {tiers.map((t) => (
             <div key={t.name}>
-              <strong style={{ fontFamily: '"DM Mono", monospace', fontSize: "0.66rem" }}>{t.name}</strong>
+              <strong style={{ fontFamily: 'var(--font-dm-mono)', fontSize: "0.66rem" }}>{t.name}</strong>
               <span style={{ fontWeight: 700, fontSize: "1.4rem" }}>${t.min.toLocaleString()}+</span>
             </div>
           ))}
           <div style={{ borderRight: 0 }}>
-            <span style={{ fontFamily: '"DM Mono", monospace', fontSize: "0.62rem", fontWeight: 400 }}>
+            <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: "0.62rem", fontWeight: 400 }}>
               Only the tier badge is public. Never the number. EVM + Solana + BTC combined.
             </span>
           </div>
@@ -75,7 +75,7 @@ export default function Home() {
           <div className="card">
             <p className="mono-label">JOIN PRIVATE ROOMS</p>
             <div className={locked ? "locked-blur" : ""} aria-hidden={locked}>
-              <div style={{ border: "2px solid var(--ink)", background: "var(--card)", padding: "0.8rem", margin: "0.8rem 0", fontFamily: '"DM Mono", monospace', fontSize: "0.7rem" }}>
+              <div style={{ border: "2px solid var(--ink)", background: "var(--card)", padding: "0.8rem", margin: "0.8rem 0", fontFamily: 'var(--font-dm-mono)', fontSize: "0.7rem" }}>
                 <p style={{ margin: "0 0 0.4rem" }}>🔒 INVITE-ONLY · 1/2 · BTC Maxis</p>
                 <p style={{ margin: "0 0 0.4rem" }}>✓ TIER I · 2/2 · Crypto Degens</p>
                 <p style={{ margin: 0 }}>✓ TIER II · 1/2 · HYPE Talks</p>

@@ -118,7 +118,7 @@ export default function ConnectPopup({ onClose, onDone }: { onClose: () => void;
             <p className="fine">Native-segwit (bc1q) only — taproot (bc1p) cannot sign messages.</p>
           </>
         )}
-        {err && <p style={{ color: "var(--crimson)", fontFamily: '"DM Mono", monospace', fontSize: "0.7rem" }}>{err}</p>}
+        {err && <p style={{ color: "var(--crimson)", fontFamily: 'var(--font-dm-mono)', fontSize: "0.7rem" }}>{err}</p>}
         <button className="btn-ghost" style={{ padding: "0.5rem 0.8rem", marginTop: "0.5rem" }} onClick={onClose}>CLOSE</button>
       </div>
     </div>

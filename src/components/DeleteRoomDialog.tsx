@@ -40,11 +40,11 @@ export default function DeleteRoomDialog({
           room messages go with it. This cannot be undone.
         </p>
         <form onSubmit={submit}>
-          <label style={{ display: "flex", gap: "0.5rem", alignItems: "flex-start", fontFamily: '"DM Mono", monospace', fontSize: "0.72rem", cursor: "pointer", margin: "0.6rem 0" }}>
+          <label style={{ display: "flex", gap: "0.5rem", alignItems: "flex-start", fontFamily: 'var(--font-dm-mono)', fontSize: "0.72rem", cursor: "pointer", margin: "0.6rem 0" }}>
             <input type="checkbox" checked={ack} onChange={(e) => setAck(e.target.checked)} style={{ marginTop: "0.15rem", width: "1rem", height: "1rem", accentColor: "var(--crimson)" }} />
             I understand this room and its messages will be deleted forever.
           </label>
-          {err && <p style={{ color: "var(--crimson)", fontFamily: '"DM Mono", monospace', fontSize: "0.7rem" }}>{err}</p>}
+          {err && <p style={{ color: "var(--crimson)", fontFamily: 'var(--font-dm-mono)', fontSize: "0.7rem" }}>{err}</p>}
           <div style={{ display: "flex", gap: "0.5rem" }}>
             <button
               className="btn-solid"

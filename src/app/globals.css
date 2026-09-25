@@ -33,7 +33,7 @@ body.dark img {
 body {
   background: var(--paper);
   color: var(--ink);
-  font-family: "Space Grotesk", Arial, sans-serif;
+  font-family: var(--font-grotesk);
   transition:
     background 0.25s ease,
     color 0.25s ease;
@@ -115,7 +115,7 @@ body > main {
 .site-nav a {
   padding: 0.55rem 0.8rem;
   border: 2px solid var(--ink);
-  font-family: "DM Mono", monospace;
+  font-family: var(--font-dm-mono);
   font-size: 0.62rem;
   letter-spacing: 0.06em;
   text-decoration: none;
@@ -133,7 +133,7 @@ body > main {
   color: var(--paper);
   background: var(--ink);
   border: 2px solid var(--ink);
-  font-family: "DM Mono", monospace;
+  font-family: var(--font-dm-mono);
   font-size: 0.73rem;
   cursor: pointer;
   text-decoration: none;
@@ -149,7 +149,7 @@ body > main {
   padding: 1rem 1.2rem;
   background: transparent;
   border: 2px solid var(--ink);
-  font-family: "DM Mono", monospace;
+  font-family: var(--font-dm-mono);
   font-size: 0.73rem;
   text-decoration: none;
   color: inherit;
@@ -171,7 +171,7 @@ body > main {
 }
 
 .tier-badge {
-  font-family: "DM Mono", monospace;
+  font-family: var(--font-dm-mono);
   font-size: 0.6rem;
   background: #121212;
   color: var(--gold);
@@ -187,7 +187,7 @@ body > main {
 
 .mono-label {
   margin: 0;
-  font-family: "DM Mono", monospace;
+  font-family: var(--font-dm-mono);
   font-size: 0.66rem;
   letter-spacing: 0.11em;
   text-transform: uppercase;
@@ -195,7 +195,7 @@ body > main {
 
 .fine {
   color: var(--muted);
-  font-family: "DM Mono", monospace;
+  font-family: var(--font-dm-mono);
   font-size: 0.58rem;
   line-height: 1.5;
 }
@@ -207,7 +207,7 @@ body > main {
   border: 2px solid var(--ink);
   background: var(--input);
   color: var(--ink);
-  font-family: "DM Mono", monospace;
+  font-family: var(--font-dm-mono);
   font-size: 0.75rem;
 }
 
@@ -230,7 +230,7 @@ select.field option {
   display: block;
   width: 100%;
   padding: 0.6rem 0.8rem;
-  font-family: "DM Mono", monospace;
+  font-family: var(--font-dm-mono);
   font-size: 0.65rem;
   text-align: left;
   background: none;
@@ -258,7 +258,7 @@ select.field option {
 }
 
 .wallet-addr {
-  font-family: "DM Mono", monospace;
+  font-family: var(--font-dm-mono);
   font-size: 0.62rem;
   background: #121212;
   color: var(--gold);
@@ -269,7 +269,7 @@ select.field option {
 }
 
 .chain-badge {
-  font-family: "DM Mono", monospace;
+  font-family: var(--font-dm-mono);
   font-size: 0.6rem;
   background: #121212;
   color: #fff;
@@ -285,7 +285,7 @@ select.field option {
   padding: 0.6rem 0.9rem;
   border: 2px solid var(--ink);
   background: var(--paper);
-  font-family: "DM Mono", monospace;
+  font-family: var(--font-dm-mono);
   font-size: 0.62rem;
   cursor: pointer;
 }
@@ -308,7 +308,7 @@ select.field option {
   background: var(--gold);
   color: #141109;
   box-shadow: 6px 6px 0 var(--shadow);
-  font-family: "DM Mono", monospace;
+  font-family: var(--font-dm-mono);
   font-size: 0.72rem;
 }
 
@@ -333,7 +333,7 @@ select.field option {
 }
 
 .tag {
-  font-family: "DM Mono", monospace;
+  font-family: var(--font-dm-mono);
   font-size: 0.58rem;
   border: 1.5px solid var(--ink);
   padding: 0.3rem 0.5rem;
@@ -403,7 +403,7 @@ select.field option {
   background: var(--crimson);
   color: #fff;
   border-bottom: 2px solid var(--ink);
-  font-family: "DM Mono", monospace;
+  font-family: var(--font-dm-mono);
   font-size: 0.67rem;
   letter-spacing: 0.09em;
   white-space: nowrap;
@@ -430,7 +430,7 @@ select.field option {
 
 .tabs a {
   padding: 0.7rem 1.4rem;
-  font-family: "DM Mono", monospace;
+  font-family: var(--font-dm-mono);
   font-size: 0.7rem;
   letter-spacing: 0.06em;
   text-decoration: none;
@@ -514,7 +514,7 @@ select.field option {
   background: none;
   border: 0;
   border-bottom: 2px solid var(--ink);
-  font-family: "DM Mono", monospace;
+  font-family: var(--font-dm-mono);
   font-size: 0.72rem;
   letter-spacing: 0.06em;
   text-align: left;
@@ -552,7 +552,7 @@ select.field option {
   border: 2px dashed var(--ink);
   background: var(--card);
   padding: 0.8rem 1rem;
-  font-family: "DM Mono", monospace;
+  font-family: var(--font-dm-mono);
   font-size: 0.7rem;
   word-break: break-all;
 }
@@ -562,7 +562,7 @@ select.field option {
   background: var(--card);
   box-shadow: 4px 4px 0 var(--shadow);
   padding: 0.7rem 0.8rem;
-  font-family: "DM Mono", monospace;
+  font-family: var(--font-dm-mono);
   margin-top: 0.4rem;
 }
 
@@ -610,7 +610,7 @@ select.field option {
   padding: 0.6rem 0.8rem;
   border: 2px solid var(--ink);
   border-radius: 2px 12px 12px 12px;
-  font-family: "DM Mono", monospace;
+  font-family: var(--font-dm-mono);
   font-size: 0.72rem;
   background: var(--card);
   align-self: flex-start;
@@ -720,6 +720,6 @@ select.field option {
   border: 2px solid var(--ink);
   box-shadow: 4px 4px 0 var(--shadow);
   padding: 0.7rem 1rem;
-  font-family: "DM Mono", monospace;
+  font-family: var(--font-dm-mono);
   font-size: 0.75rem;
 }

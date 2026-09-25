@@ -30,16 +30,23 @@ export default function PlayPage() {
     };
   }, []);
 
-  const load = useCallback(async () => {
+  const refreshFriends = useCallback(async () => {
     try {
       const params = new URLSearchParams();
       if (q) params.set("q", q);
-      const [fr, inc, out] = await Promise.all([
-        api<Friend[]>(`/play/friends?${params.toString()}`),
-        api<RoomRequestInfo[]>("/play/requests/incoming", { cache: false }),
-        api<RoomRequestInfo[]>("/play/requests/outgoing", { cache: false }),
+      setFriends(await api<Friend[]>(`/play/friends?${params.toString()}`));
+    } catch {
+      /* keep last known list through blips */
+    }
+  }, [q]);
+
+  const load = useCallback(async () => {
+    refreshFriends();
+    try {
+      const [inc, out] = await Promise.all([
+        api<RoomRequestInfo[]>("/play/requests/incoming"),
+        api<RoomRequestInfo[]>("/play/requests/outgoing"),
       ]);
-      setFriends(fr);
       setIncoming(inc);
       setOutgoing((prev) => {
         // requester side: an accepted outgoing means "join the room now"
@@ -60,7 +67,7 @@ export default function PlayPage() {
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [q]);
+  }, [q, refreshFriends]);
 
   function later(fn: () => void, ms: number) {
     timers.current.push(setTimeout(fn, ms));
@@ -112,8 +119,8 @@ export default function PlayPage() {
   useEffect(() => {
     if (!ready || !getToken()) return;
     const t = setInterval(() => {
-      api<RoomRequestInfo[]>("/play/requests/incoming", { cache: false }).then(setIncoming).catch(() => {});
-      api<RoomRequestInfo[]>("/play/requests/outgoing", { cache: false })
+      api<RoomRequestInfo[]>("/play/requests/incoming").then(setIncoming).catch(() => {});
+      api<RoomRequestInfo[]>("/play/requests/outgoing")
         .then((out) => {
           const acc = out.find((o) => o.status === "accepted" && o.roomId);
           if (acc) joinRoomWithOverlay(`ACCEPTED — JOINING ${acc.toHandle.toUpperCase()}'S ROOM…`, acc.roomId as string);
@@ -125,6 +132,13 @@ export default function PlayPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ready]);
 
+  // Friend presence refreshes every 5s — dots go live without a reload.
+  useEffect(() => {
+    if (!ready || !getToken()) return;
+    const t = setInterval(refreshFriends, 5000);
+    return () => clearInterval(t);
+  }, [ready, refreshFriends]);
+
   // Searching ticker + status poll.
   useEffect(() => {
     if (!searching) return;
@@ -133,7 +147,7 @@ export default function PlayPage() {
     const poll = setInterval(async () => {
       if (!searchingRef.current) return;
       try {
-        const st = await api<{ status: string; gameId?: string }>("/play/queue/status", { cache: false });
+        const st = await api<{ status: string; gameId?: string }>("/play/queue/status");
         if (!searchingRef.current) return;
         if (st.status === "matched" && st.gameId) {
           searchingRef.current = false;

@@ -72,6 +72,7 @@ export default function GamePage() {
     // load dm history with the real match id
     api<{ items: ChatMessage[] }>(`/chat/dm/${game.matchId}?limit=50`).then((h) => setMsgs(h.items)).catch(() => {});
     return () => {
+      s.emit("leaveScope", { scope: "dm", scopeId: game.matchId });
       s.off("gameState", onState);
       s.off("chatMessage", onChat);
       s.io.off("reconnect", joinAll);

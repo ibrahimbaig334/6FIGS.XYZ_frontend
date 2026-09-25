@@ -54,7 +54,7 @@ export default function RoomPage() {
       const code = search.get("code");
       let m: RoomMeta;
       try {
-        m = await api<RoomMeta>(`/rooms/${id}/meta`, { cache: false });
+        m = await api<RoomMeta>(`/rooms/${id}/meta`);
       } catch (e) {
         if (e instanceof ApiError && e.status === 404) setRoomGone("deleted");
         throw e;
@@ -62,7 +62,7 @@ export default function RoomPage() {
       if (!m.isMember && code) {
         try {
           await api(`/rooms/${id}/join`, { method: "POST", body: { code } });
-          m = await api<RoomMeta>(`/rooms/${id}/meta`, { cache: false });
+          m = await api<RoomMeta>(`/rooms/${id}/meta`);
         } catch (e) {
           setErr(e instanceof Error ? e.message : "Wrong invite code");
         }
@@ -78,7 +78,7 @@ export default function RoomPage() {
       setNeedCode(false);
       setInviteCode(sessionStorage.getItem(`invite:${id}`) ?? "");
       const [mem, h] = await Promise.all([
-        api<RoomMember[]>(`/rooms/${id}/members`, { cache: false }),
+        api<RoomMember[]>(`/rooms/${id}/members`),
         api<{ items: ChatMessage[] }>(`/chat/room/${id}?limit=50`),
       ]);
       setMembers(mem);
@@ -86,7 +86,7 @@ export default function RoomPage() {
       // (re)join the socket room — covers first load and post-join refresh
       sock.current?.emit("joinScope", { scope: "room", scopeId: id });
       try {
-        const g = await api<{ gameId: string }>(`/rooms/${id}/game`, { cache: false });
+        const g = await api<{ gameId: string }>(`/rooms/${id}/game`);
         const full = await api<GameState>(`/games/${g.gameId}`);
         setGame(full);
       } catch (e) {
@@ -106,28 +106,32 @@ export default function RoomPage() {
     load();
   }, [load]);
 
-  // Poll while in the room: refreshes member presence and picks up the 1v1 game
-  // as soon as the peer joins. Also notices when the room is deleted out from
-  // under us (owner deleted it) so the peer gets kicked to a notice, not a ghost.
+  // Poll while in the room: meta (membership + live occupancy), member presence,
+  // and the 1v1 game as soon as the peer joins. Notices deletion/removal so the
+  // peer gets kicked to a notice instead of a ghost room.
   useEffect(() => {
     if (!ready || !getToken() || !meta?.isMember || roomGone) return;
     const t = setInterval(async () => {
+      let m: RoomMeta;
       try {
-        setMembers(await api<RoomMember[]>(`/rooms/${id}/members`, { cache: false }));
+        m = await api<RoomMeta>(`/rooms/${id}/meta`);
       } catch (e) {
-        if (e instanceof ApiError && (e.status === 403 || e.status === 404)) {
-          try {
-            await api<RoomMeta>(`/rooms/${id}/meta`, { cache: false });
-            setRoomGone("removed");
-          } catch (e2) {
-            setRoomGone(e2 instanceof ApiError && e2.status === 404 ? "deleted" : "removed");
-          }
-          return;
-        }
+        if (e instanceof ApiError && e.status === 404) setRoomGone("deleted");
+        return; // blip — keep polling
+      }
+      setMeta(m);
+      if (!m.isMember) {
+        setRoomGone("removed");
+        return;
+      }
+      try {
+        setMembers(await api<RoomMember[]>(`/rooms/${id}/members`));
+      } catch {
+        /* meta is fresh — transient */
       }
       if (!gameRef.current) {
         try {
-          const g = await api<{ gameId: string }>(`/rooms/${id}/game`, { cache: false });
+          const g = await api<{ gameId: string }>(`/rooms/${id}/game`);
           const full = await api<GameState>(`/games/${g.gameId}`);
           setGameErr("");
           setGame(full);
@@ -158,6 +162,7 @@ export default function RoomPage() {
     s.on("gameState", onState);
     s.io.on("reconnect", joinAll); // socket.io rooms die with the old socket id
     return () => {
+      s.emit("leaveScope", { scope: "room", scopeId: id }); // stop counting me as occupant
       s.off("chatMessage", onChat);
       s.off("gameState", onState);
       s.io.off("reconnect", joinAll);
@@ -307,7 +312,7 @@ export default function RoomPage() {
   return (
     <section style={{ padding: "2rem 5vw", display: "grid", gridTemplateColumns: "220px 1fr", gap: "1rem" }}>
       <div>
-        <p className="mono-label">1V1 ROOM · {members.length}/2</p>
+        <p className="mono-label">1V1 ROOM · {meta?.onlineCount ?? 0} ONLINE · {members.length}/2</p>
         {meta?.description && <p className="fine" style={{ margin: "0.2rem 0 0.4rem" }}>{meta.description}</p>}
         {peer && (
           <h3 style={{ display: "flex", gap: "0.5rem", alignItems: "center", margin: "0.4rem 0" }}>

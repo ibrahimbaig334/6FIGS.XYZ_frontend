@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { api, ApiError, clearToken, getToken, peekCache, Profile } from "../lib/api";
+import { api, ApiError, clearToken, getToken, Profile } from "../lib/api";
 import { connectSocket, disconnectSocket } from "../lib/ws";
 import ConnectPopup from "./ConnectPopup";
 
@@ -46,7 +46,6 @@ export default function Header() {
 
   useEffect(() => {
     if (getToken()) {
-      setProfile(peekCache<Profile>("/profile/user")); // instant paint from cache
       connectSocket(); // online immediately on cached session — drives 1v1 presence
     }
     load();
@@ -57,15 +56,9 @@ export default function Header() {
         connectSocket(); // session changed → re-auth the socket
       }
     };
-    const onCache = (e: Event) => {
-      const d = (e as CustomEvent<{ path?: string; data?: Profile }>).detail;
-      if (d?.path === "/profile/user" && d.data && getToken()) setProfile(d.data);
-    };
     window.addEventListener("sixfigs-auth", h);
-    window.addEventListener("sixfigs-cache", onCache);
     return () => {
       window.removeEventListener("sixfigs-auth", h);
-      window.removeEventListener("sixfigs-cache", onCache);
     };
   }, []);
 

@@ -271,7 +271,7 @@ export default function RoomPage() {
         <div className="card" style={{ maxWidth: "480px" }}>
           <p className="mono-label">{meta.accessType === "invite" ? "🔒 INVITE-ONLY ROOM" : `✓ ${meta.minTier} ROOM`}</p>
           <h3 style={{ margin: "0.3rem 0" }}>{meta.name}</h3>
-          <p className="fine">{meta.memberCount}/2 MEMBERS · 1V1 ONLY</p>
+          <p className="fine">{meta.onlineCount}/2 ONLINE · 1V1 ONLY</p>
           {meta.accessType === "tier" ? (
             <>
               <p className="fine">Requires {meta.minTier} to enter.</p>
@@ -312,7 +312,7 @@ export default function RoomPage() {
   return (
     <section style={{ padding: "2rem 5vw", display: "grid", gridTemplateColumns: "220px 1fr", gap: "1rem" }}>
       <div>
-        <p className="mono-label">1V1 ROOM · {meta?.onlineCount ?? 0} ONLINE · {members.length}/2</p>
+        <p className="mono-label">1V1 ROOM · {meta?.onlineCount ?? 0}/2 ONLINE</p>
         {meta?.description && <p className="fine" style={{ margin: "0.2rem 0 0.4rem" }}>{meta.description}</p>}
         {peer && (
           <h3 style={{ display: "flex", gap: "0.5rem", alignItems: "center", margin: "0.4rem 0" }}>

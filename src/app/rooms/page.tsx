@@ -168,7 +168,7 @@ export default function RoomsPage() {
               <span className={r.accessType === "invite" ? "tier-badge t3" : "tier-badge"}>
                 {r.accessType === "invite" ? "🔒 INVITE-ONLY" : `✓ ${r.minTier}`}
               </span>
-              <span className="fine"><span className={r.onlineCount > 0 ? "dot on" : "dot"} /> {r.onlineCount} ONLINE · {r.memberCount}/2 MEMBERS</span>
+              <span className="fine"><span className={r.onlineCount > 0 ? "dot on" : "dot"} /> {r.onlineCount}/2 ONLINE</span>
             </div>
             <h3 style={{ margin: "0.5rem 0 0.2rem" }}>{r.name}</h3>
             {r.description && <p className="fine" style={{ margin: "0 0 0.4rem" }}>{r.description}</p>}

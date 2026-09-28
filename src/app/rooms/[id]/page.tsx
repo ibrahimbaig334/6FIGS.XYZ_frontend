@@ -2,12 +2,27 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useParams, useSearchParams } from "next/navigation";
-import { api, ApiError, ChatMessage, copyText, extractTickers, GameState, getToken, Profile, RoomMember, RoomMeta } from "../../../lib/api";
+import {
+  api,
+  ApiError,
+  ChatMessage,
+  copyText,
+  extractTickers,
+  GameState,
+  getToken,
+  Profile,
+  RoomMember,
+  RoomMeta,
+} from "../../../lib/api";
 import { connectSocket } from "../../../lib/ws";
 import TokenCard from "../../../components/TokenCard";
 import ConnectPopup from "../../../components/ConnectPopup";
 import InviteDialog from "../../../components/InviteDialog";
 import DeleteRoomDialog from "../../../components/DeleteRoomDialog";
+import ChatSuggestions from "../../../components/ChatSuggestions";
+import { ChatSkel, Skel } from "../../../components/Skeleton";
+import { useChatScroll } from "../../../lib/useChatScroll";
+import { POLL_ROOM_MS, ROOM_GONE_REDIRECT_MS } from "../../../lib/constants";
 
 export default function RoomPage() {
   const { id } = useParams<{ id: string }>();
@@ -25,9 +40,11 @@ export default function RoomPage() {
   const [game, setGame] = useState<GameState | null>(null);
   const [gameErr, setGameErr] = useState("");
   const [ready, setReady] = useState(false);
+  const [booted, setBooted] = useState(false);
   const [popup, setPopup] = useState(false);
   const sock = useRef<ReturnType<typeof connectSocket> | null>(null);
   const gameRef = useRef<GameState | null>(null);
+  const chatRef = useChatScroll(msgs.length);
 
   useEffect(() => {
     gameRef.current = game;
@@ -38,7 +55,7 @@ export default function RoomPage() {
     if (!roomGone) return;
     const t = setTimeout(() => {
       location.href = "/rooms";
-    }, 3500);
+    }, ROOM_GONE_REDIRECT_MS);
     return () => clearTimeout(t);
   }, [roomGone]);
 
@@ -103,7 +120,7 @@ export default function RoomPage() {
   }, [id, search]);
 
   useEffect(() => {
-    load();
+    load().finally(() => setBooted(true));
   }, [load]);
 
   // Poll while in the room: meta (membership + live occupancy), member presence,
@@ -143,7 +160,7 @@ export default function RoomPage() {
           }
         }
       }
-    }, 2500);
+    }, POLL_ROOM_MS);
     return () => clearInterval(t);
   }, [ready, id, meta?.isMember, roomGone]);
 
@@ -156,8 +173,18 @@ export default function RoomPage() {
     };
     joinAll();
     const onChat = (p: { message: ChatMessage }) =>
-      setMsgs((m) => (m.some((x) => x.id === p.message.id) ? m : [...m, p.message]));
-    const onState = (st: GameState) => setGame((g) => (g ? { ...st, opponent: g.opponent } : st));
+      setMsgs((m) =>
+        m.some((x) => x.id === p.message.id) ? m : [...m, p.message],
+      );
+    // Viewer-relative fields survive broadcasts computed for the mover (X-flip bug).
+    const keepView = (g: GameState | null, st: GameState): GameState => ({
+      ...st,
+      youAre: g?.youAre ?? st.youAre,
+      oppId: g?.oppId ?? st.oppId,
+      opponent: g?.opponent ?? st.opponent,
+    });
+    const onState = (st: GameState) =>
+      setGame((g) => (g ? keepView(g, st) : st));
     s.on("chatMessage", onChat);
     s.on("gameState", onState);
     s.io.on("reconnect", joinAll); // socket.io rooms die with the old socket id
@@ -173,18 +200,42 @@ export default function RoomPage() {
   function move(i: number) {
     if (!game) return;
     setGameErr("");
-    sock.current?.emit("makeMove", { gameId: game.id, index: i }, (ack: { error?: string; state?: GameState }) => {
-      if (ack?.error) setGameErr(ack.error);
-      else if (ack?.state) setGame((g) => ({ ...ack.state, opponent: g?.opponent ?? null }) as GameState);
-    });
+    sock.current?.emit(
+      "makeMove",
+      { gameId: game.id, index: i },
+      (ack: { error?: string; state?: GameState }) => {
+        if (ack?.error) setGameErr(ack.error);
+        else if (ack?.state) {
+          const st = ack.state;
+          setGame((g) => ({
+            ...st,
+            youAre: g?.youAre ?? st.youAre,
+            oppId: g?.oppId ?? st.oppId,
+            opponent: g?.opponent ?? null,
+          }));
+        }
+      },
+    );
   }
 
   function rematch() {
     if (!game) return;
-    sock.current?.emit("rematch", { gameId: game.id }, (ack: { error?: string; state?: GameState }) => {
-      if (ack?.error) setGameErr(ack.error);
-      else if (ack?.state) setGame((g) => ({ ...ack.state, opponent: g?.opponent ?? null }) as GameState);
-    });
+    sock.current?.emit(
+      "rematch",
+      { gameId: game.id },
+      (ack: { error?: string; state?: GameState }) => {
+        if (ack?.error) setGameErr(ack.error);
+        else if (ack?.state) {
+          const st = ack.state;
+          setGame((g) => ({
+            ...st,
+            youAre: g?.youAre ?? st.youAre,
+            oppId: g?.oppId ?? st.oppId,
+            opponent: g?.opponent ?? null,
+          }));
+        }
+      },
+    );
   }
 
   function send(e: React.FormEvent) {
@@ -254,12 +305,38 @@ export default function RoomPage() {
 
   if (!getToken()) {
     return (
-      <section style={{ padding: "2rem 5vw" }}>
+      <section className="page-enter" style={{ padding: "2rem 5vw" }}>
         <div className="card">
           <p className="mono-label">ROOM — CONNECT FIRST</p>
-          <button className="btn-solid" onClick={() => setPopup(true)}>CONNECT WALLET ↗</button>
+          <button className="btn-solid" onClick={() => setPopup(true)}>
+            CONNECT WALLET ↗
+          </button>
         </div>
-        {popup && <ConnectPopup onClose={() => setPopup(false)} onDone={load} />}
+        {popup && (
+          <ConnectPopup onClose={() => setPopup(false)} onDone={load} />
+        )}
+      </section>
+    );
+  }
+
+  if (!meta && !booted && !roomGone) {
+    return (
+      <section
+        className="page-enter layout-room"
+        style={{ padding: "2rem 5vw" }}
+      >
+        <div
+          style={{ display: "flex", flexDirection: "column", gap: "0.7rem" }}
+        >
+          <Skel w="60%" />
+          <Skel />
+          <Skel w="80%" />
+          <Skel h="10rem" />
+        </div>
+        <div className="card">
+          <Skel w="30%" />
+          <ChatSkel />
+        </div>
       </section>
     );
   }
@@ -269,25 +346,42 @@ export default function RoomPage() {
     return (
       <section style={{ padding: "2rem 5vw" }}>
         <div className="card" style={{ maxWidth: "480px" }}>
-          <p className="mono-label">{meta.accessType === "invite" ? "🔒 INVITE-ONLY ROOM" : `✓ ${meta.minTier} ROOM`}</p>
+          <p className="mono-label">
+            {meta.accessType === "invite"
+              ? "🔒 INVITE-ONLY ROOM"
+              : `✓ ${meta.minTier} ROOM`}
+          </p>
           <h3 style={{ margin: "0.3rem 0" }}>{meta.name}</h3>
           <p className="fine">{meta.onlineCount}/2 ONLINE · 1V1 ONLY</p>
           {meta.accessType === "tier" ? (
             <>
               <p className="fine">Requires {meta.minTier} to enter.</p>
-              <button className="btn-solid" style={{ marginTop: "0.6rem" }} onClick={joinTier}>
+              <button
+                className="btn-solid"
+                style={{ marginTop: "0.6rem" }}
+                onClick={joinTier}
+              >
                 JOIN {meta.minTier} ROOM ↗
               </button>
             </>
           ) : (
-            <button className="btn-solid" style={{ marginTop: "0.6rem" }} onClick={() => setNeedCode(true)}>
+            <button
+              className="btn-solid"
+              style={{ marginTop: "0.6rem" }}
+              onClick={() => setNeedCode(true)}
+            >
               ENTER INVITE CODE ↗
             </button>
           )}
-          {err && <p style={{ color: "var(--crimson)", fontSize: "0.7rem" }}>{err}</p>}
+          {err && <p className="err">{err}</p>}
         </div>
         {needCode && (
-          <InviteDialog roomName={meta.name} onSubmit={joinWithCode} onClose={() => setNeedCode(false)} error={err} />
+          <InviteDialog
+            roomName={meta.name}
+            onSubmit={joinWithCode}
+            onClose={() => setNeedCode(false)}
+            error={err}
+          />
         )}
       </section>
     );
@@ -297,88 +391,209 @@ export default function RoomPage() {
     return (
       <section style={{ padding: "2rem 5vw" }}>
         <div className="card" style={{ maxWidth: "480px" }}>
-          <p className="mono-label">{roomGone === "deleted" ? "ROOM DELETED" : "REMOVED FROM ROOM"}</p>
+          <p className="mono-label">
+            {roomGone === "deleted" ? "ROOM DELETED" : "REMOVED FROM ROOM"}
+          </p>
           <p className="fine">
             {roomGone === "deleted"
               ? "The owner deleted this room. Taking you back to the lobby…"
               : "You are no longer in this room. Taking you back to the lobby…"}
           </p>
-          <a href="/rooms" className="btn-solid" style={{ padding: "0.7rem 1rem" }}>BACK TO ROOMS ↗</a>
+          <a
+            href="/rooms"
+            className="btn-solid"
+            style={{ padding: "0.7rem 1rem" }}
+          >
+            BACK TO ROOMS ↗
+          </a>
         </div>
       </section>
     );
   }
 
   return (
-    <section style={{ padding: "2rem 5vw", display: "grid", gridTemplateColumns: "220px 1fr", gap: "1rem" }}>
+    <section className="page-enter layout-room" style={{ padding: "2rem 5vw" }}>
       <div>
-        <p className="mono-label">1V1 ROOM · {meta?.onlineCount ?? 0}/2 ONLINE</p>
-        {meta?.description && <p className="fine" style={{ margin: "0.2rem 0 0.4rem" }}>{meta.description}</p>}
+        <p className="mono-label">
+          1V1 ROOM · {meta?.onlineCount ?? 0}/2 ONLINE
+        </p>
+        {meta?.description && (
+          <p className="fine" style={{ margin: "0.2rem 0 0.4rem" }}>
+            {meta.description}
+          </p>
+        )}
         {peer && (
-          <h3 style={{ display: "flex", gap: "0.5rem", alignItems: "center", margin: "0.4rem 0" }}>
+          <h3
+            style={{
+              display: "flex",
+              gap: "0.5rem",
+              alignItems: "center",
+              margin: "0.4rem 0",
+            }}
+          >
             <span className={peer.online ? "dot on" : "dot"} /> {peer.handle}
           </h3>
         )}
         {inviteCode && (
           <div className="invite-box" style={{ margin: "0.6rem 0" }}>
-            INVITE LINK: <a href={`${location.origin}/rooms/${id}?code=${inviteCode}`}>{`${location.origin}/rooms/${id}?code=${inviteCode}`}</a>
-            <button className="chip" style={{ marginLeft: "0.4rem" }} onClick={() => copyText(`${location.origin}/rooms/${id}?code=${inviteCode}`)}>COPY</button>
+            INVITE LINK:{" "}
+            <a
+              href={`${location.origin}/rooms/${id}?code=${inviteCode}`}
+            >{`${location.origin}/rooms/${id}?code=${inviteCode}`}</a>
+            <button
+              className="chip"
+              style={{ marginLeft: "0.4rem" }}
+              onClick={() =>
+                copyText(`${location.origin}/rooms/${id}?code=${inviteCode}`)
+              }
+            >
+              COPY
+            </button>
           </div>
         )}
         <p className="mono-label">MEMBERS ({members.length})</p>
         {members.map((m) => (
-          <p key={m.id} style={{ fontFamily: 'var(--font-dm-mono)', fontSize: "0.7rem", display: "flex", gap: "0.4rem", alignItems: "center" }}>
-            <span className={m.online ? "dot on" : "dot"} title={m.online ? "Online" : "Offline"} /> {m.handle}
+          <p
+            key={m.id}
+            style={{
+              fontFamily: "var(--font-dm-mono)",
+              fontSize: "0.7rem",
+              display: "flex",
+              gap: "0.4rem",
+              alignItems: "center",
+            }}
+          >
+            <span
+              className={m.online ? "dot on" : "dot"}
+              title={m.online ? "Online" : "Offline"}
+            />{" "}
+            {m.handle}
           </p>
         ))}
-        <div style={{ display: "flex", gap: "0.4rem", marginTop: "0.6rem", flexWrap: "wrap" }}>
-          <button className="chip" onClick={leaveRoom}>LEAVE ROOM</button>
+        <div
+          style={{
+            display: "flex",
+            gap: "0.4rem",
+            marginTop: "0.6rem",
+            flexWrap: "wrap",
+          }}
+        >
+          <button className="chip" onClick={leaveRoom}>
+            LEAVE ROOM
+          </button>
           {meta?.isOwner && (
-            <button className="chip" style={{ color: "var(--crimson)", borderColor: "var(--crimson)" }} onClick={() => setConfirmDelete(true)}>DELETE ROOM</button>
+            <button
+              className="chip"
+              style={{ color: "var(--crimson)", borderColor: "var(--crimson)" }}
+              onClick={() => setConfirmDelete(true)}
+            >
+              DELETE ROOM
+            </button>
           )}
         </div>
         {confirmDelete && meta && (
-          <DeleteRoomDialog roomName={meta.name} onClose={() => setConfirmDelete(false)} onConfirm={deleteRoom} />
+          <DeleteRoomDialog
+            roomName={meta.name}
+            onClose={() => setConfirmDelete(false)}
+            onConfirm={deleteRoom}
+          />
         )}
         <div className="card" style={{ marginTop: "0.8rem" }}>
           <p className="mono-label">1V1 GAME</p>
           {game ? (
             <>
-              <p className="fine">YOU ARE {game.youAre} · {game.status === "open" ? `TURN: ${game.turn}` : game.status === "draw" ? "DRAW" : `${game.winner} WINS`}</p>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "3px", background: "var(--ink)", padding: "3px", border: "2px solid var(--ink)" }}>
+              <p className="fine">
+                YOU ARE {game.youAre} ·{" "}
+                {game.status === "open"
+                  ? `TURN: ${game.turn}`
+                  : game.status === "draw"
+                    ? "DRAW"
+                    : `${game.winner} WINS`}
+              </p>
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "repeat(3, min(104px, 24vw))",
+                  gap: "4px",
+                  background: "var(--ink)",
+                  padding: "4px",
+                  width: "max-content",
+                  border: "2px solid var(--ink)",
+                  boxShadow: "6px 6px 0 var(--shadow)",
+                }}
+              >
                 {game.board.split("").map((cell, i) => (
                   <button
                     key={i}
+                    className="board-cell"
                     onClick={() => move(i)}
                     disabled={cell !== "." || game.status !== "open"}
-                    style={{ aspectRatio: "1", fontSize: "1.4rem", background: "var(--paper)", border: 0, cursor: cell === "." && game.status === "open" ? "pointer" : "default", color: cell === "O" ? "var(--crimson)" : "var(--ink)" }}
+                    style={{
+                      color: cell === "O" ? "var(--crimson)" : "var(--ink)",
+                    }}
                   >
                     {cell === "." ? "" : cell === "X" ? "×" : "○"}
                   </button>
                 ))}
               </div>
-              {game.status !== "open" && <button className="chip" style={{ marginTop: "0.5rem" }} onClick={rematch}>REMATCH</button>}
-              {gameErr && <p style={{ color: "var(--crimson)", fontSize: "0.65rem" }}>{gameErr}</p>}
+              {game.status !== "open" && (
+                <button
+                  className="chip"
+                  style={{ marginTop: "0.5rem" }}
+                  onClick={rematch}
+                >
+                  REMATCH
+                </button>
+              )}
+              {gameErr && (
+                <p className="err" style={{ fontSize: "0.72rem" }}>
+                  {gameErr}
+                </p>
+              )}
             </>
           ) : (
-            <p className="fine">{gameErr || "Waiting for your 1v1 peer to join…"}</p>
+            <p className="fine">
+              {gameErr || "Waiting for your 1v1 peer to join…"}
+            </p>
           )}
         </div>
-        {err && <p style={{ color: "var(--crimson)", fontSize: "0.7rem" }}>{err}</p>}
+        {err && (
+          <p style={{ color: "var(--crimson)", fontSize: "0.7rem" }}>{err}</p>
+        )}
       </div>
-      <div className="card" style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+      <div
+        className="card"
+        style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}
+      >
         <p className="mono-label">ROOM CHAT — $TICKERS UNFURL</p>
-        <ol className="chat-log">
+        <ol className="chat-log" ref={chatRef}>
           {msgs.map((m) => (
             <li key={m.id} className={m.senderId === me?.id ? "msg me" : "msg"}>
               <strong>{m.senderHandle}:</strong> {m.body}
-              {extractTickers(m.body).map((t) => <TokenCard key={t} symbol={t} />)}
+              {extractTickers(m.body).map((t) => (
+                <TokenCard key={t} symbol={t} />
+              ))}
             </li>
           ))}
         </ol>
+        <ChatSuggestions
+          onPick={(t) => setDraft((d) => (d ? `${d} ${t}` : t))}
+        />
         <form onSubmit={send} style={{ display: "flex", gap: "0.5rem" }}>
-          <input className="field" value={draft} onChange={(e) => setDraft(e.target.value)} placeholder="Type $BTC to unfurl a card…" maxLength={240} />
-          <button className="btn-solid" style={{ padding: "0.7rem" }} type="submit">SEND</button>
+          <input
+            className="field"
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            placeholder="Type $BTC to unfurl a card…"
+            maxLength={240}
+          />
+          <button
+            className="btn-solid"
+            style={{ padding: "0.7rem" }}
+            type="submit"
+          >
+            SEND
+          </button>
         </form>
       </div>
     </section>

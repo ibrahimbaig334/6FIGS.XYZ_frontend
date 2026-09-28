@@ -3,7 +3,8 @@
 const BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
 const KEY = "sixfigs-token";
 
-export const isDevnet = (process.env.NEXT_PUBLIC_CHAIN_MODE ?? "devnet") === "devnet";
+export const isDevnet =
+  (process.env.NEXT_PUBLIC_CHAIN_MODE ?? "devnet") === "devnet";
 
 export function getToken(): string | null {
   return typeof window === "undefined" ? null : localStorage.getItem(KEY);
@@ -27,8 +28,15 @@ export class ApiError extends Error {
 /* No client-side cache by design: every call hits the backend, which owns all
  * caching (Redis). Guarantees fresh data on every sort/filter/navigation. */
 
-async function rawFetch<T>(method: string, path: string, body: unknown, token: string | null): Promise<T> {
-  const headers: Record<string, string> = { "Content-Type": "application/json" };
+async function rawFetch<T>(
+  method: string,
+  path: string,
+  body: unknown,
+  token: string | null,
+): Promise<T> {
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+  };
   if (token) headers.Authorization = `Bearer ${token}`;
   let res: Response;
   try {
@@ -44,13 +52,23 @@ async function rawFetch<T>(method: string, path: string, body: unknown, token: s
   if (res.status === 401 && token) {
     // Session actually invalid/expired (JWT lasts 7d) — NOT cleared on network blips.
     clearToken();
-    if (typeof window !== "undefined") window.dispatchEvent(new Event("sixfigs-auth"));
+    if (typeof window !== "undefined")
+      window.dispatchEvent(new Event("sixfigs-auth"));
   }
-  if (!res.ok) throw new ApiError(typeof data.message === "string" ? data.message : `Request failed (${res.status})`, res.status);
+  if (!res.ok)
+    throw new ApiError(
+      typeof data.message === "string"
+        ? data.message
+        : `Request failed (${res.status})`,
+      res.status,
+    );
   return data as T;
 }
 
-export async function api<T>(path: string, opts?: { method?: string; body?: unknown; auth?: boolean }): Promise<T> {
+export async function api<T>(
+  path: string,
+  opts?: { method?: string; body?: unknown; auth?: boolean },
+): Promise<T> {
   const method = (opts?.method ?? "GET").toUpperCase();
   const useAuth = opts?.auth !== false;
   const token = useAuth ? getToken() : null;
@@ -102,9 +120,14 @@ export interface TierInfo {
   min: number;
 }
 
-export async function getTiers(): Promise<{ chainMode: string; tiers: TierInfo[] }> {
+export async function getTiers(): Promise<{
+  chainMode: string;
+  tiers: TierInfo[];
+}> {
   try {
-    return await api<{ chainMode: string; tiers: TierInfo[] }>("/tiers", { auth: false });
+    return await api<{ chainMode: string; tiers: TierInfo[] }>("/tiers", {
+      auth: false,
+    });
   } catch {
     return {
       chainMode: "prod",
@@ -200,7 +223,16 @@ export interface RoomRequestInfo {
   toHandle: string;
   status: string;
   roomId: string | null;
+  matchId: string | null;
+  gameId: string | null;
   createdAt: string;
+}
+
+export interface FriendList {
+  items: Friend[];
+  total: number;
+  page: number;
+  limit: number;
 }
 
 export interface RoomList {
@@ -234,7 +266,10 @@ export function extractTickers(text: string): string[] {
 
 export function timeAgo(iso: string | null): string {
   if (!iso) return "long ago";
-  const s = Math.max(1, Math.floor((Date.now() - new Date(iso).getTime()) / 1000));
+  const s = Math.max(
+    1,
+    Math.floor((Date.now() - new Date(iso).getTime()) / 1000),
+  );
   if (s < 60) return `${s}s ago`;
   const m = Math.floor(s / 60);
   if (m < 60) return `${m}m ago`;
@@ -245,7 +280,11 @@ export function timeAgo(iso: string | null): string {
 }
 
 /** Must match backend loginMessage() byte-for-byte. */
-export function loginMessage(chain: string, address: string, nonce: string): string {
+export function loginMessage(
+  chain: string,
+  address: string,
+  nonce: string,
+): string {
   return `6FIGS.XYZ login\n${chain}:${address}\nnonce: ${nonce}`;
 }
 

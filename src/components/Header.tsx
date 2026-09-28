@@ -9,7 +9,7 @@ const NAV = [
   { href: "/", label: "HOME" },
   { href: "/profile", label: "PROFILE" },
   { href: "/play", label: "PLAY" },
-  { href: "/rooms", label: "ROOMS" },
+  { href: "/create", label: "CREATE" },
 ];
 
 export default function Header() {
@@ -87,7 +87,14 @@ export default function Header() {
           </a>
         ))}
       </nav>
-      <div style={{ display: "flex", gap: "0.5rem", alignItems: "center", position: "relative" }}>
+      <div
+        style={{
+          display: "flex",
+          gap: "0.5rem",
+          alignItems: "center",
+          position: "relative",
+        }}
+      >
         <button
           className="btn-ghost"
           style={{ padding: "0.6rem 0.8rem" }}
@@ -98,8 +105,13 @@ export default function Header() {
         </button>
         {profile ? (
           <>
-            <button className="tier-badge" style={{ cursor: "pointer", border: "2px solid var(--ink)" }} onClick={() => setMenu(!menu)}>
-              {(profile.handle ?? profile.wallets[0]?.display ?? "YOU")} · {profile.eligibility.tier ?? "UNVERIFIED"} ▾
+            <button
+              className="tier-badge"
+              style={{ cursor: "pointer", border: "2px solid var(--ink)" }}
+              onClick={() => setMenu(!menu)}
+            >
+              {profile.handle ?? profile.wallets[0]?.display ?? "YOU"} ·{" "}
+              {profile.eligibility.tier ?? "UNVERIFIED"} ▾
             </button>
             {menu && (
               <div style={menuBox} className="dropdown">
@@ -110,17 +122,31 @@ export default function Header() {
             )}
           </>
         ) : (
-          <button className="btn-solid" style={{ padding: "0.6rem 0.9rem" }} onClick={() => setPopup(true)}>
+          <button
+            className="btn-solid"
+            style={{ padding: "0.6rem 0.9rem" }}
+            onClick={() => setPopup(true)}
+          >
             CONNECT WALLET ↗
           </button>
         )}
       </div>
-      {popup && <ConnectPopup onClose={() => setPopup(false)} onDone={authed} />}
+      {popup && (
+        <ConnectPopup onClose={() => setPopup(false)} onDone={authed} />
+      )}
     </header>
   );
 }
 
 const menuBox: React.CSSProperties = {
-  position: "absolute", right: 0, top: "110%", background: "var(--paper)", border: "2px solid var(--ink)",
-  boxShadow: "4px 4px 0 var(--shadow)", display: "flex", flexDirection: "column", zIndex: 40, minWidth: "160px",
+  position: "absolute",
+  right: 0,
+  top: "110%",
+  background: "var(--paper)",
+  border: "2px solid var(--ink)",
+  boxShadow: "4px 4px 0 var(--shadow)",
+  display: "flex",
+  flexDirection: "column",
+  zIndex: 40,
+  minWidth: "160px",
 };

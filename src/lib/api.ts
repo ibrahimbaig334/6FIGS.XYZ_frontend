@@ -190,6 +190,7 @@ export interface Room {
   createdAt: string;
   isMember: boolean;
   isOwner: boolean;
+  creatorHandle: string;
 }
 
 export interface RoomMeta {
@@ -203,6 +204,7 @@ export interface RoomMeta {
   onlineCount: number;
   isMember: boolean;
   isOwner: boolean;
+  creatorHandle: string;
 }
 
 export interface Friend {

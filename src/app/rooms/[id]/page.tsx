@@ -296,7 +296,7 @@ export default function RoomPage() {
 
   if (!ready) {
     return (
-      <section className="page-enter" style={{ padding: "2rem 5vw" }}>
+      <section className="page-enter loader-page">
         <Loader label="LOADING ROOM…" />
       </section>
     );
@@ -320,10 +320,7 @@ export default function RoomPage() {
 
   if (!meta && !booted && !roomGone) {
     return (
-      <section
-        className="page-enter"
-        style={{ padding: "2rem 5vw" }}
-      >
+      <section className="page-enter loader-page">
         <Loader label="OPENING ROOM…" />
       </section>
     );
@@ -411,6 +408,7 @@ export default function RoomPage() {
         <h2 style={{ margin: "0.4rem 0 0.2rem", fontSize: "clamp(1.5rem, 3.5vw, 2.2rem)", letterSpacing: "-0.03em" }}>
           {meta?.name}
         </h2>
+        <p className="fine" style={{ margin: "0 0 0.2rem" }}>BY {meta?.creatorHandle.toUpperCase()}</p>
         {meta?.description && (
           <p className="fine" style={{ margin: "0 0 0.6rem" }}>{meta.description}</p>
         )}

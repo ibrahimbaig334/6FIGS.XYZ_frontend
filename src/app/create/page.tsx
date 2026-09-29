@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { api, getToken } from "../../lib/api";
+import { api, getToken, Profile } from "../../lib/api";
 import { ROOM_PUNCH_LINES } from "../../lib/constants";
 import {
   inviteCodeError,
@@ -32,6 +32,8 @@ export default function CreateRoomPage() {
   const [token, setTokenState] = useState<string | null>(null);
   const [popup, setPopup] = useState(false);
   const [punch, setPunch] = useState(ROOM_PUNCH_LINES[0]);
+  // Same display rule as room cards: saved handle, else the generated fallback.
+  const [username, setUsername] = useState("");
 
   useEffect(() => {
     setReady(true);
@@ -40,6 +42,11 @@ export default function CreateRoomPage() {
     setPunch(
       ROOM_PUNCH_LINES[Math.floor(Math.random() * ROOM_PUNCH_LINES.length)],
     );
+    if (getToken()) {
+      api<Profile>("/profile/user")
+        .then((p) => setUsername(p.handle ?? `user_${p.id.slice(-4)}`))
+        .catch(() => {});
+    }
     const h = () => setTokenState(getToken());
     window.addEventListener("sixfigs-auth", h);
     return () => window.removeEventListener("sixfigs-auth", h);
@@ -90,7 +97,7 @@ export default function CreateRoomPage() {
 
   if (!ready) {
     return (
-      <section className="page-enter" style={{ padding: "2rem 5vw" }}>
+      <section className="page-enter loader-page">
         <Loader />
       </section>
     );
@@ -309,7 +316,7 @@ export default function CreateRoomPage() {
               {previewDesc}
             </p>
             <div className="ticket-stub">
-              <span>ADMIT 1V1 · YOU + 1 PEER</span>
+              <span>BY {username.toUpperCase()} · ADMIT 1V1</span>
               <span aria-hidden="true">✕ ○ ✕</span>
             </div>
           </div>

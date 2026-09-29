@@ -48,6 +48,8 @@ body {
 
 body > main {
   flex: 1;
+  display: flex;
+  flex-direction: column;
 }
 
 .dialog-overlay {
@@ -818,18 +820,22 @@ select.field option {
   color: var(--muted);
 }
 
-/* Uniform loader: 6FIGS mark with gold rotation ring, dead-center of the screen
- * on every display (fixed overlay — no vh units, no dependence on page height). */
+/* Full-page loader state: fills the space between nav and footer so the mark
+ * sits in the true visual center (no vh units, nav/footer stay visible). */
+.loader-page {
+  flex: 1;
+  display: grid;
+  place-items: center;
+  padding: 2rem 5vw;
+}
+
+/* Uniform loader: 6FIGS mark with gold rotation ring. */
 .loader-wrap {
-  position: fixed;
-  inset: 0;
-  z-index: 90;
-  background: var(--paper);
   display: grid;
   place-items: center;
   align-content: center;
   gap: 0.9rem;
-  padding: 1rem;
+  padding: 2rem 1rem;
   text-align: center;
 }
 

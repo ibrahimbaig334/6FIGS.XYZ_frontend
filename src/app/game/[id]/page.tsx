@@ -193,7 +193,7 @@ export default function GamePage() {
 
   if (!ready)
     return (
-      <section className="page-enter" style={{ padding: "2rem 5vw" }}>
+      <section className="page-enter loader-page">
         <Loader label="LOADING…" />
       </section>
     );
@@ -224,8 +224,7 @@ export default function GamePage() {
   if (!game) {
     return (
       <section
-        className="page-enter"
-        style={{ padding: "2rem 5vw" }}
+        className="page-enter loader-page"
       >
         <Loader label="FINDING GAME…" />
       </section>

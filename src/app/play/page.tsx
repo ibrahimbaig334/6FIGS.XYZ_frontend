@@ -299,7 +299,7 @@ export default function PlayPage() {
   // Mounted guard (see rooms page): localStorage token is client-only.
   if (!ready) {
     return (
-      <section className="page-enter" style={{ padding: "2rem 5vw" }}>
+      <section className="page-enter loader-page">
         <Loader label="LOADING PLAY…" />
       </section>
     );

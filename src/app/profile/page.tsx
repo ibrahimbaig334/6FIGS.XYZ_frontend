@@ -112,8 +112,8 @@ function ProfileInner() {
   // Mounted guard (see rooms page): localStorage token is client-only.
   if (!ready) {
     return (
-      <section style={{ padding: "2rem 5vw" }}>
-        <p className="mono-label">LOADING PROFILE…</p>
+      <section className="page-enter loader-page">
+        <Loader />
       </section>
     );
   }
@@ -147,12 +147,7 @@ function ProfileInner() {
 
   if (!profile) {
     return (
-      <section
-        className="page-enter"
-        style={{
-          padding: "2rem 5vw",
-        }}
-      >
+      <section className="page-enter loader-page">
         <Loader label="LOADING PROFILE…" />
       </section>
     );

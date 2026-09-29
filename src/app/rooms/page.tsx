@@ -85,8 +85,8 @@ export default function RoomsPage() {
   // Mounted guard: localStorage token is client-only.
   if (!ready) {
     return (
-      <section style={{ padding: "2rem 5vw" }}>
-        <p className="mono-label">LOADING ROOMS…</p>
+      <section className="page-enter loader-page">
+        <Loader />
       </section>
     );
   }
@@ -211,6 +211,9 @@ export default function RoomsPage() {
                   {r.description}
                 </p>
               )}
+              <p className="fine" style={{ margin: "0 0 0.4rem" }}>
+                BY {r.creatorHandle.toUpperCase()}
+              </p>
               <div style={{ display: "flex", gap: "0.4rem", flexWrap: "wrap" }}>
                 <button className="btn-solid btn-sm" onClick={() => askJoin(r)}>
                   {r.accessType === "invite" || !r.isMember

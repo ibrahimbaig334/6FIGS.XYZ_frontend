@@ -215,6 +215,7 @@ export interface Friend {
   tags: string[];
   online: boolean;
   lastSeenAt: string | null;
+  assetPct: Record<string, number> | null;
 }
 
 export interface RoomRequestInfo {

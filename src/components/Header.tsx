@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { api, ApiError, clearToken, getToken, Profile } from "../lib/api";
 import { connectSocket, disconnectSocket } from "../lib/ws";
 import ConnectPopup from "./ConnectPopup";
@@ -17,6 +17,24 @@ export default function Header() {
   const [popup, setPopup] = useState(false);
   const [menu, setMenu] = useState(false);
   const [dark, setDark] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  // Close the wallet dropdown on outside click / Escape.
+  useEffect(() => {
+    if (!menu) return;
+    const close = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) setMenu(false);
+    };
+    const esc = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setMenu(false);
+    };
+    document.addEventListener("mousedown", close);
+    document.addEventListener("keydown", esc);
+    return () => {
+      document.removeEventListener("mousedown", close);
+      document.removeEventListener("keydown", esc);
+    };
+  }, [menu]);
 
   useEffect(() => {
     const d = localStorage.getItem("sixfigs-theme") === "dark";
@@ -105,7 +123,7 @@ export default function Header() {
           {dark ? "☀ LIGHT" : "🌙 DARK"}
         </button>
         {profile ? (
-          <div style={{ position: "relative" }}>
+          <div ref={menuRef} style={{ position: "relative" }}>
             <button
               className="tier-badge"
               style={{
@@ -116,14 +134,14 @@ export default function Header() {
                 width: "100%",
               }}
               onClick={() => setMenu(!menu)}
+              aria-haspopup="menu"
+              aria-expanded={menu}
             >
-              {profile.handle ?? profile.wallets[0]?.display ?? "YOU"} ·{" "}
               {profile.eligibility.tier ?? "UNVERIFIED"} ▾
             </button>
             {menu && (
-              <div style={menuBox} className="dropdown">
+              <div style={menuBox} className="dropdown" role="menu">
                 <a href="/profile">PROFILE</a>
-                <a href="/profile?tab=settings">SETTINGS</a>
                 <button onClick={disconnect}>DISCONNECT</button>
               </div>
             )}

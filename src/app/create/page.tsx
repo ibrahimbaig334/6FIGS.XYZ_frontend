@@ -124,7 +124,7 @@ export default function CreateRoomPage() {
           }}
         >
           <p className="mono-label">CREATE ROOM — CONNECT FIRST</p>
-          <p className="fine" style={{ margin: "0.6rem 0 0" }}>
+          <p className="fine" style={{ margin: "0.6rem 0 0", fontSize: 14 }}>
             Connect a wallet to spin up your 1v1 room.
           </p>
           <button

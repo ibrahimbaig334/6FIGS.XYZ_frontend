@@ -64,7 +64,7 @@ body > main {
 
 .dialog-box {
   background: var(--paper);
-  border: 2px solid var(--ink);
+  border: 5px solid var(--ink);
   box-shadow: 8px 8px 0 var(--shadow);
   padding: 1.2rem;
   width: min(420px, 90vw);
@@ -209,9 +209,10 @@ body > main {
 .mono-label {
   margin: 0;
   font-family: var(--font-dm-mono);
-  font-size: 0.72rem;
+  font-size: 1rem;
   letter-spacing: 0.11em;
   text-transform: uppercase;
+  font-weight: bolder;
 }
 
 .fine {
@@ -298,11 +299,6 @@ select.field option {
   color: var(--paper);
   padding: 0.5rem 0.6rem;
   letter-spacing: 0.05em;
-}
-
-.chain-badge.sol {
-  background: #14f195;
-  color: #121212;
 }
 
 .chip {

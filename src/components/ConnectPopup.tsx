@@ -116,7 +116,9 @@ export default function ConnectPopup({
         aria-label="Connect wallet"
         style={{ textAlign: "center", alignItems: "center" }}
       >
-        <p className="mono-label">CONNECT WALLET</p>
+        <p className="mono-label" style={{ fontSize: 22 }}>
+          CONNECT WALLET
+        </p>
         <div
           style={{
             display: "flex",
@@ -129,7 +131,7 @@ export default function ConnectPopup({
             <button
               key={c}
               className={chain === c ? "btn-solid" : "btn-ghost"}
-              style={{ padding: "0.5rem 0.8rem" }}
+              style={{ padding: "0.7rem 2rem", fontSize: 13 }}
               onClick={() => setChain(c)}
             >
               {c}
@@ -137,11 +139,16 @@ export default function ConnectPopup({
           ))}
           <button
             className="btn-ghost"
-            style={{ padding: "0.5rem 0.8rem", opacity: 0.45, cursor: "not-allowed" }}
+            style={{
+              padding: "0.7rem 2rem",
+              opacity: 0.45,
+              cursor: "not-allowed",
+              fontSize: 13,
+            }}
             disabled
             title="BTC support is coming soon"
           >
-            BTC · SOON
+            BTC
           </button>
         </div>
         {chain === "EVM" && (

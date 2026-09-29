@@ -468,6 +468,13 @@ export default function PlayPage() {
                 >
                   {p.tier ?? "UNVERIFIED"}
                 </span>
+                {p.assetPct && Object.keys(p.assetPct).length > 0 && (
+                  <span className="fine">
+                    {Object.entries(p.assetPct)
+                      .map(([c, pct]) => `${c} ${pct}%`)
+                      .join(" · ")}
+                  </span>
+                )}
                 {pend ? (
                   <button
                     className="btn-ghost btn-sm"

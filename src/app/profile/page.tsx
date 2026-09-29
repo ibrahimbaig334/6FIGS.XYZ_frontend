@@ -8,7 +8,6 @@ import {
   clearToken,
   getToken,
   getTiers,
-  isDevnet,
   Profile,
   TierInfo,
 } from "../../lib/api";
@@ -17,16 +16,23 @@ import { disconnectSocket } from "../../lib/ws";
 import ConnectPopup from "../../components/ConnectPopup";
 import Loader from "../../components/Loader";
 
-const TABS = ["profile", "wallets", "settings"] as const;
+const TABS = ["profile", "wallets"] as const;
 
 function ProfileInner() {
   const params = useSearchParams();
-  const [tab, setTab] = useState<string>(params.get("tab") ?? "wallets");
+  const [tab, setTab] = useState<string>(() => {
+    const t = params.get("tab");
+    return t === "profile" || t === "wallets" ? t : "wallets";
+  });
   const [profile, setProfile] = useState<Profile | null>(null);
   const [popup, setPopup] = useState(false);
   const [err, setErr] = useState("");
   const [handle, setHandle] = useState("");
   const [handleErr, setHandleErr] = useState("");
+  const [removeErr, setRemoveErr] = useState<{
+    id: string;
+    msg: string;
+  } | null>(null);
   const [ready, setReady] = useState(false);
   const [loading, setLoading] = useState(true);
   const [tiers, setTiers] = useState<TierInfo[]>([]);
@@ -94,11 +100,15 @@ function ProfileInner() {
   }
 
   async function removeWallet(id: string) {
+    setRemoveErr(null);
     try {
       await api(`/wallet/${id}`, { method: "DELETE" });
       await load();
     } catch (e) {
-      setErr(e instanceof Error ? e.message : "Remove failed");
+      setRemoveErr({
+        id,
+        msg: e instanceof Error ? e.message : "Remove failed",
+      });
     }
   }
 
@@ -120,14 +130,40 @@ function ProfileInner() {
 
   if (!getToken() || (!profile && !loading)) {
     return (
-      <section className="page-enter" style={{ padding: "2rem 5vw" }}>
-        <div className="card">
+      <section
+        className="page-enter"
+        style={{
+          padding: "2rem 5vw",
+          flex: 1,
+          display: "grid",
+          placeItems: "center",
+        }}
+      >
+        <div
+          className="card"
+          style={{
+            width: "100%",
+            maxWidth: "520px",
+            textAlign: "center",
+            padding: "2.5rem 2rem",
+          }}
+        >
           <p className="mono-label">PROFILE — CONNECT FIRST</p>
-          <p style={{ fontFamily: "var(--font-dm-mono)", fontSize: "0.85rem" }}>
+          <p
+            style={{
+              fontFamily: "var(--font-dm-mono)",
+              fontSize: "0.85rem",
+              margin: "0.6rem 0 0",
+            }}
+          >
             Link a wallet to open your profile. Below $100K you can still link
             more wallets here.
           </p>
-          <button className="btn-solid" onClick={() => setPopup(true)}>
+          <button
+            className="btn-solid"
+            style={{ marginTop: "1.2rem" }}
+            onClick={() => setPopup(true)}
+          >
             CONNECT WALLET ↗
           </button>
           {err && <p style={{ color: "var(--crimson)" }}>{err}</p>}
@@ -155,7 +191,7 @@ function ProfileInner() {
 
   const elig = profile.eligibility;
 
-  const primary = profile.wallets[0];
+  const username = profile.handle ?? `user_${profile.id.slice(-4)}`;
 
   return (
     <section className="page-enter" style={{ padding: "2rem 5vw" }}>
@@ -163,7 +199,7 @@ function ProfileInner() {
         <div>
           <p className="mono-label">PROFILE PAGE</p>
           <h2 style={{ margin: "0.3rem 0 0" }}>
-            {primary ? primary.display : "—"} · ${elig.total.toLocaleString()}{" "}
+            {username} · ${elig.total.toLocaleString()}{" "}
             <span className="tier-badge">{elig.tier ?? "UNVERIFIED"}</span>
           </h2>
         </div>
@@ -208,27 +244,44 @@ function ProfileInner() {
         >
           {tab === "wallets" && (
             <div className="card">
-              <p className="mono-label">
-                1 / CONNECTED WALLETS (EVM + SOLANA)
-              </p>
+              <p className="mono-label">CONNECTED WALLETS</p>
               {profile.wallets.map((w) => {
                 const live = elig.balances.find((b) => b.walletId === w.id);
                 return (
-                  <div key={w.id} className="wallet-row">
-                    <span
-                      className={
-                        w.chain === "SOL" ? "chain-badge sol" : "chain-badge"
-                      }
+                  <div key={w.id}>
+                    <div
+                      className="wallet-row"
+                      style={{
+                        marginBottom:
+                          removeErr?.id === w.id ? "0.3rem" : "0.6rem",
+                      }}
                     >
-                      {w.chain}
-                    </span>
-                    <code className="wallet-addr">{w.address}</code>
-                    <span className="mono-label">
-                      ${Math.round(live?.usd ?? 0).toLocaleString()} LIVE
-                    </span>
-                    <button className="chip" onClick={() => removeWallet(w.id)}>
-                      ✕
-                    </button>
+                      <span
+                        className={
+                          w.chain === "SOL" ? "chain-badge sol" : "chain-badge"
+                        }
+                      >
+                        {w.chain}
+                      </span>
+                      <span
+                        className="mono-label"
+                        style={{ fontSize: "0.85rem" }}
+                      >
+                        ${Math.round(live?.usd ?? 0).toLocaleString()} LIVE
+                      </span>
+                      <button
+                        className="chip"
+                        style={{ marginLeft: "auto" }}
+                        onClick={() => removeWallet(w.id)}
+                      >
+                        ✕
+                      </button>
+                    </div>
+                    {removeErr?.id === w.id && (
+                      <p className="err" style={{ margin: "0 0 0.6rem" }}>
+                        {removeErr.msg}
+                      </p>
+                    )}
                   </div>
                 );
               })}
@@ -240,13 +293,6 @@ function ProfileInner() {
                   marginTop: "0.6rem",
                 }}
               >
-                <button
-                  className="btn-solid"
-                  style={{ padding: "0.7rem 1rem" }}
-                  onClick={() => setPopup(true)}
-                >
-                  + ADD WALLET
-                </button>
                 <button
                   className="btn-ghost"
                   style={{ padding: "0.7rem 1rem" }}
@@ -260,16 +306,22 @@ function ProfileInner() {
                 {tiers
                   .map((t) => `${t.name} > $${t.min.toLocaleString()}`)
                   .join(" · ") || "loading…"}
-                . Balances read live onchain (Sepolia / Solana devnet) × cached
-                USD prices.
+                .
               </p>
+              <button
+                className="btn-ghost"
+                style={{ padding: "0.7rem 1rem", marginTop: "0.6rem" }}
+                onClick={disconnect}
+              >
+                DISCONNECT ALL
+              </button>
             </div>
           )}
 
           {tab === "profile" && (
             <>
               <div className="card">
-                <p className="mono-label">2 / PROOF STATUS</p>
+                <p className="mono-label">PROOF STATUS</p>
                 {elig.tier ? (
                   <p
                     style={{
@@ -306,27 +358,11 @@ function ProfileInner() {
                     <span className="fine">No allocation data yet.</span>
                   )}
                 </div>
-                <div style={{ display: "flex", gap: "0.5rem" }}>
-                  <a
-                    href="/play"
-                    className="btn-solid"
-                    style={{ padding: "0.7rem 1rem" }}
-                  >
-                    PLAY ↗
-                  </a>
-                  <a
-                    href="/rooms"
-                    className="btn-ghost"
-                    style={{ padding: "0.7rem 1rem" }}
-                  >
-                    ROOMS ↗
-                  </a>
-                </div>
               </div>
               <div className="card">
-                <p className="mono-label">3 / PORTFOLIO VISIBILITY</p>
+                <p className="mono-label">PORTFOLIO VISIBILITY</p>
                 <div style={{ display: "flex", gap: "0.5rem" }}>
-                  {(["HIDDEN", "CATEGORIES", "FULL"] as const).map((v) => (
+                  {(["HIDDEN", "VISIBLE"] as const).map((v) => (
                     <button
                       key={v}
                       className={profile.visMode === v ? "chip active" : "chip"}
@@ -337,53 +373,38 @@ function ProfileInner() {
                   ))}
                 </div>
                 <p className="fine">
-                  HIDDEN = tier badge only · CATEGORIES = allocation % · FULL =
-                  already-doxxed only.
+                  HIDDEN = tier badge only · VISIBLE = your holdings % show up
+                  for friends in the 1v1 tab.
                 </p>
               </div>
-            </>
-          )}
-
-          {tab === "settings" && (
-            <div className="card">
-              <p className="mono-label">SETTINGS</p>
-              <div
-                style={{
-                  display: "flex",
-                  gap: "0.5rem",
-                  alignItems: "center",
-                  flexWrap: "wrap",
-                }}
-              >
-                <input
-                  className="field"
-                  value={handle}
-                  onChange={(e) => {
-                    setHandle(e.target.value);
-                    if (handleErr)
-                      setHandleErr(handleError(e.target.value) ?? "");
+              <div className="card">
+                <p className="mono-label">USERNAME</p>
+                <div
+                  style={{
+                    display: "flex",
+                    gap: "0.5rem",
+                    alignItems: "center",
+                    flexWrap: "wrap",
                   }}
-                  placeholder="handle (3–24 chars)"
-                  style={{ maxWidth: "240px" }}
-                />
-                <button className="chip" onClick={saveHandle}>
-                  SAVE HANDLE
-                </button>
+                >
+                  <input
+                    className="field"
+                    value={handle}
+                    onChange={(e) => {
+                      setHandle(e.target.value);
+                      if (handleErr)
+                        setHandleErr(handleError(e.target.value) ?? "");
+                    }}
+                    placeholder="handle (3–24 chars)"
+                    style={{ maxWidth: "240px" }}
+                  />
+                  <button className="chip" onClick={saveHandle}>
+                    SAVE HANDLE
+                  </button>
+                </div>
+                {handleErr && <p className="err">{handleErr}</p>}
               </div>
-              {handleErr && <p className="err">{handleErr}</p>}
-              <p className="fine">
-                API:{" "}
-                {process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000"} ·
-                Mode: {isDevnet ? "devnet" : "prod"}
-              </p>
-              <button
-                className="btn-ghost"
-                style={{ padding: "0.7rem 1rem" }}
-                onClick={disconnect}
-              >
-                DISCONNECT ALL
-              </button>
-            </div>
+            </>
           )}
           {popup && (
             <ConnectPopup

@@ -219,6 +219,7 @@ body > main {
   font-family: var(--font-dm-mono);
   font-size: 0.7rem;
   line-height: 1.6;
+  overflow-wrap: anywhere;
 }
 
 .field {
@@ -421,9 +422,45 @@ select.field option {
 }
 
 @media (max-width: 900px) {
+  /* Tier 1: icon + wallet/dark stay on top, the 4 nav buttons center below. */
+  .masthead {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+  .masthead .wordmark {
+    order: 1;
+  }
+  .masthead .masthead-actions {
+    order: 2;
+    margin-left: auto;
+  }
+  .masthead .site-nav {
+    order: 3;
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+@media (max-width: 540px) {
+  /* Tier 2: everything stacks centered — icon, then wallet/dark, then nav. */
   .masthead {
     flex-direction: column;
-    align-items: flex-start;
+    align-items: center;
+  }
+  .masthead .masthead-actions {
+    margin-left: 0;
+    justify-content: center;
+  }
+  .masthead .site-nav {
+    width: auto;
+  }
+  /* Footer stacks centered: tagline, then © below. */
+  .site-footer {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 0.4rem;
   }
 }
 
@@ -778,7 +815,6 @@ select.field option {
   background: var(--card);
   box-shadow: 8px 8px 0 var(--shadow);
   padding: 1.8rem 1.6rem 1.4rem;
-  transform: rotate(-1.2deg);
   overflow: visible;
 }
 
@@ -790,7 +826,7 @@ select.field option {
   background: var(--crimson);
   color: #fff;
   font-family: var(--font-dm-mono);
-  font-size: 0.62rem;
+  font-size: 0.85rem;
   letter-spacing: 0.14em;
   padding: 0.3rem 0.7rem;
   border: 2px solid var(--ink);

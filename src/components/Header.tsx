@@ -88,6 +88,7 @@ export default function Header() {
         ))}
       </nav>
       <div
+        className="masthead-actions"
         style={{
           display: "flex",
           gap: "0.5rem",

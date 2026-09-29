@@ -41,6 +41,7 @@ export default function RootLayout({
         <Header />
         <main>{children}</main>
         <footer
+          className="site-footer"
           style={{
             display: "flex",
             justifyContent: "space-between",

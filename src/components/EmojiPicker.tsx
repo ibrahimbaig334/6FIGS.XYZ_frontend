@@ -58,7 +58,7 @@ export default function EmojiPicker({
             gridTemplateColumns: "repeat(6, 1fr)",
             gap: "0.15rem",
             width: "max-content",
-            maxWidth: "70vw",
+            maxWidth: "90vw",
           }}
         >
           {CHAT_EMOJIS.map((e) => (

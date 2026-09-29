@@ -104,10 +104,16 @@ export default function Header() {
           {dark ? "☀ LIGHT" : "🌙 DARK"}
         </button>
         {profile ? (
-          <>
+          <div style={{ position: "relative" }}>
             <button
               className="tier-badge"
-              style={{ cursor: "pointer", border: "2px solid var(--ink)" }}
+              style={{
+                cursor: "pointer",
+                border: "2px solid var(--ink)",
+                padding: "0.6rem 0.9rem",
+                fontSize: "0.72rem",
+                width: "100%",
+              }}
               onClick={() => setMenu(!menu)}
             >
               {profile.handle ?? profile.wallets[0]?.display ?? "YOU"} ·{" "}
@@ -120,7 +126,7 @@ export default function Header() {
                 <button onClick={disconnect}>DISCONNECT</button>
               </div>
             )}
-          </>
+          </div>
         ) : (
           <button
             className="btn-solid"
@@ -140,6 +146,7 @@ export default function Header() {
 
 const menuBox: React.CSSProperties = {
   position: "absolute",
+  left: 0,
   right: 0,
   top: "110%",
   background: "var(--paper)",
@@ -148,5 +155,4 @@ const menuBox: React.CSSProperties = {
   display: "flex",
   flexDirection: "column",
   zIndex: 40,
-  minWidth: "160px",
 };

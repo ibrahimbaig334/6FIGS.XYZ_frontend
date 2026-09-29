@@ -23,6 +23,7 @@ export function roomNameError(v: string): string | null {
 }
 
 export function roomDescriptionError(v: string): string | null {
+  if (!v.trim()) return "Description is required";
   if (v.trim().length > ROOM_DESC_MAX)
     return `Description must be ${ROOM_DESC_MAX} characters or fewer`;
   return null;

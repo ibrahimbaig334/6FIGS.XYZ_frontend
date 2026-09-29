@@ -6,7 +6,7 @@ import { ROOMS_PAGE_SIZE } from "../../lib/constants";
 import ConnectPopup from "../../components/ConnectPopup";
 import InviteDialog from "../../components/InviteDialog";
 import DeleteRoomDialog from "../../components/DeleteRoomDialog";
-import { CardSkel } from "../../components/Skeleton";
+import Loader from "../../components/Loader";
 
 export default function RoomsPage() {
   const [rooms, setRooms] = useState<Room[]>([]);
@@ -178,12 +178,9 @@ export default function RoomsPage() {
       </div>
       <div className="grid-cards">
         {initialLoading ? (
-          <>
-            <CardSkel />
-            <CardSkel />
-            <CardSkel />
-            <CardSkel />
-          </>
+          <div className="card">
+            <Loader label="LOADING ROOMS…" />
+          </div>
         ) : (
           rooms.map((r) => (
             <div key={r.id} className="card">

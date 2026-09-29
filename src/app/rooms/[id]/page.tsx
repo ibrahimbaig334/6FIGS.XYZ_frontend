@@ -20,7 +20,8 @@ import ConnectPopup from "../../../components/ConnectPopup";
 import InviteDialog from "../../../components/InviteDialog";
 import DeleteRoomDialog from "../../../components/DeleteRoomDialog";
 import ChatSuggestions from "../../../components/ChatSuggestions";
-import { ChatSkel, Skel } from "../../../components/Skeleton";
+import EmojiPicker from "../../../components/EmojiPicker";
+import Loader from "../../../components/Loader";
 import { useChatScroll } from "../../../lib/useChatScroll";
 import { POLL_ROOM_MS, ROOM_GONE_REDIRECT_MS } from "../../../lib/constants";
 
@@ -293,12 +294,10 @@ export default function RoomPage() {
     location.href = "/rooms";
   }
 
-  const peer = members.find((m) => m.id !== me?.id) ?? null;
-
   if (!ready) {
     return (
-      <section style={{ padding: "2rem 5vw" }}>
-        <p className="mono-label">LOADING ROOM…</p>
+      <section className="page-enter" style={{ padding: "2rem 5vw" }}>
+        <Loader label="LOADING ROOM…" />
       </section>
     );
   }
@@ -322,21 +321,10 @@ export default function RoomPage() {
   if (!meta && !booted && !roomGone) {
     return (
       <section
-        className="page-enter layout-room"
+        className="page-enter"
         style={{ padding: "2rem 5vw" }}
       >
-        <div
-          style={{ display: "flex", flexDirection: "column", gap: "0.7rem" }}
-        >
-          <Skel w="60%" />
-          <Skel />
-          <Skel w="80%" />
-          <Skel h="10rem" />
-        </div>
-        <div className="card">
-          <Skel w="30%" />
-          <ChatSkel />
-        </div>
+        <Loader label="OPENING ROOM…" />
       </section>
     );
   }
@@ -412,72 +400,41 @@ export default function RoomPage() {
   }
 
   return (
-    <section className="page-enter layout-room" style={{ padding: "2rem 5vw" }}>
-      <div>
-        <p className="mono-label">
-          1V1 ROOM · {meta?.onlineCount ?? 0}/2 ONLINE
-        </p>
+    <section className="page-enter" style={{ padding: "2rem 5vw", display: "flex", flexDirection: "column", gap: "1rem" }}>
+      <div className="card">
+        <div style={{ display: "flex", gap: "0.6rem", alignItems: "center", flexWrap: "wrap" }}>
+          <p className="mono-label">1V1 ROOM · {meta?.onlineCount ?? 0}/2 ONLINE</p>
+          <span className={meta?.accessType === "invite" ? "tier-badge t3" : "tier-badge"}>
+            {meta?.accessType === "invite" ? "🔒 INVITE-ONLY" : `✓ ${meta?.minTier}`}
+          </span>
+        </div>
+        <h2 style={{ margin: "0.4rem 0 0.2rem", fontSize: "clamp(1.5rem, 3.5vw, 2.2rem)", letterSpacing: "-0.03em" }}>
+          {meta?.name}
+        </h2>
         {meta?.description && (
-          <p className="fine" style={{ margin: "0.2rem 0 0.4rem" }}>
-            {meta.description}
-          </p>
+          <p className="fine" style={{ margin: "0 0 0.6rem" }}>{meta.description}</p>
         )}
-        {peer && (
-          <h3
-            style={{
-              display: "flex",
-              gap: "0.5rem",
-              alignItems: "center",
-              margin: "0.4rem 0",
-            }}
-          >
-            <span className={peer.online ? "dot on" : "dot"} /> {peer.handle}
-          </h3>
-        )}
+        <div style={{ display: "flex", gap: "0.8rem", alignItems: "center", flexWrap: "wrap" }}>
+          {members.map((m) => (
+            <span key={m.id} className="tier-badge" title={m.online ? "Online" : "Offline"}>
+              <span className={m.online ? "dot on" : "dot"} /> {m.handle}
+            </span>
+          ))}
+        </div>
         {inviteCode && (
-          <div className="invite-box" style={{ margin: "0.6rem 0" }}>
+          <div className="invite-box" style={{ margin: "0.8rem 0 0" }}>
             INVITE LINK:{" "}
-            <a
-              href={`${location.origin}/rooms/${id}?code=${inviteCode}`}
-            >{`${location.origin}/rooms/${id}?code=${inviteCode}`}</a>
+            <a href={`${location.origin}/rooms/${id}?code=${inviteCode}`}>{`${location.origin}/rooms/${id}?code=${inviteCode}`}</a>
             <button
               className="chip"
               style={{ marginLeft: "0.4rem" }}
-              onClick={() =>
-                copyText(`${location.origin}/rooms/${id}?code=${inviteCode}`)
-              }
+              onClick={() => copyText(`${location.origin}/rooms/${id}?code=${inviteCode}`)}
             >
               COPY
             </button>
           </div>
         )}
-        <p className="mono-label">MEMBERS ({members.length})</p>
-        {members.map((m) => (
-          <p
-            key={m.id}
-            style={{
-              fontFamily: "var(--font-dm-mono)",
-              fontSize: "0.7rem",
-              display: "flex",
-              gap: "0.4rem",
-              alignItems: "center",
-            }}
-          >
-            <span
-              className={m.online ? "dot on" : "dot"}
-              title={m.online ? "Online" : "Offline"}
-            />{" "}
-            {m.handle}
-          </p>
-        ))}
-        <div
-          style={{
-            display: "flex",
-            gap: "0.4rem",
-            marginTop: "0.6rem",
-            flexWrap: "wrap",
-          }}
-        >
+        <div style={{ display: "flex", gap: "0.4rem", marginTop: "0.8rem", flexWrap: "wrap" }}>
           <button className="chip" onClick={leaveRoom}>
             LEAVE ROOM
           </button>
@@ -498,28 +455,26 @@ export default function RoomPage() {
             onConfirm={deleteRoom}
           />
         )}
-        <div className="card" style={{ marginTop: "0.8rem" }}>
-          <p className="mono-label">1V1 GAME</p>
+        {err && <p className="err" style={{ marginTop: "0.6rem" }}>{err}</p>}
+      </div>
+      <div className="layout-game">
+        <div>
+          <p className="mono-label">
+            1V1 GAME · {game ? <>YOU ARE {game.youAre} · {game.status === "open" ? `TURN: ${game.turn}` : game.status === "draw" ? "DRAW" : `${game.winner} WINS`}</> : "WAITING FOR PEER…"}
+          </p>
           {game ? (
             <>
-              <p className="fine">
-                YOU ARE {game.youAre} ·{" "}
-                {game.status === "open"
-                  ? `TURN: ${game.turn}`
-                  : game.status === "draw"
-                    ? "DRAW"
-                    : `${game.winner} WINS`}
-              </p>
               <div
                 style={{
                   display: "grid",
-                  gridTemplateColumns: "repeat(3, min(104px, 24vw))",
+                  gridTemplateColumns: "repeat(3, min(110px, 26vw))",
                   gap: "4px",
                   background: "var(--ink)",
                   padding: "4px",
                   width: "max-content",
                   border: "2px solid var(--ink)",
-                  boxShadow: "6px 6px 0 var(--shadow)",
+                  boxShadow: "8px 8px 0 var(--shadow)",
+                  marginTop: "0.8rem",
                 }}
               >
                 {game.board.split("").map((cell, i) => (
@@ -539,27 +494,24 @@ export default function RoomPage() {
               {game.status !== "open" && (
                 <button
                   className="chip"
-                  style={{ marginTop: "0.5rem" }}
+                  style={{ marginTop: "0.8rem" }}
                   onClick={rematch}
                 >
                   REMATCH
                 </button>
               )}
               {gameErr && (
-                <p className="err" style={{ fontSize: "0.72rem" }}>
+                <p className="err" style={{ fontSize: "0.72rem", marginTop: "0.5rem" }}>
                   {gameErr}
                 </p>
               )}
             </>
           ) : (
-            <p className="fine">
+            <p className="fine" style={{ marginTop: "0.8rem" }}>
               {gameErr || "Waiting for your 1v1 peer to join…"}
             </p>
           )}
         </div>
-        {err && (
-          <p style={{ color: "var(--crimson)", fontSize: "0.7rem" }}>{err}</p>
-        )}
       </div>
       <div
         className="card"

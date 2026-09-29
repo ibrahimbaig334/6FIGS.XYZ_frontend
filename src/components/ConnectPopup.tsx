@@ -10,10 +10,6 @@ type SolProvider = {
   connect: () => Promise<{ publicKey: { toString: () => string } }>;
   signMessage: (msg: Uint8Array) => Promise<{ signature: Uint8Array }>;
 };
-type UnisatProvider = {
-  requestAccounts: () => Promise<string[]>;
-  signMessage: (msg: string) => Promise<string>;
-};
 
 function eth(): EthProvider | null {
   const w = window as unknown as { ethereum?: EthProvider };
@@ -23,15 +19,10 @@ function sol(): SolProvider | null {
   const w = window as unknown as { solana?: SolProvider };
   return w.solana ?? null;
 }
-function unisat(): UnisatProvider | null {
-  const w = window as unknown as { unisat?: UnisatProvider };
-  return w.unisat ?? null;
-}
 
-// Devnet runs Sepolia-ETH + Solana-devnet only — BTC is hidden there.
-const CHAINS = (isDevnet ? ["EVM", "SOL"] : ["EVM", "SOL", "BTC"]) as (
-  "EVM" | "SOL" | "BTC"
-)[];
+// BTC is not supported in v1 — the button below stays visible but disabled
+// (devnet and prod alike) so users see it's coming.
+const CHAINS = ["EVM", "SOL"] as ("EVM" | "SOL")[];
 
 export default function ConnectPopup({
   onClose,
@@ -104,25 +95,6 @@ export default function ConnectPopup({
     await finish(res.token);
   }
 
-  async function connectBtc() {
-    const p = unisat();
-    if (!p)
-      throw new Error("Install the Unisat wallet extension to connect BTC");
-    const accounts = await p.requestAccounts();
-    const address = accounts[0];
-    const { nonce } = await api<{ nonce: string }>("/wallet/nonce", {
-      method: "POST",
-      body: { chain: "BTC", address },
-      auth: false,
-    });
-    const sig = await p.signMessage(loginMessage("BTC", address, nonce));
-    const res = await api<{ token: string }>("/wallet/verify", {
-      method: "POST",
-      body: { chain: "BTC", address, nonce, signature: sig },
-    });
-    await finish(res.token);
-  }
-
   async function run(fn: () => Promise<void>) {
     setBusy(true);
     setErr("");
@@ -142,9 +114,17 @@ export default function ConnectPopup({
         onClick={(e) => e.stopPropagation()}
         role="dialog"
         aria-label="Connect wallet"
+        style={{ textAlign: "center", alignItems: "center" }}
       >
         <p className="mono-label">CONNECT WALLET</p>
-        <div style={{ display: "flex", gap: "0.4rem", margin: "0.6rem 0" }}>
+        <div
+          style={{
+            display: "flex",
+            gap: "0.4rem",
+            margin: "0.6rem 0",
+            justifyContent: "center",
+          }}
+        >
           {CHAINS.map((c) => (
             <button
               key={c}
@@ -155,6 +135,14 @@ export default function ConnectPopup({
               {c}
             </button>
           ))}
+          <button
+            className="btn-ghost"
+            style={{ padding: "0.5rem 0.8rem", opacity: 0.45, cursor: "not-allowed" }}
+            disabled
+            title="BTC support is coming soon"
+          >
+            BTC · SOON
+          </button>
         </div>
         {chain === "EVM" && (
           <button
@@ -174,26 +162,12 @@ export default function ConnectPopup({
             SIGN IN WITH SOLANA ↗
           </button>
         )}
-        {chain === "BTC" && (
-          <>
-            <button
-              className="btn-solid"
-              disabled={busy}
-              onClick={() => run(connectBtc)}
-            >
-              SIGN IN WITH UNISAT ↗
-            </button>
-            <p className="fine">
-              Native-segwit (bc1q) only — taproot (bc1p) cannot sign messages.
-            </p>
-          </>
-        )}
         {err && (
           <p
             style={{
               color: "var(--crimson)",
               fontFamily: "var(--font-dm-mono)",
-              fontSize: "0.7rem",
+              fontSize: "0.78rem",
             }}
           >
             {err}

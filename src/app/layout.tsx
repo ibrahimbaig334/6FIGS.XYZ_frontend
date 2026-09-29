@@ -50,7 +50,7 @@ export default function RootLayout({
             color: "var(--paper)",
             padding: "1.5rem 3vw",
             fontFamily: "var(--font-dm-mono)",
-            fontSize: "0.68rem",
+            fontSize: "0.8rem",
           }}
         >
           <p style={{ margin: 0 }}>

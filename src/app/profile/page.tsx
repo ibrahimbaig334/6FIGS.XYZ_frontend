@@ -15,7 +15,7 @@ import {
 import { handleError } from "../../lib/validate";
 import { disconnectSocket } from "../../lib/ws";
 import ConnectPopup from "../../components/ConnectPopup";
-import { CardSkel } from "../../components/Skeleton";
+import Loader from "../../components/Loader";
 
 const TABS = ["profile", "wallets", "settings"] as const;
 
@@ -151,14 +151,9 @@ function ProfileInner() {
         className="page-enter"
         style={{
           padding: "2rem 5vw",
-          display: "flex",
-          flexDirection: "column",
-          gap: "1rem",
-          maxWidth: "900px",
         }}
       >
-        <CardSkel />
-        <CardSkel />
+        <Loader label="LOADING PROFILE…" />
       </section>
     );
   }
@@ -219,7 +214,7 @@ function ProfileInner() {
           {tab === "wallets" && (
             <div className="card">
               <p className="mono-label">
-                1 / CONNECTED WALLETS (EVM + SOLANA + BTC)
+                1 / CONNECTED WALLETS (EVM + SOLANA)
               </p>
               {profile.wallets.map((w) => {
                 const live = elig.balances.find((b) => b.walletId === w.id);

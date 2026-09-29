@@ -20,7 +20,8 @@ import {
 import TokenCard from "../../../components/TokenCard";
 import ConnectPopup from "../../../components/ConnectPopup";
 import ChatSuggestions from "../../../components/ChatSuggestions";
-import { ChatSkel, Skel } from "../../../components/Skeleton";
+import EmojiPicker from "../../../components/EmojiPicker";
+import Loader from "../../../components/Loader";
 
 export default function GamePage() {
   const { id } = useParams<{ id: string }>();
@@ -192,8 +193,8 @@ export default function GamePage() {
 
   if (!ready)
     return (
-      <section style={{ padding: "2rem 5vw" }}>
-        <p className="mono-label">LOADING…</p>
+      <section className="page-enter" style={{ padding: "2rem 5vw" }}>
+        <Loader label="LOADING…" />
       </section>
     );
   if (!getToken()) {
@@ -223,19 +224,10 @@ export default function GamePage() {
   if (!game) {
     return (
       <section
-        className="page-enter layout-game"
+        className="page-enter"
         style={{ padding: "2rem 5vw" }}
       >
-        <div
-          style={{ display: "flex", flexDirection: "column", gap: "0.8rem" }}
-        >
-          <Skel w="45%" />
-          <Skel w="min(344px, 80vw)" h="min(344px, 80vw)" />
-        </div>
-        <div className="card">
-          <Skel w="50%" />
-          <ChatSkel />
-        </div>
+        <Loader label="FINDING GAME…" />
       </section>
     );
   }

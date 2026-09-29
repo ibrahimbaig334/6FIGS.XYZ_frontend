@@ -20,7 +20,7 @@ import {
 } from "../../lib/constants";
 import { connectSocket } from "../../lib/ws";
 import ConnectPopup from "../../components/ConnectPopup";
-import { RowSkel } from "../../components/Skeleton";
+import Loader from "../../components/Loader";
 
 export default function PlayPage() {
   const router = useRouter();
@@ -299,8 +299,8 @@ export default function PlayPage() {
   // Mounted guard (see rooms page): localStorage token is client-only.
   if (!ready) {
     return (
-      <section style={{ padding: "2rem 5vw" }}>
-        <p className="mono-label">LOADING PLAY…</p>
+      <section className="page-enter" style={{ padding: "2rem 5vw" }}>
+        <Loader label="LOADING PLAY…" />
       </section>
     );
   }
@@ -446,11 +446,9 @@ export default function PlayPage() {
       </div>
       <div style={{ display: "flex", flexDirection: "column", gap: "0.7rem" }}>
         {initialLoading ? (
-          <>
-            <RowSkel />
-            <RowSkel />
-            <RowSkel />
-          </>
+          <div className="card">
+            <Loader label="LOADING FRIENDS…" />
+          </div>
         ) : (
           friends.map((p) => {
             const pend = pendingTo(p.id);

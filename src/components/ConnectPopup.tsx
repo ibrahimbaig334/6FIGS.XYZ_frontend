@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { api, b58encode, isDevnet, loginMessage, setToken } from "../lib/api";
+import { api, b58encode, getToken, isDevnet, loginMessage, setToken } from "../lib/api";
 
 type EthProvider = {
   request: (args: { method: string; params?: unknown[] }) => Promise<unknown>;
@@ -62,8 +62,9 @@ export default function ConnectPopup({
       method: "personal_sign",
       params: [loginMessage("EVM", address.toLowerCase(), nonce), address],
     })) as string;
-    // Session attached when logged in (multi-wallet) — anonymous otherwise.
-    const res = await api<{ token: string }>("/wallet/verify", {
+    // Logged in → explicit attach endpoint (can never switch accounts).
+    const endpoint = getToken() ? "/wallet/add" : "/wallet/verify";
+    const res = await api<{ token: string }>(endpoint, {
       method: "POST",
       body: { chain: "EVM", address, nonce, signature: sig },
     });
@@ -88,7 +89,8 @@ export default function ConnectPopup({
     const { signature } = await p.signMessage(
       new TextEncoder().encode(loginMessage("SOL", address, nonce)),
     );
-    const res = await api<{ token: string }>("/wallet/verify", {
+    const endpoint = getToken() ? "/wallet/add" : "/wallet/verify";
+    const res = await api<{ token: string }>(endpoint, {
       method: "POST",
       body: { chain: "SOL", address, nonce, signature: b58encode(signature) },
     });

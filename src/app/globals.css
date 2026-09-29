@@ -218,7 +218,7 @@ body > main {
 .fine {
   color: var(--muted);
   font-family: var(--font-dm-mono);
-  font-size: 0.7rem;
+  font-size: 0.8rem;
   line-height: 1.6;
   overflow-wrap: anywhere;
 }

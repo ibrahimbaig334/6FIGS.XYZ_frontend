@@ -1,7 +1,6 @@
 "use client";
 
-import { Suspense, useCallback, useEffect, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { useCallback, useEffect, useState } from "react";
 import {
   api,
   ApiError,
@@ -12,18 +11,12 @@ import {
   TierInfo,
 } from "../../lib/api";
 import { handleError } from "../../lib/validate";
+import { MAX_WALLETS } from "../../lib/constants";
 import { disconnectSocket } from "../../lib/ws";
 import ConnectPopup from "../../components/ConnectPopup";
 import Loader from "../../components/Loader";
 
-const TABS = ["profile", "wallets"] as const;
-
-function ProfileInner() {
-  const params = useSearchParams();
-  const [tab, setTab] = useState<string>(() => {
-    const t = params.get("tab");
-    return t === "profile" || t === "wallets" ? t : "wallets";
-  });
+export default function ProfilePage() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [popup, setPopup] = useState(false);
   const [err, setErr] = useState("");
@@ -190,241 +183,298 @@ function ProfileInner() {
   }
 
   const elig = profile.eligibility;
-
   const username = profile.handle ?? `user_${profile.id.slice(-4)}`;
+  const full = profile.wallets.length >= MAX_WALLETS;
+
+  // Next tier + log-scale progress (thresholds span orders of magnitude).
+  const sortedTiers = [...tiers].sort((a, b) => a.min - b.min);
+  const next = sortedTiers.find((t) => elig.total < t.min) ?? null;
+  const scaleMax = Math.max(...sortedTiers.map((t) => t.min), 1) * 1.5;
+  const pos = (v: number) =>
+    v <= 0 ? 0 : Math.min(1, Math.log10(v) / Math.log10(scaleMax));
+  const pct = Math.round(pos(elig.total) * 100);
 
   return (
-    <section className="page-enter" style={{ padding: "2rem 5vw" }}>
-      <div className="topline">
-        <div>
-          <p className="mono-label">PROFILE PAGE</p>
-          <h2 style={{ margin: "0.3rem 0 0" }}>
-            {username} · ${elig.total.toLocaleString()}{" "}
-            <span className="tier-badge">{elig.tier ?? "UNVERIFIED"}</span>
-          </h2>
-        </div>
-        <button
-          className="btn-ghost"
-          style={{ padding: "0.7rem 1rem" }}
-          onClick={() => setPopup(true)}
-        >
-          CONNECT MORE WALLETS +
-        </button>
-      </div>
-      {err && (
-        <p
-          style={{
-            color: "var(--crimson)",
-            fontFamily: "var(--font-dm-mono)",
-            fontSize: "0.7rem",
-          }}
-        >
-          {err}
-        </p>
-      )}
-      <div className="layout-profile">
-        <nav className="side-tabs" aria-label="Profile sections">
-          {TABS.map((t) => (
-            <button
-              key={t}
-              className={tab === t ? "active" : ""}
-              onClick={() => setTab(t)}
-            >
-              {t.toUpperCase()}
-            </button>
-          ))}
-        </nav>
+    <section
+      className="page-enter"
+      style={{
+        padding: "2rem 5vw",
+        margin: "0 auto",
+        width: "100%",
+        display: "flex",
+        flexDirection: "column",
+        gap: "1rem",
+      }}
+    >
+      <div
+        className="card"
+        style={{ position: "relative", overflow: "hidden" }}
+      >
         <div
           style={{
             display: "flex",
-            flexDirection: "column",
-            gap: "1rem",
-            minWidth: 0,
+            gap: "0.8rem",
+            alignItems: "flex-start",
+            justifyContent: "space-between",
+            flexWrap: "wrap",
           }}
         >
-          {tab === "wallets" && (
-            <div className="card">
-              <p className="mono-label">CONNECTED WALLETS</p>
-              {profile.wallets.map((w) => {
-                const live = elig.balances.find((b) => b.walletId === w.id);
-                return (
-                  <div key={w.id}>
-                    <div
-                      className="wallet-row"
-                      style={{
-                        marginBottom:
-                          removeErr?.id === w.id ? "0.3rem" : "0.6rem",
-                      }}
-                    >
-                      <span
-                        className={
-                          w.chain === "SOL" ? "chain-badge sol" : "chain-badge"
-                        }
-                      >
-                        {w.chain}
-                      </span>
-                      <span
-                        className="mono-label"
-                        style={{ fontSize: "0.85rem" }}
-                      >
-                        ${Math.round(live?.usd ?? 0).toLocaleString()} LIVE
-                      </span>
-                      <button
-                        className="chip"
-                        style={{ marginLeft: "auto" }}
-                        onClick={() => removeWallet(w.id)}
-                      >
-                        ✕
-                      </button>
-                    </div>
-                    {removeErr?.id === w.id && (
-                      <p className="err" style={{ margin: "0 0 0.6rem" }}>
-                        {removeErr.msg}
-                      </p>
-                    )}
-                  </div>
-                );
-              })}
+          <div>
+            <p className="mono-label" style={{ fontSize: 20 }}>
+              PROFILE PAGE
+            </p>
+            <h2
+              style={{
+                margin: "0.3rem 0 0",
+                fontSize: "clamp(1.6rem, 4vw, 2.2rem)",
+                letterSpacing: "-0.03em",
+                display: "flex",
+                gap: 20,
+              }}
+            >
+              {username}{" "}
+              <span
+                className="tier-badge"
+                style={{ alignSelf: "center", padding: "7px 30px" }}
+              >
+                {elig.tier ?? "UNVERIFIED"}
+              </span>
+            </h2>
+          </div>
+          <button
+            className="btn-ghost btn-sm"
+            onClick={() => setPopup(true)}
+            disabled={full}
+            title={
+              full
+                ? `Wallet limit reached (${MAX_WALLETS}) — remove one to add another`
+                : "Connect more wallets"
+            }
+          >
+            CONNECT MORE WALLETS +
+          </button>
+        </div>
+
+        <p
+          style={{
+            margin: "0.8rem 0 0",
+            fontSize: "clamp(2rem, 6vw, 3rem)",
+            fontWeight: 700,
+            letterSpacing: "-0.04em",
+            lineHeight: 1,
+          }}
+        >
+          ${elig.total.toLocaleString()}
+        </p>
+        <p className="fine" style={{ margin: "0.3rem 0 0" }}>
+          {next ? (
+            <>
+              NEED <strong>${(next.min - elig.total).toLocaleString()}</strong>{" "}
+              MORE FOR {next.name}
+            </>
+          ) : (
+            "MAX TIER — TOP OF THE HILL."
+          )}
+          {" · "}
+          {elig.expiresAt
+            ? `Refreshes ${new Date(elig.expiresAt).toLocaleString()}.`
+            : "Unverified — run PROVE below."}
+        </p>
+
+        <div
+          style={{
+            position: "relative",
+            height: "16px",
+            border: "2px solid var(--ink)",
+            background: "var(--input)",
+            marginTop: "0.9rem",
+          }}
+          role="progressbar"
+          aria-valuenow={pct}
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-label="Progress to next tier"
+        >
+          <div
+            style={{
+              position: "absolute",
+              inset: 0,
+              width: `${pct}%`,
+              background: "var(--gold)",
+              transition: "width 0.5s ease",
+            }}
+          />
+          {sortedTiers.map((t) => (
+            <span
+              key={t.name}
+              title={`${t.name} — $${t.min.toLocaleString()}`}
+              style={{
+                position: "absolute",
+                left: `${pos(t.min) * 100}%`,
+                top: -5,
+                bottom: -5,
+                width: 3,
+                background: "var(--ink)",
+              }}
+            />
+          ))}
+        </div>
+        <div
+          style={{
+            display: "flex",
+            gap: "0.8rem",
+            flexWrap: "wrap",
+            marginTop: "0.4rem",
+          }}
+        >
+          {sortedTiers.map((t) => (
+            <span key={t.name} className="fine">
+              {t.name} &gt; ${t.min.toLocaleString()}
+            </span>
+          ))}
+          {sortedTiers.length === 0 && (
+            <span className="fine">loading tiers…</span>
+          )}
+        </div>
+
+        <div
+          style={{
+            display: "flex",
+            gap: "1rem",
+            flexWrap: "wrap",
+            marginTop: "1rem",
+          }}
+        >
+          <div>
+            <p className="mono-label" style={{ marginBottom: "0.4rem" }}>
+              USERNAME
+            </p>
+            <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
+              <input
+                className="field"
+                value={handle}
+                onChange={(e) => {
+                  setHandle(e.target.value);
+                  if (handleErr)
+                    setHandleErr(handleError(e.target.value) ?? "");
+                }}
+                placeholder="handle (3–24 chars)"
+                style={{ maxWidth: "220px" }}
+              />
+              <button className="chip" onClick={saveHandle}>
+                SAVE
+              </button>
+            </div>
+            {handleErr && <p className="err">{handleErr}</p>}
+          </div>
+          <div>
+            <p className="mono-label" style={{ marginBottom: "0.4rem" }}>
+              VISIBILITY
+            </p>
+            <div style={{ display: "flex", gap: "1rem" }}>
+              {(["HIDDEN", "VISIBLE"] as const).map((v) => (
+                <button
+                  key={v}
+                  className={profile.visMode === v ? "chip active" : "chip"}
+                  style={{ padding: "0.9rem 1rem" }}
+                  onClick={() => saveVis(v)}
+                >
+                  {v}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+        <p className="fine" style={{ margin: "0.6rem 0 0" }}>
+          VISIBLE = your holdings % show up for friends in the 1v1 tab.
+        </p>
+      </div>
+
+      {err && <p className="err">{err}</p>}
+
+      <div className="card">
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "0.6rem",
+            flexWrap: "wrap",
+          }}
+        >
+          <p className="mono-label" style={{ fontSize: 20 }}>
+            WALLETS
+          </p>
+          <span className="fine" style={{ marginLeft: "auto" }}>
+            {profile.wallets.length}/{MAX_WALLETS}
+          </span>
+        </div>
+        {profile.wallets.map((w) => {
+          const live = elig.balances.find((b) => b.walletId === w.id);
+          return (
+            <div key={w.id}>
               <div
+                className="wallet-row"
                 style={{
-                  display: "flex",
-                  gap: "0.5rem",
-                  flexWrap: "wrap",
+                  marginBottom: removeErr?.id === w.id ? "0.3rem" : "0.6rem",
                   marginTop: "0.6rem",
                 }}
               >
-                <button
-                  className="btn-ghost"
-                  style={{ padding: "0.7rem 1rem" }}
-                  onClick={recheck}
+                <span
+                  className={"chain-badge"}
+                  style={{ padding: "0.4rem 2.5rem", fontSize: 15 }}
                 >
-                  PROVE COMBINED TOTAL ↗
+                  {w.chain}
+                </span>
+                <span className="mono-label" style={{ fontSize: 18 }}>
+                  ${Math.round(live?.usd ?? 0).toLocaleString()} LIVE
+                </span>
+                <button
+                  className="chip"
+                  style={{ marginLeft: "auto" }}
+                  onClick={() => removeWallet(w.id)}
+                >
+                  ✕
                 </button>
               </div>
-              <p className="fine">
-                Tiers —{" "}
-                {tiers
-                  .map((t) => `${t.name} > $${t.min.toLocaleString()}`)
-                  .join(" · ") || "loading…"}
-                .
-              </p>
-              <button
-                className="btn-ghost"
-                style={{ padding: "0.7rem 1rem", marginTop: "0.6rem" }}
-                onClick={disconnect}
-              >
-                DISCONNECT ALL
-              </button>
-            </div>
-          )}
-
-          {tab === "profile" && (
-            <>
-              <div className="card">
-                <p className="mono-label">PROOF STATUS</p>
-                {elig.tier ? (
-                  <p
-                    style={{
-                      fontFamily: "var(--font-dm-mono)",
-                      fontSize: "0.75rem",
-                    }}
-                  >
-                    ✓ {elig.tier} CLEARED — ${elig.total.toLocaleString()}{" "}
-                    across {elig.walletCount} wallet(s).
-                    {elig.expiresAt
-                      ? ` Refreshes ${new Date(elig.expiresAt).toLocaleString()}.`
-                      : ""}
-                  </p>
-                ) : (
-                  <p
-                    style={{
-                      fontFamily: "var(--font-dm-mono)",
-                      fontSize: "0.75rem",
-                    }}
-                  >
-                    ✕ ${elig.total.toLocaleString()} — below $100K. Link more
-                    wallets in the Wallets tab.
-                  </p>
-                )}
-                <div
-                  style={{ display: "flex", gap: "0.4rem", margin: "0.5rem 0" }}
-                >
-                  {Object.entries(elig.assetPct).map(([chain, pct]) => (
-                    <span key={chain} className="tier-badge">
-                      {chain} {pct}%
-                    </span>
-                  ))}
-                  {Object.keys(elig.assetPct).length === 0 && (
-                    <span className="fine">No allocation data yet.</span>
-                  )}
-                </div>
-              </div>
-              <div className="card">
-                <p className="mono-label">PORTFOLIO VISIBILITY</p>
-                <div style={{ display: "flex", gap: "0.5rem" }}>
-                  {(["HIDDEN", "VISIBLE"] as const).map((v) => (
-                    <button
-                      key={v}
-                      className={profile.visMode === v ? "chip active" : "chip"}
-                      onClick={() => saveVis(v)}
-                    >
-                      {v}
-                    </button>
-                  ))}
-                </div>
-                <p className="fine">
-                  HIDDEN = tier badge only · VISIBLE = your holdings % show up
-                  for friends in the 1v1 tab.
+              {removeErr?.id === w.id && (
+                <p className="err" style={{ margin: "0 0 0.6rem" }}>
+                  {removeErr.msg}
                 </p>
-              </div>
-              <div className="card">
-                <p className="mono-label">USERNAME</p>
-                <div
-                  style={{
-                    display: "flex",
-                    gap: "0.5rem",
-                    alignItems: "center",
-                    flexWrap: "wrap",
-                  }}
-                >
-                  <input
-                    className="field"
-                    value={handle}
-                    onChange={(e) => {
-                      setHandle(e.target.value);
-                      if (handleErr)
-                        setHandleErr(handleError(e.target.value) ?? "");
-                    }}
-                    placeholder="handle (3–24 chars)"
-                    style={{ maxWidth: "240px" }}
-                  />
-                  <button className="chip" onClick={saveHandle}>
-                    SAVE HANDLE
-                  </button>
-                </div>
-                {handleErr && <p className="err">{handleErr}</p>}
-              </div>
-            </>
-          )}
-          {popup && (
-            <ConnectPopup
-              onClose={() => setPopup(false)}
-              onDone={() => {
-                load();
-                window.dispatchEvent(new Event("sixfigs-auth"));
-              }}
-            />
-          )}
+              )}
+            </div>
+          );
+        })}
+        <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
+          <button
+            className="btn-ghost"
+            style={{ padding: "0.7rem 1rem" }}
+            onClick={recheck}
+          >
+            PROVE COMBINED TOTAL ↗
+          </button>
+          <button
+            className="btn-ghost"
+            style={{ padding: "0.7rem 1rem" }}
+            onClick={disconnect}
+          >
+            DISCONNECT ALL
+          </button>
         </div>
+        {full && (
+          <p className="fine" style={{ marginBottom: 0 }}>
+            Wallet limit reached ({MAX_WALLETS}) — remove one to add another.
+          </p>
+        )}
       </div>
+      {popup && (
+        <ConnectPopup
+          onClose={() => setPopup(false)}
+          onDone={() => {
+            load();
+            window.dispatchEvent(new Event("sixfigs-auth"));
+          }}
+        />
+      )}
     </section>
-  );
-}
-
-export default function ProfilePage() {
-  return (
-    <Suspense>
-      <ProfileInner />
-    </Suspense>
   );
 }

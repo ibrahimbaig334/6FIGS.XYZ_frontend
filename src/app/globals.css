@@ -178,6 +178,16 @@ body > main {
   color: var(--paper);
 }
 
+.btn-ghost:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.btn-ghost:disabled:hover {
+  background: transparent;
+  color: inherit;
+}
+
 .btn-sm {
   padding: 0.55rem 0.9rem !important;
   font-size: 0.7rem !important;
@@ -289,6 +299,65 @@ select.field option {
   background: var(--card);
   padding: 0.7rem 0.8rem;
   margin-bottom: 0.7rem;
+}
+
+/* Text column: basis 0 so it never pushes the ✕ off the first line —
+   long content wraps inside instead. */
+.wallet-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.wallet-info strong,
+.wallet-info span {
+  overflow-wrap: anywhere;
+}
+
+.wallet-row .chip {
+  flex-shrink: 0;
+}
+
+.wallet-icon {
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
+  box-sizing: border-box;
+  border: 2px solid var(--ink);
+  background: var(--paper);
+  padding: 3px;
+  object-fit: contain;
+}
+
+/* Username + visibility row (hero). */
+.profile-fields {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-top: 1rem;
+  justify-content: space-between;
+  align-items: end;
+}
+
+.vis-block {
+  text-align: right;
+}
+
+.vis-chips {
+  display: flex;
+  gap: 1rem;
+  justify-content: flex-end;
+}
+
+/* Connect / prove / disconnect row in the wallets card. */
+.wallet-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  align-items: center;
+  margin-top: 20px;
 }
 
 /* Empty multi-wallet slot — trigger renders dashed like the old adapter slot. */
@@ -488,6 +557,48 @@ select.field option {
     align-items: center;
     text-align: center;
     gap: 0.4rem;
+  }
+}
+
+@media (max-width: 650px) {
+  /* Profile: visibility stacks below username, both full width. */
+  .profile-fields {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .profile-fields > div {
+    width: 100%;
+  }
+  .profile-fields .field {
+    max-width: none !important;
+  }
+  .profile-fields .vis-block {
+    text-align: left;
+  }
+  .profile-fields .vis-chips {
+    justify-content: center;
+  }
+
+  /* Wallets: connect / prove / disconnect stack centered, full width. */
+  .wallet-actions {
+    flex-direction: column;
+    align-items: stretch;
+    flex-wrap: nowrap;
+  }
+  .wallet-actions > * {
+    width: 100%;
+  }
+  .wallet-actions .btn-solid,
+  .wallet-actions .btn-ghost {
+    width: 100%;
+    text-align: center;
+    margin: 0;
+  }
+  .wallet-actions .fine,
+  .wallet-actions .err {
+    text-align: center;
+    margin-left: 0;
+    margin-right: 0;
   }
 }
 

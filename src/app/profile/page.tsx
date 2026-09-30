@@ -14,6 +14,7 @@ import { handleError } from "../../lib/validate";
 import { MAX_WALLETS } from "../../lib/constants";
 import { disconnectSocket } from "../../lib/ws";
 import SolanaConnect from "../../components/SolanaConnect";
+import WalletIcon from "../../components/WalletIcon";
 import Loader from "../../components/Loader";
 
 export default function ProfilePage() {
@@ -27,6 +28,7 @@ export default function ProfilePage() {
   } | null>(null);
   const [ready, setReady] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [checking, setChecking] = useState(false);
   const [tiers, setTiers] = useState<TierInfo[]>([]);
 
   useEffect(() => {
@@ -60,12 +62,16 @@ export default function ProfilePage() {
   }, [load]);
 
   async function recheck() {
+    if (checking) return;
+    setChecking(true);
     try {
       await api("/eligibility/check", { method: "POST" });
       await load();
       window.dispatchEvent(new Event("sixfigs-auth"));
     } catch (e) {
       setErr(e instanceof Error ? e.message : "Check failed");
+    } finally {
+      setChecking(false);
     }
   }
 
@@ -321,18 +327,12 @@ export default function ProfilePage() {
           )}
         </div>
 
-        <div
-          style={{
-            display: "flex",
-            gap: "1rem",
-            flexWrap: "wrap",
-            marginTop: "1rem",
-            justifyContent: "space-between",
-            alignItems: "end",
-          }}
-        >
+        <div className="profile-fields">
           <div>
-            <p className="mono-label" style={{ marginBottom: "0.4rem" }}>
+            <p
+              className="mono-label"
+              style={{ marginBottom: "0.4rem", justifySelf: "center" }}
+            >
               USERNAME
             </p>
             <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
@@ -353,20 +353,14 @@ export default function ProfilePage() {
             </div>
             {handleErr && <p className="err">{handleErr}</p>}
           </div>
-          <div style={{ textAlign: "right" }}>
+          <div className="vis-block">
             <p
               className="mono-label"
               style={{ marginBottom: "0.4rem", justifySelf: "center" }}
             >
               VISIBILITY
             </p>
-            <div
-              style={{
-                display: "flex",
-                gap: "1rem",
-                justifyContent: "flex-end",
-              }}
-            >
+            <div className="vis-chips">
               {(["HIDDEN", "VISIBLE"] as const).map((v) => (
                 <button
                   key={v}
@@ -430,21 +424,11 @@ export default function ProfilePage() {
                   marginTop: "0.6rem",
                 }}
               >
-                <span
-                  className="chain-badge sol"
-                  style={{ padding: "0.4rem 0.8rem", fontSize: 15 }}
-                  title={wname}
-                >
-                  {wname.slice(0, 1).toUpperCase()}
-                </span>
-                <div
-                  style={{
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: "0.15rem",
-                    minWidth: 0,
-                  }}
-                >
+                <WalletIcon
+                  name={wname}
+                  letter={wname.slice(0, 1).toUpperCase()}
+                />
+                <div className="wallet-info">
                   <strong style={{ fontSize: "1rem" }}>{wname}</strong>
                   <span className="fine" style={{ margin: 0 }}>
                     SOL {pct}% · ${Math.round(usd).toLocaleString()} OF $
@@ -467,15 +451,7 @@ export default function ProfilePage() {
             </div>
           );
         })}
-        <div
-          style={{
-            display: "flex",
-            gap: "0.5rem",
-            flexWrap: "wrap",
-            alignItems: "center",
-            marginTop: 20,
-          }}
-        >
+        <div className="wallet-actions">
           {full ? (
             <p className="fine" style={{ margin: 0 }}>
               Wallet limit reached ({MAX_WALLETS}) — remove one to add another.
@@ -490,14 +466,15 @@ export default function ProfilePage() {
           )}
           <button
             className="btn-ghost"
-            style={{ padding: "0.7rem 1rem", margin: "0 auto" }}
+            style={{ padding: "0.6rem 1rem", margin: "0 auto" }}
+            disabled={checking}
             onClick={recheck}
           >
-            PROVE COMBINED TOTAL ↗
+            {checking ? "CHECKING…" : "PROVE COMBINED TOTAL ↗"}
           </button>
           <button
             className="btn-ghost"
-            style={{ padding: "0.7rem 1rem" }}
+            style={{ padding: "0.6rem 1rem" }}
             onClick={disconnect}
           >
             DISCONNECT ALL

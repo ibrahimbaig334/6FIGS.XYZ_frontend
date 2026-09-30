@@ -3,8 +3,12 @@
 import { useEffect, useRef, useState } from "react";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { useWalletModal } from "@solana/wallet-adapter-react-ui";
-import { getToken } from "../lib/api";
-import { alreadySignedIn, loginOnce, storeSession } from "../lib/solanaLogin";
+import { getToken, Profile } from "../lib/api";
+import {
+  alreadySignedIn,
+  lastLoggedInProfile,
+  loginOnce,
+} from "../lib/solanaLogin";
 
 /**
  * Navbar-style (btn-solid) trigger that opens the DEFAULT wallet-adapter
@@ -12,7 +16,7 @@ import { alreadySignedIn, loginOnce, storeSession } from "../lib/solanaLogin";
  * popup closes we connect the chosen (or previously used) wallet, then run
  * nonce → sign → verify (first wallet) / attach (extra wallets).
  */
-function SolanaConnectInner({ onDone }: { onDone: () => void }) {
+function SolanaConnectInner({ onDone }: { onDone: (p?: Profile) => void }) {
   const { publicKey, signMessage, wallet, connected, connecting, connect } =
     useWallet();
   const { visible, setVisible: setModalVisible } = useWalletModal();
@@ -60,7 +64,7 @@ function SolanaConnectInner({ onDone }: { onDone: () => void }) {
     if (doneFor.current === address) return;
     if (alreadySignedIn(address)) {
       doneFor.current = address;
-      onDone();
+      onDone(lastLoggedInProfile() ?? undefined);
       return;
     }
     let cancelled = false;
@@ -71,11 +75,10 @@ function SolanaConnectInner({ onDone }: { onDone: () => void }) {
     // Shared singleton flow: concurrent instances (and StrictMode's double
     // effect) all join ONE nonce→sign→verify, so nonces never collide.
     loginOnce(address, sign, wallet?.adapter.name ?? null)
-      .then((token) => {
+      .then((res) => {
         if (cancelled) return;
-        storeSession(token, address);
         doneFor.current = address;
-        onDone();
+        onDone(res.profile);
       })
       .catch((e) => {
         if (!cancelled) setErr(e instanceof Error ? e.message : "Connect failed");

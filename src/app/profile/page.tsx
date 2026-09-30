@@ -36,16 +36,20 @@ export default function ProfilePage() {
     getTiers().then((t) => setTiers(t.tiers));
   }, []);
 
+  const applyProfile = (p: Profile) => {
+    setProfile(p);
+    setHandle(p.handle ?? "");
+    setErr("");
+    setLoading(false);
+  };
+
   const load = useCallback(async () => {
     if (!getToken()) {
       setProfile(null);
       return;
     }
     try {
-      const p = await api<Profile>("/profile/user");
-      setProfile(p);
-      setHandle(p.handle ?? "");
-      setErr("");
+      applyProfile(await api<Profile>("/profile/user"));
     } catch (e) {
       if (e instanceof ApiError && e.status === 0) {
         setErr("Server unreachable — showing last saved data.");
@@ -55,7 +59,15 @@ export default function ProfilePage() {
     } finally {
       setLoading(false);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  /** Connect done: use the profile from the login response when present —
+   *  no dispatch (Header/create get their own copy from their own instance). */
+  const onConnected = (p?: Profile) => {
+    if (p) applyProfile(p);
+    else void load();
+  };
 
   useEffect(() => {
     load();
@@ -164,12 +176,7 @@ export default function ProfilePage() {
               justifyContent: "center",
             }}
           >
-            <SolanaConnect
-              onDone={() => {
-                load();
-                window.dispatchEvent(new Event("sixfigs-auth"));
-              }}
-            />
+            <SolanaConnect onDone={onConnected} />
           </div>
           {err && <p style={{ color: "var(--crimson)" }}>{err}</p>}
         </div>
@@ -403,10 +410,7 @@ export default function ProfilePage() {
             return (
               <div key={`empty-${i}`} className="wallet-slot-empty">
                 <SolanaConnect
-                  onDone={() => {
-                    load();
-                    window.dispatchEvent(new Event("sixfigs-auth"));
-                  }}
+              onDone={onConnected}
                 />
               </div>
             );
@@ -457,12 +461,7 @@ export default function ProfilePage() {
               Wallet limit reached ({MAX_WALLETS}) — remove one to add another.
             </p>
           ) : (
-            <SolanaConnect
-              onDone={() => {
-                load();
-                window.dispatchEvent(new Event("sixfigs-auth"));
-              }}
-            />
+            <SolanaConnect onDone={onConnected} />
           )}
           <button
             className="btn-ghost"

@@ -17,6 +17,7 @@ export default function Header() {
   const [menu, setMenu] = useState(false);
   const [dark, setDark] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+  const profileFreshRef = useRef(false);
 
   // Close the wallet dropdown on outside click / Escape.
   useEffect(() => {
@@ -68,7 +69,9 @@ export default function Header() {
     }
     load();
     const h = () => {
-      load();
+      // Login delivers the profile via onDone first — skip the redundant fetch.
+      if (!profileFreshRef.current) load();
+      profileFreshRef.current = false;
       if (getToken()) {
         disconnectSocket();
         connectSocket(); // session changed → re-auth the socket
@@ -78,10 +81,23 @@ export default function Header() {
     return () => {
       window.removeEventListener("sixfigs-auth", h);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  function authed() {
-    window.dispatchEvent(new Event("sixfigs-auth"));
+  /** Login success: the response already carries the profile — render the
+   *  tier badge immediately (no follow-up fetch → no CONNECT WALLET flash). */
+  function authed(p?: Profile) {
+    if (p) {
+      profileFreshRef.current = true;
+      // Flag is short-lived: h consumes it on the login event; clear it so a
+      // later unrelated event (recheck/mutation) still triggers a real load.
+      window.setTimeout(() => {
+        profileFreshRef.current = false;
+      }, 1000);
+      setProfile(p);
+      return;
+    }
+    load();
   }
 
   function disconnect() {

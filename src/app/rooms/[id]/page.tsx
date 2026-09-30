@@ -16,7 +16,7 @@ import {
 } from "../../../lib/api";
 import { connectSocket } from "../../../lib/ws";
 import TokenCard from "../../../components/TokenCard";
-import ConnectPopup from "../../../components/ConnectPopup";
+import SolanaConnect from "../../../components/SolanaConnect";
 import InviteDialog from "../../../components/InviteDialog";
 import DeleteRoomDialog from "../../../components/DeleteRoomDialog";
 import ChatSuggestions from "../../../components/ChatSuggestions";
@@ -304,16 +304,35 @@ export default function RoomPage() {
 
   if (!getToken()) {
     return (
-      <section className="page-enter" style={{ padding: "2rem 5vw" }}>
-        <div className="card">
+      <section
+        className="page-enter"
+        style={{
+          padding: "2rem 5vw",
+          flex: 1,
+          display: "grid",
+          placeItems: "center",
+        }}
+      >
+        <div
+          className="card"
+          style={{
+            width: "100%",
+            maxWidth: "520px",
+            textAlign: "center",
+            padding: "2.5rem 2rem",
+          }}
+        >
           <p className="mono-label">ROOM — CONNECT FIRST</p>
-          <button className="btn-solid" onClick={() => setPopup(true)}>
-            CONNECT WALLET ↗
-          </button>
+          <div
+            style={{
+              marginTop: "1.2rem",
+              display: "flex",
+              justifyContent: "center",
+            }}
+          >
+            <SolanaConnect onDone={load} />
+          </div>
         </div>
-        {popup && (
-          <ConnectPopup onClose={() => setPopup(false)} onDone={load} />
-        )}
       </section>
     );
   }

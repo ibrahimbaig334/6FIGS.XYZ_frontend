@@ -8,9 +8,9 @@ import {
   roomDescriptionError,
   roomNameError,
 } from "../../lib/validate";
-import ConnectPopup from "../../components/ConnectPopup";
 import SelectMenu from "../../components/SelectMenu";
 import EmojiPicker from "../../components/EmojiPicker";
+import SolanaConnect from "../../components/SolanaConnect";
 import Loader from "../../components/Loader";
 
 export default function CreateRoomPage() {
@@ -30,7 +30,6 @@ export default function CreateRoomPage() {
   const [busy, setBusy] = useState(false);
   const [ready, setReady] = useState(false);
   const [token, setTokenState] = useState<string | null>(null);
-  const [popup, setPopup] = useState(false);
   const [punch, setPunch] = useState(ROOM_PUNCH_LINES[0]);
   // Same display rule as room cards: saved handle, else the generated fallback.
   const [username, setUsername] = useState("");
@@ -127,23 +126,20 @@ export default function CreateRoomPage() {
           <p className="fine" style={{ margin: "0.6rem 0 0", fontSize: 14 }}>
             Connect a wallet to spin up your 1v1 room.
           </p>
-          <button
-            className="btn-solid"
-            style={{ marginTop: "1.2rem" }}
-            onClick={() => setPopup(true)}
-          >
-            CONNECT WALLET ↗
-          </button>
-        </div>
-        {popup && (
-          <ConnectPopup
-            onClose={() => setPopup(false)}
-            onDone={() => {
-              setPopup(false);
-              setTokenState(getToken());
+          <div
+            style={{
+              marginTop: "1.2rem",
+              display: "flex",
+              justifyContent: "center",
             }}
-          />
-        )}
+          >
+            <SolanaConnect
+              onDone={() => {
+                setTokenState(getToken());
+              }}
+            />
+          </div>
+        </div>
       </section>
     );
   }

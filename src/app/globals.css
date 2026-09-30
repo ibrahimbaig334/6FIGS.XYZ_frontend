@@ -135,9 +135,9 @@ body > main {
 
 .btn-solid {
   display: inline-block;
-  padding: 0.85rem 1.3rem;
-  color: var(--paper);
-  background: var(--ink);
+  padding: 0.6rem 1.3rem;
+  color: var(--ink);
+  background: var(--paper);
   border: 2px solid var(--ink);
   font-family: var(--font-dm-mono);
   font-size: 0.8rem;
@@ -147,8 +147,18 @@ body > main {
 }
 
 .btn-solid:hover {
-  color: var(--on-dark);
-  background: var(--gold);
+  color: var(--paper);
+  background: var(--ink);
+}
+
+.btn-solid:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.btn-solid:disabled:hover {
+  color: var(--paper);
+  background: var(--ink);
 }
 
 .btn-ghost {
@@ -279,6 +289,27 @@ select.field option {
   background: var(--card);
   padding: 0.7rem 0.8rem;
   margin-bottom: 0.7rem;
+}
+
+/* Empty multi-wallet slot — trigger renders dashed like the old adapter slot. */
+.wallet-slot-empty {
+  width: 100%;
+  margin-top: 0.6rem;
+}
+
+.wallet-slot-empty .btn-solid {
+  width: 100%;
+  border-style: dashed;
+  background: transparent;
+  color: var(--muted);
+  text-align: center;
+}
+
+.wallet-slot-empty .btn-solid:hover {
+  border-style: solid;
+  border-color: var(--ink);
+  color: var(--on-dark);
+  background: var(--gold);
 }
 
 .wallet-addr {

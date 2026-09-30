@@ -96,6 +96,7 @@ export function copyText(text: string): boolean {
 export interface Wallet {
   id: string;
   chain: string;
+  name: string | null;
   address: string;
   display: string;
 }

@@ -13,12 +13,11 @@ import {
 import { handleError } from "../../lib/validate";
 import { MAX_WALLETS } from "../../lib/constants";
 import { disconnectSocket } from "../../lib/ws";
-import ConnectPopup from "../../components/ConnectPopup";
+import SolanaConnect from "../../components/SolanaConnect";
 import Loader from "../../components/Loader";
 
 export default function ProfilePage() {
   const [profile, setProfile] = useState<Profile | null>(null);
-  const [popup, setPopup] = useState(false);
   const [err, setErr] = useState("");
   const [handle, setHandle] = useState("");
   const [handleErr, setHandleErr] = useState("");
@@ -152,24 +151,22 @@ export default function ProfilePage() {
             Link a wallet to open your profile. Below $100K you can still link
             more wallets here.
           </p>
-          <button
-            className="btn-solid"
-            style={{ marginTop: "1.2rem" }}
-            onClick={() => setPopup(true)}
+          <div
+            style={{
+              marginTop: "1.2rem",
+              display: "flex",
+              justifyContent: "center",
+            }}
           >
-            CONNECT WALLET ↗
-          </button>
+            <SolanaConnect
+              onDone={() => {
+                load();
+                window.dispatchEvent(new Event("sixfigs-auth"));
+              }}
+            />
+          </div>
           {err && <p style={{ color: "var(--crimson)" }}>{err}</p>}
         </div>
-        {popup && (
-          <ConnectPopup
-            onClose={() => setPopup(false)}
-            onDone={() => {
-              load();
-              window.dispatchEvent(new Event("sixfigs-auth"));
-            }}
-          />
-        )}
       </section>
     );
   }
@@ -228,31 +225,18 @@ export default function ProfilePage() {
                 margin: "0.3rem 0 0",
                 fontSize: "clamp(1.6rem, 4vw, 2.2rem)",
                 letterSpacing: "-0.03em",
-                display: "flex",
-                gap: 20,
+                overflowWrap: "anywhere",
               }}
             >
-              {username}{" "}
-              <span
-                className="tier-badge"
-                style={{ alignSelf: "center", padding: "7px 30px" }}
-              >
-                {elig.tier ?? "UNVERIFIED"}
-              </span>
+              {username}
             </h2>
           </div>
-          <button
-            className="btn-ghost btn-sm"
-            onClick={() => setPopup(true)}
-            disabled={full}
-            title={
-              full
-                ? `Wallet limit reached (${MAX_WALLETS}) — remove one to add another`
-                : "Connect more wallets"
-            }
+          <span
+            className="tier-badge"
+            style={{ alignSelf: "center", padding: "7px 30px" }}
           >
-            CONNECT MORE WALLETS +
-          </button>
+            {elig.tier ?? "UNVERIFIED"}
+          </span>
         </div>
 
         <p
@@ -343,6 +327,8 @@ export default function ProfilePage() {
             gap: "1rem",
             flexWrap: "wrap",
             marginTop: "1rem",
+            justifyContent: "space-between",
+            alignItems: "end",
           }}
         >
           <div>
@@ -367,11 +353,20 @@ export default function ProfilePage() {
             </div>
             {handleErr && <p className="err">{handleErr}</p>}
           </div>
-          <div>
-            <p className="mono-label" style={{ marginBottom: "0.4rem" }}>
+          <div style={{ textAlign: "right" }}>
+            <p
+              className="mono-label"
+              style={{ marginBottom: "0.4rem", justifySelf: "center" }}
+            >
               VISIBILITY
             </p>
-            <div style={{ display: "flex", gap: "1rem" }}>
+            <div
+              style={{
+                display: "flex",
+                gap: "1rem",
+                justifyContent: "flex-end",
+              }}
+            >
               {(["HIDDEN", "VISIBLE"] as const).map((v) => (
                 <button
                   key={v}
@@ -408,8 +403,24 @@ export default function ProfilePage() {
             {profile.wallets.length}/{MAX_WALLETS}
           </span>
         </div>
-        {profile.wallets.map((w) => {
+        {Array.from({ length: MAX_WALLETS }).map((_, i) => {
+          const w = profile.wallets[i];
+          if (!w) {
+            return (
+              <div key={`empty-${i}`} className="wallet-slot-empty">
+                <SolanaConnect
+                  onDone={() => {
+                    load();
+                    window.dispatchEvent(new Event("sixfigs-auth"));
+                  }}
+                />
+              </div>
+            );
+          }
           const live = elig.balances.find((b) => b.walletId === w.id);
+          const usd = live?.usd ?? 0;
+          const pct = elig.total > 0 ? Math.round((usd / elig.total) * 100) : 0;
+          const wname = w.name ?? "Solana Wallet";
           return (
             <div key={w.id}>
               <div
@@ -420,14 +431,26 @@ export default function ProfilePage() {
                 }}
               >
                 <span
-                  className={"chain-badge"}
-                  style={{ padding: "0.4rem 2.5rem", fontSize: 15 }}
+                  className="chain-badge sol"
+                  style={{ padding: "0.4rem 0.8rem", fontSize: 15 }}
+                  title={wname}
                 >
-                  {w.chain}
+                  {wname.slice(0, 1).toUpperCase()}
                 </span>
-                <span className="mono-label" style={{ fontSize: 18 }}>
-                  ${Math.round(live?.usd ?? 0).toLocaleString()} LIVE
-                </span>
+                <div
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "0.15rem",
+                    minWidth: 0,
+                  }}
+                >
+                  <strong style={{ fontSize: "1rem" }}>{wname}</strong>
+                  <span className="fine" style={{ margin: 0 }}>
+                    SOL {pct}% · ${Math.round(usd).toLocaleString()} OF $
+                    {Math.round(elig.total).toLocaleString()}
+                  </span>
+                </div>
                 <button
                   className="chip"
                   style={{ marginLeft: "auto" }}
@@ -444,10 +467,30 @@ export default function ProfilePage() {
             </div>
           );
         })}
-        <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
+        <div
+          style={{
+            display: "flex",
+            gap: "0.5rem",
+            flexWrap: "wrap",
+            alignItems: "center",
+            marginTop: 20,
+          }}
+        >
+          {full ? (
+            <p className="fine" style={{ margin: 0 }}>
+              Wallet limit reached ({MAX_WALLETS}) — remove one to add another.
+            </p>
+          ) : (
+            <SolanaConnect
+              onDone={() => {
+                load();
+                window.dispatchEvent(new Event("sixfigs-auth"));
+              }}
+            />
+          )}
           <button
             className="btn-ghost"
-            style={{ padding: "0.7rem 1rem" }}
+            style={{ padding: "0.7rem 1rem", margin: "0 auto" }}
             onClick={recheck}
           >
             PROVE COMBINED TOTAL ↗
@@ -462,19 +505,10 @@ export default function ProfilePage() {
         </div>
         {full && (
           <p className="fine" style={{ marginBottom: 0 }}>
-            Wallet limit reached ({MAX_WALLETS}) — remove one to add another.
+            Remove a wallet above to connect a new one.
           </p>
         )}
       </div>
-      {popup && (
-        <ConnectPopup
-          onClose={() => setPopup(false)}
-          onDone={() => {
-            load();
-            window.dispatchEvent(new Event("sixfigs-auth"));
-          }}
-        />
-      )}
     </section>
   );
 }

@@ -18,7 +18,7 @@ import {
   POLL_GAME_LIVE_MS,
 } from "../../../lib/constants";
 import TokenCard from "../../../components/TokenCard";
-import ConnectPopup from "../../../components/ConnectPopup";
+import SolanaConnect from "../../../components/SolanaConnect";
 import ChatSuggestions from "../../../components/ChatSuggestions";
 import EmojiPicker from "../../../components/EmojiPicker";
 import Loader from "../../../components/Loader";
@@ -36,7 +36,6 @@ export default function GamePage() {
   const offStreak = useRef(0);
   const goneTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [ready, setReady] = useState(false);
-  const [popup, setPopup] = useState(false);
   const sock = useRef<ReturnType<typeof connectSocket> | null>(null);
   const chatRef = useChatScroll(msgs.length);
 
@@ -199,16 +198,35 @@ export default function GamePage() {
     );
   if (!getToken()) {
     return (
-      <section style={{ padding: "2rem 5vw" }}>
-        <div className="card">
+      <section
+        className="page-enter"
+        style={{
+          padding: "2rem 5vw",
+          flex: 1,
+          display: "grid",
+          placeItems: "center",
+        }}
+      >
+        <div
+          className="card"
+          style={{
+            width: "100%",
+            maxWidth: "520px",
+            textAlign: "center",
+            padding: "2.5rem 2rem",
+          }}
+        >
           <p className="mono-label">GAME — CONNECT FIRST</p>
-          <button className="btn-solid" onClick={() => setPopup(true)}>
-            CONNECT WALLET ↗
-          </button>
+          <div
+            style={{
+              marginTop: "1.2rem",
+              display: "flex",
+              justifyContent: "center",
+            }}
+          >
+            <SolanaConnect onDone={load} />
+          </div>
         </div>
-        {popup && (
-          <ConnectPopup onClose={() => setPopup(false)} onDone={load} />
-        )}
       </section>
     );
   }

@@ -80,7 +80,7 @@ export default function Home() {
                 fontWeight: 400,
               }}
             >
-              Only the tier badge is public. Never the number. EVM + Solana
+              Only the tier badge is public. Never the number. Solana
               combined.
             </span>
           </div>

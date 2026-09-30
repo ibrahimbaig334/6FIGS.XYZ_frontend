@@ -19,7 +19,7 @@ import {
   POLL_REQUESTS_MS,
 } from "../../lib/constants";
 import { connectSocket } from "../../lib/ws";
-import ConnectPopup from "../../components/ConnectPopup";
+import SolanaConnect from "../../components/SolanaConnect";
 import Loader from "../../components/Loader";
 
 export default function PlayPage() {
@@ -30,7 +30,6 @@ export default function PlayPage() {
   const [friendSort, setFriendSort] = useState("created");
   const [profile, setProfile] = useState<Profile | null>(null);
   const [q, setQ] = useState("");
-  const [popup, setPopup] = useState(false);
   const [err, setErr] = useState("");
   const [ready, setReady] = useState(false);
   const [searching, setSearching] = useState(false);
@@ -307,16 +306,35 @@ export default function PlayPage() {
 
   if (!getToken()) {
     return (
-      <section style={{ padding: "2rem 5vw" }}>
-        <div className="card">
+      <section
+        className="page-enter"
+        style={{
+          padding: "2rem 5vw",
+          flex: 1,
+          display: "grid",
+          placeItems: "center",
+        }}
+      >
+        <div
+          className="card"
+          style={{
+            width: "100%",
+            maxWidth: "520px",
+            textAlign: "center",
+            padding: "2.5rem 2rem",
+          }}
+        >
           <p className="mono-label">PLAY — CONNECT FIRST</p>
-          <button className="btn-solid" onClick={() => setPopup(true)}>
-            CONNECT WALLET ↗
-          </button>
+          <div
+            style={{
+              marginTop: "1.2rem",
+              display: "flex",
+              justifyContent: "center",
+            }}
+          >
+            <SolanaConnect onDone={load} />
+          </div>
         </div>
-        {popup && (
-          <ConnectPopup onClose={() => setPopup(false)} onDone={load} />
-        )}
       </section>
     );
   }

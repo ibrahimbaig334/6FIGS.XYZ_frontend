@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { api, getToken, Room, RoomList } from "../../lib/api";
 import { ROOMS_PAGE_SIZE } from "../../lib/constants";
-import ConnectPopup from "../../components/ConnectPopup";
+import SolanaConnect from "../../components/SolanaConnect";
 import InviteDialog from "../../components/InviteDialog";
 import DeleteRoomDialog from "../../components/DeleteRoomDialog";
 import Loader from "../../components/Loader";
@@ -13,7 +13,6 @@ export default function RoomsPage() {
   const [total, setTotal] = useState(0);
   const [owned, setOwned] = useState(0);
   const [page, setPage] = useState(1);
-  const [popup, setPopup] = useState(false);
   const [err, setErr] = useState("");
   const [ready, setReady] = useState(false);
   const [accessFilter, setAccessFilter] = useState("");
@@ -93,16 +92,35 @@ export default function RoomsPage() {
 
   if (!getToken()) {
     return (
-      <section style={{ padding: "2rem 5vw" }}>
-        <div className="card">
+      <section
+        className="page-enter"
+        style={{
+          padding: "2rem 5vw",
+          flex: 1,
+          display: "grid",
+          placeItems: "center",
+        }}
+      >
+        <div
+          className="card"
+          style={{
+            width: "100%",
+            maxWidth: "520px",
+            textAlign: "center",
+            padding: "2.5rem 2rem",
+          }}
+        >
           <p className="mono-label">ROOMS — CONNECT FIRST</p>
-          <button className="btn-solid" onClick={() => setPopup(true)}>
-            CONNECT WALLET ↗
-          </button>
+          <div
+            style={{
+              marginTop: "1.2rem",
+              display: "flex",
+              justifyContent: "center",
+            }}
+          >
+            <SolanaConnect onDone={load} />
+          </div>
         </div>
-        {popup && (
-          <ConnectPopup onClose={() => setPopup(false)} onDone={load} />
-        )}
       </section>
     );
   }

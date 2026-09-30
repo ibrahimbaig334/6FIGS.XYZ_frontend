@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { DM_Mono, Space_Grotesk } from "next/font/google";
 import "./globals.css";
 import Header from "../components/Header";
+import SolanaProviders from "../components/SolanaProviders";
 
 const grotesk = Space_Grotesk({
   subsets: ["latin"],
@@ -30,35 +31,37 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${grotesk.variable} ${dmMono.variable}`}>
-        <div className="ticker" aria-hidden="true">
-          <div className="ticker-inner">
-            PROOF OF BAGS ✕ SIX FIGURES OR NOTHING ✕ NO BALANCES SHOWN ✕ FAIR
-            TIC-TAC-TOE ✕ 1V1 CHAT + 1V1 ROOMS ✕&nbsp;PROOF OF BAGS ✕ SIX
-            FIGURES OR NOTHING ✕ NO BALANCES SHOWN ✕ FAIR TIC-TAC-TOE ✕ 1V1 CHAT
-            + 1V1 ROOMS ✕&nbsp;
+        <SolanaProviders>
+          <div className="ticker" aria-hidden="true">
+            <div className="ticker-inner">
+              PROOF OF BAGS ✕ SIX FIGURES OR NOTHING ✕ NO BALANCES SHOWN ✕ FAIR
+              TIC-TAC-TOE ✕ 1V1 CHAT + 1V1 ROOMS ✕&nbsp;PROOF OF BAGS ✕ SIX
+              FIGURES OR NOTHING ✕ NO BALANCES SHOWN ✕ FAIR TIC-TAC-TOE ✕ 1V1 CHAT
+              + 1V1 ROOMS ✕&nbsp;
+            </div>
           </div>
-        </div>
-        <Header />
-        <main>{children}</main>
-        <footer
-          className="site-footer"
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            gap: "1rem",
-            flexWrap: "wrap",
-            background: "var(--ink)",
-            color: "var(--paper)",
-            padding: "1.5rem 3vw",
-            fontFamily: "var(--font-dm-mono)",
-            fontSize: "0.8rem",
-          }}
-        >
-          <p style={{ margin: 0 }}>
-            6FIGS.XYZ — VERIFIED BAGS. FAIR GAMES. NO NUMBERS SHOWN.
-          </p>
-          <p style={{ margin: 0 }}>© 2026</p>
-        </footer>
+          <Header />
+          <main>{children}</main>
+          <footer
+            className="site-footer"
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              gap: "1rem",
+              flexWrap: "wrap",
+              background: "var(--ink)",
+              color: "var(--paper)",
+              padding: "1.5rem 3vw",
+              fontFamily: "var(--font-dm-mono)",
+              fontSize: "0.8rem",
+            }}
+          >
+            <p style={{ margin: 0 }}>
+              6FIGS.XYZ — VERIFIED BAGS. FAIR GAMES. NO NUMBERS SHOWN.
+            </p>
+            <p style={{ margin: 0 }}>© 2026</p>
+          </footer>
+        </SolanaProviders>
       </body>
     </html>
   );

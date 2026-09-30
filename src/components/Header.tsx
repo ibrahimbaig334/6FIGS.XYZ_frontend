@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { api, ApiError, clearToken, getToken, Profile } from "../lib/api";
 import { connectSocket, disconnectSocket } from "../lib/ws";
-import ConnectPopup from "./ConnectPopup";
+import SolanaConnect from "./SolanaConnect";
 
 const NAV = [
   { href: "/", label: "HOME" },
@@ -14,7 +14,6 @@ const NAV = [
 
 export default function Header() {
   const [profile, setProfile] = useState<Profile | null>(null);
-  const [popup, setPopup] = useState(false);
   const [menu, setMenu] = useState(false);
   const [dark, setDark] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -23,7 +22,8 @@ export default function Header() {
   useEffect(() => {
     if (!menu) return;
     const close = (e: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) setMenu(false);
+      if (menuRef.current && !menuRef.current.contains(e.target as Node))
+        setMenu(false);
     };
     const esc = (e: KeyboardEvent) => {
       if (e.key === "Escape") setMenu(false);
@@ -129,7 +129,7 @@ export default function Header() {
               style={{
                 cursor: "pointer",
                 border: "2px solid var(--ink)",
-                padding: "0.6rem 0.9rem",
+                padding: "0.65rem 0.9rem",
                 fontSize: "0.72rem",
                 width: "100%",
               }}
@@ -147,18 +147,9 @@ export default function Header() {
             )}
           </div>
         ) : (
-          <button
-            className="btn-solid"
-            style={{ padding: "0.6rem 0.9rem" }}
-            onClick={() => setPopup(true)}
-          >
-            CONNECT WALLET ↗
-          </button>
+          <SolanaConnect onDone={authed} />
         )}
       </div>
-      {popup && (
-        <ConnectPopup onClose={() => setPopup(false)} onDone={authed} />
-      )}
     </header>
   );
 }

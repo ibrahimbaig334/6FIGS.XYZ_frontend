@@ -142,7 +142,7 @@ function SolanaConnectInner({
           setPhase("choose");
         }}
       >
-        {uiConnecting ? "CONNECTING…" : label ?? "CONNECT WALLET"}
+        {uiConnecting ? "CONNECTING…" : (label ?? "CONNECT WALLET")}
       </button>
       {err && !hideError && <p className="err">{err}</p>}
     </div>

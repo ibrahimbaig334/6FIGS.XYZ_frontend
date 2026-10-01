@@ -248,7 +248,7 @@ export default function RoomPage() {
     sock.current?.emit(
       "sendMessage",
       { scope: "room", scopeId: id, body },
-        (ack: { error?: string; message?: ChatMessage }) => {
+      (ack: { error?: string; message?: ChatMessage }) => {
         if (ack?.error) console.error("room message rejected", ack.error);
         else if (ack?.message) {
           // append from ack — the WS echo may be missed if joinScope is still in flight

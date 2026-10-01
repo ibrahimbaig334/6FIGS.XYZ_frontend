@@ -116,7 +116,10 @@ export default function RoomsPage() {
   function pickAccess(f: string) {
     setAccessFilter(f);
     // No tier ordering exists for invite rooms — fall back to newest.
-    if (f === "invite" && (sort === "tier" || sort.startsWith(TIER_ONLY_PREFIX)))
+    if (
+      f === "invite" &&
+      (sort === "tier" || sort.startsWith(TIER_ONLY_PREFIX))
+    )
       setSort("created");
     setPage(1);
   }

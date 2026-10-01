@@ -25,7 +25,8 @@ export default function DeleteRoomDialog({
     try {
       await onConfirm();
     } catch (e2) {
-      setErr(e2 instanceof Error ? e2.message : "Delete failed");
+      console.error("delete room failed", e2);
+      setErr("Delete failed — try again");
       setBusy(false);
     }
   }

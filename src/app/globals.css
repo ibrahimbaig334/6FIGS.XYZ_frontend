@@ -246,7 +246,7 @@ body > main {
 .field {
   flex: 1;
   min-width: 100px;
-  padding: 0.8rem 1rem;
+  padding: 0.55rem 1rem;
   border: 2px solid var(--ink);
   background: var(--input);
   color: var(--ink);
@@ -369,7 +369,6 @@ select.field option {
 }
 
 .rooms-q {
-  flex: 1 1 200px;
   max-width: 280px;
 }
 
@@ -387,9 +386,9 @@ select.field option {
   opacity: 0.25;
 }
 
-.rooms-sort {
+.sortmenu-wrap {
   flex: none;
-  width: auto;
+  min-width: 210px;
 }
 
 .rooms-count {
@@ -847,9 +846,10 @@ select.field option {
     align-items: stretch;
   }
   .rooms-filter .rooms-q,
-  .rooms-filter .rooms-sort {
+  .rooms-filter .sortmenu-wrap {
     width: 100%;
     max-width: none;
+    min-width: 0;
   }
   .filter-chips {
     justify-content: center;
@@ -920,6 +920,14 @@ select.field option {
   flex-wrap: wrap;
   padding-bottom: 1.2rem;
   border-bottom: 2px solid var(--ink);
+}
+
+@media (max-width: 480px) {
+  /* Tabs centered on their own row, create button centered below. */
+  .topline {
+    flex-direction: column;
+    align-items: center;
+  }
 }
 
 .hero {

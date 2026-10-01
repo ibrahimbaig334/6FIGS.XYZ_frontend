@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { api, getToken, Room, RoomList } from "../../lib/api";
 import { ROOMS_PAGE_SIZE } from "../../lib/constants";
 import SolanaConnect from "../../components/SolanaConnect";
+import SelectMenu from "../../components/SelectMenu";
 import InviteDialog from "../../components/InviteDialog";
 import DeleteRoomDialog from "../../components/DeleteRoomDialog";
 import Loader from "../../components/Loader";
@@ -63,9 +64,8 @@ export default function RoomsPage() {
       setRooms(res.items);
       setTotal(res.total);
       setOwned(res.ownedCount ?? 0);
-      setErr("");
     } catch (e) {
-      setErr(e instanceof Error ? e.message : "Load failed");
+      console.error("rooms load failed", e);
     } finally {
       setLoading(false);
     }
@@ -84,8 +84,10 @@ export default function RoomsPage() {
       setInviteFor(null);
       location.href = `/rooms/${r.id}`;
     } catch (e) {
-      // Invalid password lands INSIDE the popup (dialog stays open with the message).
-      setErr(e instanceof Error ? e.message : "Join failed");
+      // Invite-code problems surface inside the dialog; anything else stays
+      // out of the UI (backend text is never rendered).
+      if (r.accessType === "invite") setErr("Wrong invite code — try again");
+      else console.error("join failed", e);
     }
   }
 
@@ -197,7 +199,7 @@ export default function RoomsPage() {
           + CREATE ROOM
         </a>
       </div>
-      {err && !inviteFor && <p className="err">{err}</p>}
+      {/* Join-code feedback lives inside the dialog (error prop below). */}
       <div className="rooms-filter">
         <input
           className="field rooms-q"
@@ -223,24 +225,27 @@ export default function RoomsPage() {
             </button>
           ))}
         </div>
-        <select
-          className="field rooms-sort"
-          value={sort}
-          onChange={(e) => pickSort(e.target.value)}
-        >
-          <option value="created">NEWEST</option>
-          <option value="members">MOST MEMBERS</option>
-          <option value="mine">MY ROOMS</option>
-          <option value="tier">TOP TIER</option>
-          {accessFilter !== "invite" && (
-            <>
-              <option value="only:TIER I">TIER I ONLY</option>
-              <option value="only:TIER II">TIER II ONLY</option>
-              <option value="only:TIER III">TIER III ONLY</option>
-              <option value="only:TIER IV">TIER IV ONLY</option>
-            </>
-          )}
-        </select>
+        <div className="sortmenu-wrap">
+          <SelectMenu
+            label="Sort rooms"
+            value={sort}
+            onChange={pickSort}
+            options={[
+              { value: "created", label: "NEWEST" },
+              { value: "members", label: "MOST MEMBERS" },
+              { value: "mine", label: "MY ROOMS" },
+              { value: "tier", label: "TOP TIER" },
+              ...(accessFilter !== "invite"
+                ? [
+                    { value: "only:TIER I", label: "TIER I ONLY" },
+                    { value: "only:TIER II", label: "TIER II ONLY" },
+                    { value: "only:TIER III", label: "TIER III ONLY" },
+                    { value: "only:TIER IV", label: "TIER IV ONLY" },
+                  ]
+                : []),
+            ]}
+          />
+        </div>
         <span className="fine rooms-count">
           {total} ROOMS · MY ROOMS {owned}/3 · 1V1 MAX 2 EACH
         </span>

@@ -88,7 +88,7 @@ export default function PlayPage() {
         return out;
       });
     } catch (e) {
-      setErr(e instanceof Error ? e.message : "Load failed");
+      console.error("play load failed", e);
     }
     if (getToken()) {
       try {
@@ -230,7 +230,8 @@ export default function PlayPage() {
       searchingRef.current = true;
       setSearching(true); // animation locks the UI until matched/cancelled
     } catch (e) {
-      setErr(e instanceof Error ? e.message : "Queue failed");
+      console.error("queue failed", e);
+      setErr("Couldn't join the queue — try again");
     }
   }
 
@@ -253,7 +254,8 @@ export default function PlayPage() {
       });
       setOutgoing((prev) => [r, ...prev]);
     } catch (e) {
-      setErr(e instanceof Error ? e.message : "Request failed");
+      console.error("request failed", e);
+      setErr("Couldn't send the request — try again");
     }
   }
 
@@ -262,7 +264,8 @@ export default function PlayPage() {
       await api(`/play/requests/${id}/cancel`, { method: "POST" });
       setOutgoing((prev) => prev.filter((o) => o.id !== id));
     } catch (e) {
-      setErr(e instanceof Error ? e.message : "Cancel failed");
+      console.error("cancel request failed", e);
+      setErr("Couldn't cancel — try again");
     }
   }
 
@@ -279,7 +282,8 @@ export default function PlayPage() {
         acc.gameId,
       );
     } catch (e) {
-      setErr(e instanceof Error ? e.message : "Accept failed");
+      console.error("accept failed", e);
+      setErr("Couldn't accept — try again");
     }
   }
 
@@ -288,7 +292,8 @@ export default function PlayPage() {
       await api(`/play/requests/${id}/decline`, { method: "POST" });
       setIncoming((prev) => prev.filter((x) => x.id !== id));
     } catch (e) {
-      setErr(e instanceof Error ? e.message : "Decline failed");
+      console.error("decline failed", e);
+      setErr("Couldn't decline — try again");
     }
   }
 

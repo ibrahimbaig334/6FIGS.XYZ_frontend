@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useState } from "react";
 import {
   api,
-  ApiError,
   clearToken,
   getToken,
   getTiers,
@@ -19,13 +18,8 @@ import Loader from "../../components/Loader";
 
 export default function ProfilePage() {
   const [profile, setProfile] = useState<Profile | null>(null);
-  const [err, setErr] = useState("");
   const [handle, setHandle] = useState("");
   const [handleErr, setHandleErr] = useState("");
-  const [removeErr, setRemoveErr] = useState<{
-    id: string;
-    msg: string;
-  } | null>(null);
   const [ready, setReady] = useState(false);
   const [loading, setLoading] = useState(true);
   const [checking, setChecking] = useState(false);
@@ -39,7 +33,6 @@ export default function ProfilePage() {
   const applyProfile = (p: Profile) => {
     setProfile(p);
     setHandle(p.handle ?? "");
-    setErr("");
     setLoading(false);
   };
 
@@ -51,11 +44,7 @@ export default function ProfilePage() {
     try {
       applyProfile(await api<Profile>("/profile/user"));
     } catch (e) {
-      if (e instanceof ApiError && e.status === 0) {
-        setErr("Server unreachable — showing last saved data.");
-      } else {
-        setErr(e instanceof Error ? e.message : "Load failed");
-      }
+      console.error("profile load failed", e);
     } finally {
       setLoading(false);
     }
@@ -81,7 +70,7 @@ export default function ProfilePage() {
       await load();
       window.dispatchEvent(new Event("sixfigs-auth"));
     } catch (e) {
-      setErr(e instanceof Error ? e.message : "Check failed");
+      console.error("eligibility recheck failed", e);
     } finally {
       setChecking(false);
     }
@@ -92,7 +81,7 @@ export default function ProfilePage() {
       await api("/profile/user", { method: "PATCH", body: { visMode } });
       await load();
     } catch (e) {
-      setErr(e instanceof Error ? e.message : "Save failed");
+      console.error("visibility save failed", e);
     }
   }
 
@@ -105,20 +94,16 @@ export default function ProfilePage() {
       await load();
       window.dispatchEvent(new Event("sixfigs-auth"));
     } catch (e) {
-      setErr(e instanceof Error ? e.message : "Save failed");
+      console.error("handle save failed", e);
     }
   }
 
   async function removeWallet(id: string) {
-    setRemoveErr(null);
     try {
       await api(`/wallet/${id}`, { method: "DELETE" });
       await load();
     } catch (e) {
-      setRemoveErr({
-        id,
-        msg: e instanceof Error ? e.message : "Remove failed",
-      });
+      console.error("remove wallet failed", e);
     }
   }
 
@@ -178,7 +163,6 @@ export default function ProfilePage() {
           >
             <SolanaConnect onDone={onConnected} />
           </div>
-          {err && <p style={{ color: "var(--crimson)" }}>{err}</p>}
         </div>
       </section>
     );
@@ -386,8 +370,6 @@ export default function ProfilePage() {
         </p>
       </div>
 
-      {err && <p className="err">{err}</p>}
-
       <div className="card">
         <div
           style={{
@@ -413,10 +395,7 @@ export default function ProfilePage() {
             <div key={w.id}>
               <div
                 className="wallet-row"
-                style={{
-                  marginBottom: removeErr?.id === w.id ? "0.3rem" : "0.6rem",
-                  marginTop: "0.6rem",
-                }}
+                style={{ marginBottom: "0.6rem", marginTop: "0.6rem" }}
               >
                 <WalletIcon
                   name={wname}
@@ -437,11 +416,6 @@ export default function ProfilePage() {
                   ✕
                 </button>
               </div>
-              {removeErr?.id === w.id && (
-                <p className="err" style={{ margin: "0 0 0.6rem" }}>
-                  {removeErr.msg}
-                </p>
-              )}
             </div>
           );
         })}

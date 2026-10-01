@@ -82,7 +82,8 @@ export default function RoomPage() {
           await api(`/rooms/${id}/join`, { method: "POST", body: { code } });
           m = await api<RoomMeta>(`/rooms/${id}/meta`);
         } catch (e) {
-          setErr(e instanceof Error ? e.message : "Wrong invite code");
+          console.error("invite-link auto-join failed", e);
+          setErr("Wrong invite code — try again");
         }
         const url = new URL(window.location.href);
         url.searchParams.delete("code");
@@ -116,7 +117,7 @@ export default function RoomPage() {
         setMe(null);
       }
     } catch (e) {
-      setErr(e instanceof Error ? e.message : "Load failed");
+      console.error("room load failed", e);
     }
   }, [id, search]);
 
@@ -247,8 +248,8 @@ export default function RoomPage() {
     sock.current?.emit(
       "sendMessage",
       { scope: "room", scopeId: id, body },
-      (ack: { error?: string; message?: ChatMessage }) => {
-        if (ack?.error) setErr(ack.error);
+        (ack: { error?: string; message?: ChatMessage }) => {
+        if (ack?.error) console.error("room message rejected", ack.error);
         else if (ack?.message) {
           // append from ack — the WS echo may be missed if joinScope is still in flight
           const msg = ack.message;
@@ -265,7 +266,8 @@ export default function RoomPage() {
       setNeedCode(false);
       await load();
     } catch (e) {
-      setErr(e instanceof Error ? e.message : "Wrong invite code");
+      console.error("join with code failed", e);
+      setErr("Wrong invite code — try again");
     }
   }
 
@@ -275,7 +277,8 @@ export default function RoomPage() {
       await api(`/rooms/${id}/join`, { method: "POST", body: {} });
       await load();
     } catch (e) {
-      setErr(e instanceof Error ? e.message : "Join failed");
+      console.error("tier join failed", e);
+      setErr("Couldn't join — try again");
     }
   }
 
@@ -285,7 +288,8 @@ export default function RoomPage() {
       await api(`/rooms/${id}/leave`, { method: "POST" });
       location.href = "/rooms";
     } catch (e) {
-      setErr(e instanceof Error ? e.message : "Leave failed");
+      console.error("leave failed", e);
+      setErr("Couldn't leave — try again");
     }
   }
 
@@ -377,7 +381,8 @@ export default function RoomPage() {
               ENTER INVITE CODE ↗
             </button>
           )}
-          {err && <p className="err">{err}</p>}
+          {/* Code/join feedback also shows inside the dialog when it's open. */}
+          {err && !needCode && <p className="err">{err}</p>}
         </div>
         {needCode && (
           <InviteDialog

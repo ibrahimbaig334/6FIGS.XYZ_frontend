@@ -71,7 +71,7 @@ export default function GamePage() {
         setOppOnline(false);
       }
     } catch (e) {
-      setErr(e instanceof Error ? e.message : "Load failed");
+      console.error("game load failed", e);
     }
   }, [id]);
 

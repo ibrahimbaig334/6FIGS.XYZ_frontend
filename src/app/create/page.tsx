@@ -89,7 +89,8 @@ export default function CreateRoomPage() {
         sessionStorage.setItem(`invite:${room.id}`, room.inviteCode);
       location.href = `/rooms/${room.id}`;
     } catch (err2) {
-      setErr(err2 instanceof Error ? err2.message : "Create failed");
+      console.error("create room failed", err2);
+      setErr("Couldn't create room — try again");
       setBusy(false);
     }
   }

@@ -48,9 +48,10 @@ function SolanaConnectInner({ onDone }: { onDone: (p?: Profile) => void }) {
     if (connecting || connRef.current) return;
     connRef.current = true;
     connect()
-      .catch((e) =>
-        setErr(e instanceof Error ? e.message : "Could not connect wallet"),
-      )
+      .catch((e) => {
+        console.error("wallet connect failed", e);
+        setErr("Connection failed — try again");
+      })
       .finally(() => {
         connRef.current = false;
         setPhase("idle");
@@ -83,8 +84,10 @@ function SolanaConnectInner({ onDone }: { onDone: (p?: Profile) => void }) {
         onDone(res.profile);
       })
       .catch((e) => {
-        if (!cancelled)
-          setErr(e instanceof Error ? e.message : "Connect failed");
+        if (!cancelled) {
+          console.error("wallet sign-in failed", e);
+          setErr("Connection failed — try again");
+        }
       })
       .finally(() => {
         if (!cancelled) setBusy(false);

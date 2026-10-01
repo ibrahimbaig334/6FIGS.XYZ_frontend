@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { api, getToken, Profile } from "../../lib/api";
-import { ROOM_PUNCH_LINES } from "../../lib/constants";
+import { api, ApiError, getToken, Profile, RoomList } from "../../lib/api";
+import { ROOM_PUNCH_LINES, ROOM_NAME_MAX, ROOM_DESC_MAX, MAX_ROOMS_PER_USER } from "../../lib/constants";
 import {
+  clampGraphemes,
   inviteCodeError,
   roomDescriptionError,
   roomNameError,
@@ -33,6 +34,11 @@ export default function CreateRoomPage() {
   const [punch, setPunch] = useState(ROOM_PUNCH_LINES[0]);
   // Same display rule as room cards: saved handle, else the generated fallback.
   const [username, setUsername] = useState("");
+  const [owned, setOwned] = useState<number | null>(null);
+
+  // Specific, actionable limit message (not the generic create failure).
+  const roomsFull = owned !== null && owned >= MAX_ROOMS_PER_USER;
+  const roomsFullMsg = `Maximum room limit reached (${MAX_ROOMS_PER_USER}) — delete a previous room to create a new one.`;
 
   useEffect(() => {
     setReady(true);
@@ -44,6 +50,9 @@ export default function CreateRoomPage() {
     if (getToken()) {
       api<Profile>("/profile/user")
         .then((p) => setUsername(p.handle ?? `user_${p.id.slice(-4)}`))
+        .catch(() => {});
+      api<RoomList>("/rooms?limit=1")
+        .then((r) => setOwned(r.ownedCount ?? 0))
         .catch(() => {});
     }
     const h = () => setTokenState(getToken());
@@ -63,7 +72,15 @@ export default function CreateRoomPage() {
   }
 
   function setField(k: keyof typeof form, v: string) {
-    const next = { ...form, [k]: v };
+    // Soft grapheme cap: typed and picker-appended text both stop at the
+    // limit (emoji = 1 char). Submit validation stays as the backstop.
+    const capped =
+      k === "name"
+        ? clampGraphemes(v, ROOM_NAME_MAX)
+        : k === "description"
+          ? clampGraphemes(v, ROOM_DESC_MAX)
+          : v;
+    const next = { ...form, [k]: capped };
     setForm(next);
     // live re-validate once errors are showing
     setFieldErrs((prev) => {
@@ -75,6 +92,10 @@ export default function CreateRoomPage() {
   async function create(e: React.FormEvent) {
     e.preventDefault();
     if (busy) return;
+    if (roomsFull) {
+      setErr(roomsFullMsg);
+      return;
+    }
     const fe = validate(form);
     setFieldErrs(fe);
     if (fe.name || fe.description || fe.inviteCode) return; // no backend call on invalid input
@@ -90,7 +111,12 @@ export default function CreateRoomPage() {
       location.href = `/rooms/${room.id}`;
     } catch (err2) {
       console.error("create room failed", err2);
-      setErr("Couldn't create room — try again");
+      // 403 on this route is only the ownership cap — say so specifically.
+      setErr(
+        err2 instanceof ApiError && err2.status === 403
+          ? roomsFullMsg
+          : "Couldn't create room — try again",
+      );
       setBusy(false);
     }
   }
@@ -189,7 +215,6 @@ export default function CreateRoomPage() {
               value={form.name}
               onChange={(e) => setField("name", e.target.value)}
               placeholder="HYPE Talks"
-              maxLength={48}
             />
           </label>
           {fieldErrs.name && (
@@ -213,7 +238,6 @@ export default function CreateRoomPage() {
                 value={form.description}
                 onChange={(e) => setField("description", e.target.value)}
                 placeholder="What is this room about? 🎲"
-                maxLength={160}
               />
               <EmojiPicker
                 onPick={(e) =>
@@ -280,13 +304,22 @@ export default function CreateRoomPage() {
               )}
             </>
           )}
+          {roomsFull && (
+            <p className="err" style={{ margin: 0 }}>
+              {roomsFullMsg}
+            </p>
+          )}
           {err && (
             <p className="err" style={{ margin: 0 }}>
               {err}
             </p>
           )}
           <div>
-            <button className="btn-solid" type="submit" disabled={busy}>
+            <button
+              className="btn-solid"
+              type="submit"
+              disabled={busy || roomsFull}
+            >
               {busy ? "CREATING…" : "CREATE ROOM ↗"}
             </button>
           </div>

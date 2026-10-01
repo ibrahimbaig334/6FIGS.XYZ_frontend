@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { api, getToken, Room, RoomList } from "../../lib/api";
-import { ROOMS_PAGE_SIZE } from "../../lib/constants";
+import { ROOMS_PAGE_SIZE, MAX_ROOMS_PER_USER } from "../../lib/constants";
 import SolanaConnect from "../../components/SolanaConnect";
 import SelectMenu from "../../components/SelectMenu";
 import InviteDialog from "../../components/InviteDialog";
@@ -115,8 +115,9 @@ export default function RoomsPage() {
 
   function pickAccess(f: string) {
     setAccessFilter(f);
-    // Tier-only views can't apply under invite-only — fall back to newest.
-    if (f === "invite" && sort.startsWith(TIER_ONLY_PREFIX)) setSort("created");
+    // No tier ordering exists for invite rooms — fall back to newest.
+    if (f === "invite" && (sort === "tier" || sort.startsWith(TIER_ONLY_PREFIX)))
+      setSort("created");
     setPage(1);
   }
 
@@ -234,9 +235,10 @@ export default function RoomsPage() {
               { value: "created", label: "NEWEST" },
               { value: "members", label: "MOST MEMBERS" },
               { value: "mine", label: "MY ROOMS" },
-              { value: "tier", label: "TOP TIER" },
+              // Invite rooms carry no tier — no tier options under invite-only.
               ...(accessFilter !== "invite"
                 ? [
+                    { value: "tier", label: "TOP TIER" },
                     { value: "only:TIER I", label: "TIER I ONLY" },
                     { value: "only:TIER II", label: "TIER II ONLY" },
                     { value: "only:TIER III", label: "TIER III ONLY" },
@@ -247,7 +249,7 @@ export default function RoomsPage() {
           />
         </div>
         <span className="fine rooms-count">
-          {total} ROOMS · MY ROOMS {owned}/3 · 1V1 MAX 2 EACH
+          {total} ROOMS · MY ROOMS {owned}/{MAX_ROOMS_PER_USER} · 1V1 MAX 2 EACH
         </span>
       </div>
       {loading ? (
@@ -275,9 +277,13 @@ export default function RoomsPage() {
                     </span>
                     {r.isOwner && <span className="tier-badge">OWNER</span>}
                   </div>
-                  <h3 className="room-name">{r.name}</h3>
+                  <h3 className="room-name" title={r.name}>
+                    {r.name}
+                  </h3>
                   {r.description && (
-                    <p className="fine room-desc">{r.description}</p>
+                    <p className="fine room-desc" title={r.description}>
+                      {r.description}
+                    </p>
                   )}
                   <p className="fine room-meta">
                     BY {r.creatorHandle.toUpperCase()}

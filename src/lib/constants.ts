@@ -21,6 +21,9 @@ export const FRIENDS_PAGE_SIZE = 10;
 // Wallet cap (backend: MAX_WALLETS_PER_USER)
 export const MAX_WALLETS = 20;
 
+// Rooms one user may own (backend: MAX_ROOMS_PER_USER)
+export const MAX_ROOMS_PER_USER = 3;
+
 // Emoji set for room descriptions + chats (tap to insert)
 export const CHAT_EMOJIS = [
   "🚀",
@@ -50,8 +53,7 @@ export const CHAT_EMOJIS = [
 ];
 
 // Room-create punch lines — one random pick shows under the heading
-export const ROOM_PUNCH_LINES = [
-  "No balances. No mercy. Just tic-tac-toe.",
+export const ROOM_PUNCH_LINES = [  "No balances. No mercy. Just tic-tac-toe.",
   "Proof of bags, then proof of skill.",
   "Six figures to enter. Three in a row to win.",
   "Your wallet got you in. Your brain keeps you here.",

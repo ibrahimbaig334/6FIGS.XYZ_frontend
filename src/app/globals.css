@@ -245,7 +245,7 @@ body > main {
 
 .field {
   flex: 1;
-  min-width: 140px;
+  min-width: 100px;
   padding: 0.8rem 1rem;
   border: 2px solid var(--ink);
   background: var(--input);
@@ -358,6 +358,204 @@ select.field option {
   flex-wrap: wrap;
   align-items: center;
   margin-top: 20px;
+}
+
+/* ---- rooms directory ---- */
+.rooms-filter {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.rooms-q {
+  flex: 1 1 200px;
+  max-width: 280px;
+}
+
+.filter-chips {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.filter-div {
+  width: 2px;
+  align-self: stretch;
+  background: var(--ink);
+  opacity: 0.25;
+}
+
+.rooms-sort {
+  flex: none;
+  width: auto;
+}
+
+.rooms-count {
+  margin-left: auto;
+}
+
+.room-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+}
+
+.room-row {
+  display: flex;
+  gap: 1rem;
+  align-items: stretch;
+  border: 2px solid var(--ink);
+  background: var(--card);
+  padding: 0.9rem 1rem;
+}
+
+.room-main {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.room-topline {
+  display: flex;
+  gap: 0.45rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.room-name {
+  margin: 0;
+  font-size: 1.15rem;
+  letter-spacing: -0.02em;
+  overflow-wrap: anywhere;
+}
+
+.room-desc {
+  margin: 0;
+}
+
+.room-meta {
+  margin: 0;
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+}
+
+.room-side {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  justify-content: center;
+  min-width: 190px;
+  border-left: 2px solid var(--ink);
+  padding-left: 1rem;
+}
+
+.room-occ {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0;
+}
+
+.meter {
+  height: 9px;
+  border: 2px solid var(--ink);
+  background: var(--paper);
+}
+
+.meter i {
+  display: block;
+  height: 100%;
+  background: var(--gold);
+}
+
+.room-side .btn-solid,
+.room-side .chip {
+  width: 100%;
+  text-align: center;
+}
+
+.room-del {
+  color: var(--crimson) !important;
+  border-color: var(--crimson) !important;
+}
+
+.room-del:hover {
+  background: var(--crimson) !important;
+  color: #fff !important;
+}
+
+.loader-block {
+  display: grid;
+  place-items: center;
+  flex: 1;
+  padding: 2rem 0;
+}
+
+.pager {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  gap: 0.6rem;
+  align-items: center;
+  margin-top: auto;
+}
+
+.pager-stat {
+  margin: 0;
+  justify-self: start;
+}
+
+.pager-nav {
+  display: flex;
+  gap: 0.4rem;
+  align-items: center;
+  justify-self: center;
+}
+
+/* Pagination icons chunky enough to read. */
+.pager-nav .chip {
+  font-size: 1rem;
+  padding: 0.3rem 0.85rem;
+  min-width: 2.6rem;
+  text-align: center;
+}
+
+.pager-nums {
+  display: flex;
+  gap: 0.4rem;
+  align-items: center;
+}
+
+.pager .chip:disabled:hover {
+  background: var(--paper);
+  color: var(--ink);
+}
+
+.pager-gap {
+  color: var(--muted);
+  font-family: var(--font-dm-mono);
+  font-size: 0.8rem;
+}
+
+.pager-goto {
+  display: flex;
+  gap: 0.35rem;
+  align-items: center;
+  margin: 0;
+  justify-self: end;
+  font-family: var(--font-dm-mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.04em;
+}
+
+.pager-goto .field {
+  flex: none;
+  width: 100px;
+  padding: 0.6rem 0.6rem;
+  font-size: 0.75rem;
 }
 
 /* Empty multi-wallet slot — trigger renders dashed like the old adapter slot. */
@@ -602,6 +800,67 @@ select.field option {
   }
 }
 
+@media (min-width: 1100px) {
+  /* Two room cards per line on wide screens. */
+  .room-rows {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 700px) {
+  /* Room rows stack; action rail becomes a full-width footer strip. */
+  .room-row {
+    flex-direction: column;
+  }
+  .room-side {
+    border-left: none;
+    border-top: 2px dashed var(--ink);
+    padding-left: 0;
+    padding-top: 0.8rem;
+    min-width: 0;
+    width: 100%;
+  }
+  /* Pager zones stack centered: nav, info, goto. */
+  .pager {
+    grid-template-columns: 1fr;
+    justify-items: center;
+  }
+  .pager-stat {
+    justify-self: center;
+  }
+  .pager-nums {
+    display: none;
+  }
+  .pager-goto {
+    width: 100%;
+    justify-content: center;
+    justify-self: center;
+    margin-left: 0;
+  }
+}
+
+@media (max-width: 650px) {
+  /* Rooms filter stacks: search, chips, sort, count. */
+  .rooms-filter {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .rooms-filter .rooms-q,
+  .rooms-filter .rooms-sort {
+    width: 100%;
+    max-width: none;
+  }
+  .filter-chips {
+    justify-content: center;
+  }
+  .rooms-count {
+    margin-left: 0;
+    text-align: center;
+    width: 100%;
+  }
+}
+
 /* ---- handwritten-layout chrome: ticker, tabs, sidebar, blur, rows ---- */
 .ticker {
   overflow: hidden;
@@ -634,7 +893,7 @@ select.field option {
 }
 
 .tabs a {
-  padding: 0.8rem 1.5rem;
+  padding: 0.6rem 1.3rem;
   font-family: var(--font-dm-mono);
   font-size: 0.78rem;
   letter-spacing: 0.06em;
@@ -659,9 +918,8 @@ select.field option {
   align-items: center;
   gap: 1rem;
   flex-wrap: wrap;
-  padding: 1.2rem 0;
+  padding-bottom: 1.2rem;
   border-bottom: 2px solid var(--ink);
-  margin-bottom: 1.2rem;
 }
 
 .hero {

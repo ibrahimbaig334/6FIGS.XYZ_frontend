@@ -8,6 +8,26 @@ import InviteDialog from "../../components/InviteDialog";
 import DeleteRoomDialog from "../../components/DeleteRoomDialog";
 import Loader from "../../components/Loader";
 
+const TIER_ONLY_PREFIX = "only:";
+
+/** Sliding page list with ellipsis: 1 … 4 5 6 … 12. */
+function pageWindow(cur: number, totalPages: number): (number | "…")[] {
+  if (totalPages <= 7)
+    return Array.from({ length: totalPages }, (_, i) => i + 1);
+  const keep = new Set(
+    [1, totalPages, cur - 1, cur, cur + 1].filter(
+      (p) => p >= 1 && p <= totalPages,
+    ),
+  );
+  const sorted = Array.from(keep).sort((a, b) => a - b);
+  const out: (number | "…")[] = [];
+  sorted.forEach((p, i) => {
+    if (i > 0 && p > sorted[i - 1] + 1) out.push("…");
+    out.push(p);
+  });
+  return out;
+}
+
 export default function RoomsPage() {
   const [rooms, setRooms] = useState<Room[]>([]);
   const [total, setTotal] = useState(0);
@@ -20,16 +40,24 @@ export default function RoomsPage() {
   const [sort, setSort] = useState("created");
   const [inviteFor, setInviteFor] = useState<Room | null>(null);
   const [deleteFor, setDeleteFor] = useState<Room | null>(null);
-  const [initialLoading, setInitialLoading] = useState(true);
+  const [loading, setLoading] = useState(true);
+  const [goto, setGoto] = useState("");
 
   const load = useCallback(async () => {
+    setLoading(true);
     try {
+      // "only:TIER x" options live in the same dropdown: they filter to that
+      // min-tier (newest first). Tier rooms have no meaning under invite-only.
+      const onlyTier = sort.startsWith(TIER_ONLY_PREFIX)
+        ? sort.slice(TIER_ONLY_PREFIX.length)
+        : "";
       const params = new URLSearchParams({
         page: String(page),
         limit: String(ROOMS_PAGE_SIZE),
-        sort,
+        sort: onlyTier ? "created" : sort,
       });
       if (accessFilter) params.set("access", accessFilter);
+      if (onlyTier && accessFilter !== "invite") params.set("tier", onlyTier);
       if (q) params.set("q", q);
       const res = await api<RoomList>(`/rooms?${params.toString()}`);
       setRooms(res.items);
@@ -38,13 +66,15 @@ export default function RoomsPage() {
       setErr("");
     } catch (e) {
       setErr(e instanceof Error ? e.message : "Load failed");
+    } finally {
+      setLoading(false);
     }
   }, [page, accessFilter, q, sort]);
 
   useEffect(() => {
     setReady(true);
-    if (getToken()) load().finally(() => setInitialLoading(false));
-    else setInitialLoading(false);
+    if (getToken()) void load();
+    else setLoading(false);
   }, [load]);
 
   async function join(r: Room, code?: string) {
@@ -80,6 +110,26 @@ export default function RoomsPage() {
   }
 
   const pages = Math.max(1, Math.ceil(total / ROOMS_PAGE_SIZE));
+
+  function pickAccess(f: string) {
+    setAccessFilter(f);
+    // Tier-only views can't apply under invite-only — fall back to newest.
+    if (f === "invite" && sort.startsWith(TIER_ONLY_PREFIX)) setSort("created");
+    setPage(1);
+  }
+
+  function pickSort(v: string) {
+    // A tier-only view is a tier view, not an invite view.
+    if (v.startsWith(TIER_ONLY_PREFIX)) setAccessFilter("");
+    setSort(v);
+    setPage(1);
+  }
+
+  function goToPage() {
+    const n = parseInt(goto, 10);
+    if (!Number.isNaN(n)) setPage(Math.min(pages, Math.max(1, n)));
+    setGoto("");
+  }
 
   // Mounted guard: localStorage token is client-only.
   if (!ready) {
@@ -130,6 +180,7 @@ export default function RoomsPage() {
       className="page-enter"
       style={{
         padding: "2rem 5vw",
+        flex: 1,
         display: "flex",
         flexDirection: "column",
         gap: "1rem",
@@ -147,17 +198,9 @@ export default function RoomsPage() {
         </a>
       </div>
       {err && !inviteFor && <p className="err">{err}</p>}
-      <div
-        style={{
-          display: "flex",
-          gap: "0.5rem",
-          alignItems: "center",
-          flexWrap: "wrap",
-        }}
-      >
+      <div className="rooms-filter">
         <input
-          className="field"
-          style={{ maxWidth: "200px" }}
+          className="field rooms-q"
           value={q}
           onChange={(e) => {
             setQ(e.target.value);
@@ -165,125 +208,113 @@ export default function RoomsPage() {
           }}
           placeholder="search…"
         />
-        {["", "tier", "invite"].map((f) => (
-          <button
-            key={f || "all"}
-            className={accessFilter === f ? "chip active" : "chip"}
-            onClick={() => {
-              setAccessFilter(f);
-              setPage(1);
-            }}
-          >
-            {f === "" ? "ALL" : f === "tier" ? "TIER-BASED" : "🔒 INVITE-ONLY"}
-          </button>
-        ))}
+        <div className="filter-chips">
+          {["", "tier", "invite"].map((f) => (
+            <button
+              key={f || "all"}
+              className={accessFilter === f ? "chip active" : "chip"}
+              onClick={() => pickAccess(f)}
+            >
+              {f === ""
+                ? "ALL"
+                : f === "tier"
+                  ? "TIER-BASED"
+                  : "🔒 INVITE-ONLY"}
+            </button>
+          ))}
+        </div>
         <select
-          className="field"
-          style={{ maxWidth: "190px", flex: "none" }}
+          className="field rooms-sort"
           value={sort}
-          onChange={(e) => {
-            setSort(e.target.value);
-            setPage(1);
-          }}
+          onChange={(e) => pickSort(e.target.value)}
         >
-          <option value="created">SORT: NEWEST</option>
-          <option value="members">SORT: MEMBERS</option>
-          <option value="mine">SORT: MY ROOMS</option>
+          <option value="created">NEWEST</option>
+          <option value="members">MOST MEMBERS</option>
+          <option value="mine">MY ROOMS</option>
+          <option value="tier">TOP TIER</option>
+          {accessFilter !== "invite" && (
+            <>
+              <option value="only:TIER I">TIER I ONLY</option>
+              <option value="only:TIER II">TIER II ONLY</option>
+              <option value="only:TIER III">TIER III ONLY</option>
+              <option value="only:TIER IV">TIER IV ONLY</option>
+            </>
+          )}
         </select>
-        <span className="fine" style={{ marginLeft: "auto" }}>
+        <span className="fine rooms-count">
           {total} ROOMS · MY ROOMS {owned}/3 · 1V1 MAX 2 EACH
         </span>
       </div>
-      <div className="grid-cards">
-        {initialLoading ? (
-          <div className="card">
-            <Loader label="LOADING ROOMS…" />
-          </div>
-        ) : (
-          rooms.map((r) => (
-            <div key={r.id} className="card">
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                }}
-              >
-                <span
-                  className={
-                    r.accessType === "invite" ? "tier-badge t3" : "tier-badge"
-                  }
-                >
-                  {r.accessType === "invite"
-                    ? "🔒 INVITE-ONLY"
-                    : `✓ ${r.minTier}`}
-                </span>
-                <span className="fine">
-                  <span className={r.onlineCount > 0 ? "dot on" : "dot"} />{" "}
-                  {r.onlineCount}/2 ONLINE
-                </span>
-              </div>
-              <h3 style={{ margin: "0.5rem 0 0.2rem" }}>{r.name}</h3>
-              {r.description && (
-                <p className="fine" style={{ margin: "0 0 0.4rem" }}>
-                  {r.description}
-                </p>
-              )}
-              <p className="fine" style={{ margin: "0 0 0.4rem" }}>
-                BY {r.creatorHandle.toUpperCase()}
-              </p>
-              <div style={{ display: "flex", gap: "0.4rem", flexWrap: "wrap" }}>
-                <button className="btn-solid btn-sm" onClick={() => askJoin(r)}>
-                  {r.accessType === "invite" || !r.isMember
-                    ? "JOIN 1V1 ↗"
-                    : "ENTER ↗"}
-                </button>
-                {r.isOwner && (
-                  <button
-                    className="chip"
-                    style={{
-                      color: "var(--crimson)",
-                      borderColor: "var(--crimson)",
-                    }}
-                    onClick={() => setDeleteFor(r)}
-                  >
-                    DELETE
-                  </button>
-                )}
-              </div>
-            </div>
-          ))
-        )}
-      </div>
-      {pages > 1 && (
-        <div
-          style={{
-            display: "flex",
-            gap: "0.5rem",
-            alignItems: "center",
-            justifyContent: "center",
-          }}
-        >
-          <button
-            className="chip"
-            disabled={page <= 1}
-            onClick={() => setPage(page - 1)}
-          >
-            ← PREV
-          </button>
-          <span className="mono-label">
-            PAGE {page} / {pages}
-          </span>
-          <button
-            className="chip"
-            disabled={page >= pages}
-            onClick={() => setPage(page + 1)}
-          >
-            NEXT →
-          </button>
+      {loading ? (
+        <div className="loader-block">
+          <Loader label="LOADING ROOMS…" />
         </div>
-      )}
-      {!initialLoading && rooms.length === 0 && (
+      ) : rooms.length > 0 ? (
+        <div className="room-rows">
+          {rooms.map((r) => {
+            const onlinePct = Math.min(100, (r.onlineCount / 2) * 100);
+            return (
+              <div key={r.id} className="room-row">
+                <div className="room-main">
+                  <div className="room-topline">
+                    <span
+                      className={
+                        r.accessType === "invite"
+                          ? "tier-badge t3"
+                          : "tier-badge"
+                      }
+                    >
+                      {r.accessType === "invite"
+                        ? "🔒 INVITE-ONLY"
+                        : `✓ ${r.minTier}`}
+                    </span>
+                    {r.isOwner && <span className="tier-badge">OWNER</span>}
+                  </div>
+                  <h3 className="room-name">{r.name}</h3>
+                  {r.description && (
+                    <p className="fine room-desc">{r.description}</p>
+                  )}
+                  <p className="fine room-meta">
+                    BY {r.creatorHandle.toUpperCase()}
+                  </p>
+                </div>
+                <div className="room-side">
+                  <span className="fine room-occ">
+                    <span className={r.onlineCount > 0 ? "dot on" : "dot"} />
+                    {r.onlineCount}/2 ONLINE
+                  </span>
+                  <div
+                    className="meter"
+                    role="progressbar"
+                    aria-valuenow={r.onlineCount}
+                    aria-valuemin={0}
+                    aria-valuemax={2}
+                    aria-label={`${r.onlineCount} of 2 online`}
+                  >
+                    <i style={{ width: `${onlinePct}%` }} />
+                  </div>
+                  <button
+                    className="btn-solid btn-sm"
+                    onClick={() => askJoin(r)}
+                  >
+                    {r.accessType === "invite" || !r.isMember
+                      ? "JOIN 1V1 ↗"
+                      : "ENTER ↗"}
+                  </button>
+                  {r.isOwner && (
+                    <button
+                      className="chip room-del"
+                      onClick={() => setDeleteFor(r)}
+                    >
+                      DELETE
+                    </button>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      ) : (
         <div
           className="card"
           style={{ textAlign: "center", padding: "2.5rem 1.5rem" }}
@@ -292,11 +323,94 @@ export default function RoomsPage() {
           <p className="fine">
             Be the first — spin up a 1v1 room for you and a peer.
           </p>
-          <a href="/create" className="btn-solid btn-sm">
+          <a
+            href="/create"
+            className="btn-solid btn-sm"
+            style={{ marginTop: "10px" }}
+          >
             + CREATE ROOM
           </a>
         </div>
       )}
+      <div className="pager">
+        <span className="fine pager-stat">
+          PAGE {page} / {pages} · {total} ROOMS
+        </span>
+        <div className="pager-nav">
+          <button
+            className="chip"
+            disabled={page <= 1}
+            onClick={() => setPage(1)}
+            title="First page"
+            aria-label="First page"
+          >
+            «
+          </button>
+          <button
+            className="chip"
+            disabled={page <= 1}
+            onClick={() => setPage(page - 1)}
+            title="Previous page"
+            aria-label="Previous page"
+          >
+            ‹
+          </button>
+          <span className="pager-nums">
+            {pageWindow(page, pages).map((n, i) =>
+              n === "…" ? (
+                <span key={`gap-${i}`} className="pager-gap">
+                  …
+                </span>
+              ) : (
+                <button
+                  key={n}
+                  className={n === page ? "chip active" : "chip"}
+                  onClick={() => setPage(n)}
+                  aria-label={`Page ${n}`}
+                  aria-current={n === page ? "page" : undefined}
+                >
+                  {n}
+                </button>
+              ),
+            )}
+          </span>
+          <button
+            className="chip"
+            disabled={page >= pages}
+            onClick={() => setPage(page + 1)}
+            title="Next page"
+            aria-label="Next page"
+          >
+            ›
+          </button>
+          <button
+            className="chip"
+            disabled={page >= pages}
+            onClick={() => setPage(pages)}
+            title="Last page"
+            aria-label="Last page"
+          >
+            »
+          </button>
+        </div>
+        <label className="pager-goto">
+          <input
+            className="field"
+            inputMode="numeric"
+            pattern="[0-9]*"
+            placeholder="GO TO PAGE"
+            value={goto}
+            onChange={(e) => setGoto(e.target.value.replace(/[^0-9]/g, ""))}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") goToPage();
+            }}
+            aria-label="Go to page"
+          />
+          <button className="chip" onClick={goToPage}>
+            GO
+          </button>
+        </label>
+      </div>
       {inviteFor && (
         <InviteDialog
           roomName={inviteFor.name}

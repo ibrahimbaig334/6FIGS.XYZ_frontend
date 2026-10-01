@@ -253,6 +253,7 @@ export default function CreateRoomPage() {
                   { value: "TIER I", label: "TIER I" },
                   { value: "TIER II", label: "TIER II" },
                   { value: "TIER III", label: "TIER III" },
+                  { value: "TIER IV", label: "TIER IV" },
                 ]}
               />
             </div>

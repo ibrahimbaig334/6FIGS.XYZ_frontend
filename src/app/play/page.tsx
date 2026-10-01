@@ -481,7 +481,7 @@ export default function PlayPage() {
                 <span className="fine">{p.online ? "ONLINE" : "OFFLINE"}</span>
                 <span
                   className={
-                    p.tier === "TIER III" ? "tier-badge t3" : "tier-badge"
+                    p.tier === "TIER III" || p.tier === "TIER IV" ? "tier-badge t3" : "tier-badge"
                   }
                 >
                   {p.tier ?? "UNVERIFIED"}

@@ -134,8 +134,9 @@ export async function getTiers(): Promise<{
       chainMode: "prod",
       tiers: [
         { name: "TIER I", min: 100000 },
-        { name: "TIER II", min: 500000 },
-        { name: "TIER III", min: 1000000 },
+        { name: "TIER II", min: 300000 },
+        { name: "TIER III", min: 500000 },
+        { name: "TIER IV", min: 1000000 },
       ],
     };
   }

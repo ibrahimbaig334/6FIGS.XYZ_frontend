@@ -22,7 +22,8 @@ export default function SelectMenu({
 
   useEffect(() => {
     const close = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+      if (ref.current && !ref.current.contains(e.target as Node))
+        setOpen(false);
     };
     const esc = (e: KeyboardEvent) => {
       if (e.key === "Escape") setOpen(false);
@@ -44,14 +45,35 @@ export default function SelectMenu({
         aria-haspopup="listbox"
         aria-expanded={open}
         aria-label={label}
-        style={{ width: "100%", textAlign: "left", cursor: "pointer", display: "flex", justifyContent: "space-between", alignItems: "center", gap: "0.5rem" }}
+        style={{
+          width: "100%",
+          textAlign: "left",
+          cursor: "pointer",
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          gap: "0.5rem",
+        }}
         onClick={() => setOpen(!open)}
       >
         <span>{current?.label ?? value}</span>
         <span aria-hidden="true">{open ? "▴" : "▾"}</span>
       </button>
       {open && (
-        <div className="dropdown" role="listbox" style={{ position: "absolute", left: 0, right: 0, top: "105%", background: "var(--paper)", border: "2px solid var(--ink)", boxShadow: "4px 4px 0 var(--shadow)", zIndex: 40 }}>
+        <div
+          className="dropdown"
+          role="listbox"
+          style={{
+            position: "absolute",
+            left: 0,
+            right: 0,
+            top: "105%",
+            background: "var(--paper)",
+            border: "2px solid var(--ink)",
+            boxShadow: "4px 4px 0 var(--shadow)",
+            zIndex: 40,
+          }}
+        >
           {options.map((o) => (
             <button
               key={o.value}

@@ -416,24 +416,68 @@ export default function RoomPage() {
   }
 
   return (
-    <section className="page-enter" style={{ padding: "2rem 5vw", display: "flex", flexDirection: "column", gap: "1rem" }}>
+    <section
+      className="page-enter"
+      style={{
+        padding: "2rem 5vw",
+        display: "flex",
+        flexDirection: "column",
+        gap: "1rem",
+      }}
+    >
       <div className="card">
-        <div style={{ display: "flex", gap: "0.6rem", alignItems: "center", flexWrap: "wrap" }}>
-          <p className="mono-label">1V1 ROOM · {meta?.onlineCount ?? 0}/2 ONLINE</p>
-          <span className={meta?.accessType === "invite" ? "tier-badge t3" : "tier-badge"}>
-            {meta?.accessType === "invite" ? "🔒 INVITE-ONLY" : `✓ ${meta?.minTier}`}
+        <div
+          style={{
+            display: "flex",
+            gap: "0.6rem",
+            alignItems: "center",
+            flexWrap: "wrap",
+          }}
+        >
+          <p className="mono-label">
+            1V1 ROOM · {meta?.onlineCount ?? 0}/2 ONLINE
+          </p>
+          <span
+            className={
+              meta?.accessType === "invite" ? "tier-badge t3" : "tier-badge"
+            }
+          >
+            {meta?.accessType === "invite"
+              ? "🔒 INVITE-ONLY"
+              : `✓ ${meta?.minTier}`}
           </span>
         </div>
-        <h2 style={{ margin: "0.4rem 0 0.2rem", fontSize: "clamp(1.5rem, 3.5vw, 2.2rem)", letterSpacing: "-0.03em" }}>
+        <h2
+          style={{
+            margin: "0.4rem 0 0.2rem",
+            fontSize: "clamp(1.5rem, 3.5vw, 2.2rem)",
+            letterSpacing: "-0.03em",
+          }}
+        >
           {meta?.name}
         </h2>
-        <p className="fine" style={{ margin: "0 0 0.2rem" }}>BY {meta?.creatorHandle.toUpperCase()}</p>
+        <p className="fine" style={{ margin: "0 0 0.2rem" }}>
+          BY {meta?.creatorHandle.toUpperCase()}
+        </p>
         {meta?.description && (
-          <p className="fine" style={{ margin: "0 0 0.6rem" }}>{meta.description}</p>
+          <p className="fine" style={{ margin: "0 0 0.6rem" }}>
+            {meta.description}
+          </p>
         )}
-        <div style={{ display: "flex", gap: "0.8rem", alignItems: "center", flexWrap: "wrap" }}>
+        <div
+          style={{
+            display: "flex",
+            gap: "0.8rem",
+            alignItems: "center",
+            flexWrap: "wrap",
+          }}
+        >
           {members.map((m) => (
-            <span key={m.id} className="tier-badge" title={m.online ? "Online" : "Offline"}>
+            <span
+              key={m.id}
+              className="tier-badge"
+              title={m.online ? "Online" : "Offline"}
+            >
               <span className={m.online ? "dot on" : "dot"} /> {m.handle}
             </span>
           ))}
@@ -441,17 +485,28 @@ export default function RoomPage() {
         {inviteCode && (
           <div className="invite-box" style={{ margin: "0.8rem 0 0" }}>
             INVITE LINK:{" "}
-            <a href={`${location.origin}/rooms/${id}?code=${inviteCode}`}>{`${location.origin}/rooms/${id}?code=${inviteCode}`}</a>
+            <a
+              href={`${location.origin}/rooms/${id}?code=${inviteCode}`}
+            >{`${location.origin}/rooms/${id}?code=${inviteCode}`}</a>
             <button
               className="chip"
               style={{ marginLeft: "0.4rem" }}
-              onClick={() => copyText(`${location.origin}/rooms/${id}?code=${inviteCode}`)}
+              onClick={() =>
+                copyText(`${location.origin}/rooms/${id}?code=${inviteCode}`)
+              }
             >
               COPY
             </button>
           </div>
         )}
-        <div style={{ display: "flex", gap: "0.4rem", marginTop: "0.8rem", flexWrap: "wrap" }}>
+        <div
+          style={{
+            display: "flex",
+            gap: "0.4rem",
+            marginTop: "0.8rem",
+            flexWrap: "wrap",
+          }}
+        >
           <button className="chip" onClick={leaveRoom}>
             LEAVE ROOM
           </button>
@@ -472,12 +527,28 @@ export default function RoomPage() {
             onConfirm={deleteRoom}
           />
         )}
-        {err && <p className="err" style={{ marginTop: "0.6rem" }}>{err}</p>}
+        {err && (
+          <p className="err" style={{ marginTop: "0.6rem" }}>
+            {err}
+          </p>
+        )}
       </div>
       <div className="layout-game">
         <div>
           <p className="mono-label">
-            1V1 GAME · {game ? <>YOU ARE {game.youAre} · {game.status === "open" ? `TURN: ${game.turn}` : game.status === "draw" ? "DRAW" : `${game.winner} WINS`}</> : "WAITING FOR PEER…"}
+            1V1 GAME ·{" "}
+            {game ? (
+              <>
+                YOU ARE {game.youAre} ·{" "}
+                {game.status === "open"
+                  ? `TURN: ${game.turn}`
+                  : game.status === "draw"
+                    ? "DRAW"
+                    : `${game.winner} WINS`}
+              </>
+            ) : (
+              "WAITING FOR PEER…"
+            )}
           </p>
           {game ? (
             <>
@@ -518,7 +589,10 @@ export default function RoomPage() {
                 </button>
               )}
               {gameErr && (
-                <p className="err" style={{ fontSize: "0.72rem", marginTop: "0.5rem" }}>
+                <p
+                  className="err"
+                  style={{ fontSize: "0.72rem", marginTop: "0.5rem" }}
+                >
                   {gameErr}
                 </p>
               )}

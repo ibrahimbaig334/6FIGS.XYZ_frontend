@@ -241,9 +241,7 @@ export default function GamePage() {
     );
   if (!game) {
     return (
-      <section
-        className="page-enter loader-page"
-      >
+      <section className="page-enter loader-page">
         <Loader label="FINDING GAME…" />
       </section>
     );

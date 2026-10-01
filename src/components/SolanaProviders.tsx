@@ -1,7 +1,10 @@
 "use client";
 
 import { useMemo } from "react";
-import { ConnectionProvider, WalletProvider } from "@solana/wallet-adapter-react";
+import {
+  ConnectionProvider,
+  WalletProvider,
+} from "@solana/wallet-adapter-react";
 import { WalletModalProvider } from "@solana/wallet-adapter-react-ui";
 import { PhantomWalletAdapter } from "@solana/wallet-adapter-phantom";
 import { SolflareWalletAdapter } from "@solana/wallet-adapter-solflare";
@@ -15,7 +18,11 @@ const DEVNET_RPC = "https://api.devnet.solana.com";
 const MAINNET_RPC = "https://api.mainnet-beta.solana.com";
 
 /** Solana wallet stack (connection only used for signing — no transactions). */
-export default function SolanaProviders({ children }: { children: React.ReactNode }) {
+export default function SolanaProviders({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   const endpoint = isDevnet ? DEVNET_RPC : MAINNET_RPC;
   const wallets = useMemo(
     () => [

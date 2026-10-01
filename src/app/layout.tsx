@@ -36,8 +36,8 @@ export default function RootLayout({
             <div className="ticker-inner">
               PROOF OF BAGS ✕ SIX FIGURES OR NOTHING ✕ NO BALANCES SHOWN ✕ FAIR
               TIC-TAC-TOE ✕ 1V1 CHAT + 1V1 ROOMS ✕&nbsp;PROOF OF BAGS ✕ SIX
-              FIGURES OR NOTHING ✕ NO BALANCES SHOWN ✕ FAIR TIC-TAC-TOE ✕ 1V1 CHAT
-              + 1V1 ROOMS ✕&nbsp;
+              FIGURES OR NOTHING ✕ NO BALANCES SHOWN ✕ FAIR TIC-TAC-TOE ✕ 1V1
+              CHAT + 1V1 ROOMS ✕&nbsp;
             </div>
           </div>
           <Header />

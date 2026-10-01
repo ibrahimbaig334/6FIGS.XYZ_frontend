@@ -1,4 +1,11 @@
-import { api, b58encode, getToken, loginMessage, Profile, setToken } from "./api";
+import {
+  api,
+  b58encode,
+  getToken,
+  loginMessage,
+  Profile,
+  setToken,
+} from "./api";
 
 export type WalletSignFn = (
   msg: Uint8Array,
@@ -71,9 +78,7 @@ async function doLogin(
   const raw = (await sign(
     new TextEncoder().encode(loginMessage("SOL", address, nonce)),
   )) as unknown as Uint8Array | { signature: Uint8Array };
-  const signature = b58encode(
-    raw instanceof Uint8Array ? raw : raw.signature,
-  );
+  const signature = b58encode(raw instanceof Uint8Array ? raw : raw.signature);
   const endpoint = getToken() ? "/wallet/add" : "/wallet/verify";
   const res = await api<{ token: string; profile?: Profile }>(endpoint, {
     method: "POST",
@@ -102,7 +107,11 @@ export function loginOnce(
   ) {
     return current.promise;
   }
-  const entry: { address: string; promise: Promise<LoginResult>; settledAt: number | null } = {
+  const entry: {
+    address: string;
+    promise: Promise<LoginResult>;
+    settledAt: number | null;
+  } = {
     address,
     promise: undefined as unknown as Promise<LoginResult>,
     settledAt: null,

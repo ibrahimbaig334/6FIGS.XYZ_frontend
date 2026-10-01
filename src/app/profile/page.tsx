@@ -6,13 +6,17 @@ import {
   clearToken,
   getToken,
   getTiers,
+  teeRecheck,
   Profile,
+  TeeEligibility,
   TierInfo,
 } from "../../lib/api";
 import { handleError } from "../../lib/validate";
 import { MAX_WALLETS } from "../../lib/constants";
 import { disconnectSocket } from "../../lib/ws";
 import SolanaConnect from "../../components/SolanaConnect";
+import EmailAuth from "../../components/EmailAuth";
+import TeeProve from "../../components/TeeProve";
 import WalletIcon from "../../components/WalletIcon";
 import Loader from "../../components/Loader";
 
@@ -25,6 +29,8 @@ export default function ProfilePage() {
   const [checking, setChecking] = useState(false);
   const [savingHandle, setSavingHandle] = useState(false);
   const [tiers, setTiers] = useState<TierInfo[]>([]);
+  const [showProve, setShowProve] = useState(false);
+  const [showLink, setShowLink] = useState(false);
 
   useEffect(() => {
     setReady(true);
@@ -67,7 +73,8 @@ export default function ProfilePage() {
     if (checking) return;
     setChecking(true);
     try {
-      await api("/eligibility/check", { method: "POST" });
+      if (profile && isTee(profile.eligibility)) await teeRecheck();
+      else await api("/eligibility/check", { method: "POST" });
       await load();
       window.dispatchEvent(new Event("sixfigs-auth"));
     } catch (e) {
@@ -145,26 +152,17 @@ export default function ProfilePage() {
             maxWidth: "520px",
             textAlign: "center",
             padding: "2.5rem 2rem",
+            display: "flex",
+            flexDirection: "column",
+            gap: "1rem",
           }}
         >
-          <p className="mono-label">PROFILE — CONNECT FIRST</p>
-          <p
-            style={{
-              fontFamily: "var(--font-dm-mono)",
-              fontSize: "0.85rem",
-              margin: "0.6rem 0 0",
-            }}
-          >
-            Link a wallet to open your profile. Below $100K you can still link
-            more wallets here.
+          <p className="mono-label">PROFILE — SIGN IN FIRST</p>
+          <EmailAuth onDone={() => void load()} />
+          <p className="fine" style={{ margin: "0.4rem 0 0" }}>
+            …or link a wallet (legacy sign-in)
           </p>
-          <div
-            style={{
-              marginTop: "1.2rem",
-              display: "flex",
-              justifyContent: "center",
-            }}
-          >
+          <div style={{ display: "flex", justifyContent: "center" }}>
             <SolanaConnect onDone={onConnected} />
           </div>
         </div>
@@ -180,7 +178,355 @@ export default function ProfilePage() {
     );
   }
 
+  if (isTee(profile.eligibility)) {
+    return (
+      <TeeProfile
+        profile={profile}
+        checking={checking}
+        showProve={showProve}
+        showLink={showLink}
+        onProve={() => setShowProve(true)}
+        onProveDone={(p) => {
+          setShowProve(false);
+          applyProfile(p);
+        }}
+        onProveCancel={() => setShowProve(false)}
+        onLink={() => setShowLink((v) => !v)}
+        onLinked={() => {
+          setShowLink(false);
+          void load();
+        }}
+        onRecheck={() => void recheck()}
+        onSaveVis={(v) => void saveVis(v)}
+        handle={handle}
+        setHandle={setHandle}
+        handleErr={handleErr}
+        savingHandle={savingHandle}
+        onSaveHandle={() => void saveHandle()}
+        onDisconnect={disconnect}
+      />
+    );
+  }
+
+  return (
+    <LegacyProfile
+      profile={profile}
+      tiers={tiers}
+      checking={checking}
+      savingHandle={savingHandle}
+      handle={handle}
+      setHandle={setHandle}
+      handleErr={handleErr}
+      onConnected={onConnected}
+      onRecheck={() => void recheck()}
+      onSaveVis={(v) => void saveVis(v)}
+      onSaveHandle={() => void saveHandle()}
+      onRemoveWallet={(id) => void removeWallet(id)}
+      onDisconnect={disconnect}
+    />
+  );
+}
+
+function isTee(elig: Profile["eligibility"]): elig is TeeEligibility {
+  return (elig as { source?: string }).source === "tee";
+}
+
+function TeeProfile({
+  profile,
+  checking,
+  showProve,
+  showLink,
+  onProve,
+  onProveDone,
+  onProveCancel,
+  onLink,
+  onLinked,
+  onRecheck,
+  onSaveVis,
+  handle,
+  setHandle,
+  handleErr,
+  savingHandle,
+  onSaveHandle,
+  onDisconnect,
+}: {
+  profile: Profile;
+  checking: boolean;
+  showProve: boolean;
+  showLink: boolean;
+  onProve: () => void;
+  onProveDone: (p: Profile) => void;
+  onProveCancel: () => void;
+  onLink: () => void;
+  onLinked: () => void;
+  onRecheck: () => void;
+  onSaveVis: (v: string) => void;
+  handle: string;
+  setHandle: (v: string) => void;
+  handleErr: string;
+  savingHandle: boolean;
+  onSaveHandle: () => void;
+  onDisconnect: () => void;
+}) {
+  const elig = profile.eligibility as TeeEligibility;
+  const username = profile.handle ?? `user_${profile.id.slice(-4)}`;
+  const keepLabels = elig.wallets
+    .map((w) => w.label ?? w.family.toUpperCase())
+    .filter((l, i, a) => a.indexOf(l) === i);
+
+  return (
+    <section
+      className="page-enter"
+      style={{
+        padding: "2rem 5vw",
+        margin: "0 auto",
+        width: "100%",
+        display: "flex",
+        flexDirection: "column",
+        gap: "1rem",
+      }}
+    >
+      <div className="card" style={{ position: "relative", overflow: "hidden" }}>
+        <div
+          style={{
+            display: "flex",
+            gap: "0.8rem",
+            alignItems: "flex-start",
+            justifyContent: "space-between",
+            flexWrap: "wrap",
+          }}
+        >
+          <div>
+            <p className="mono-label" style={{ fontSize: 20 }}>
+              PROFILE PAGE
+            </p>
+            <h2
+              style={{
+                margin: "0.3rem 0 0",
+                fontSize: "clamp(1.6rem, 4vw, 2.2rem)",
+                letterSpacing: "-0.03em",
+                overflowWrap: "anywhere",
+              }}
+            >
+              {username}
+            </h2>
+          </div>
+          <span
+            className="tier-badge"
+            style={{ alignSelf: "center", padding: "7px 30px" }}
+          >
+            {elig.tier ?? "UNVERIFIED"}
+          </span>
+        </div>
+
+        <p
+          style={{
+            margin: "0.8rem 0 0",
+            fontSize: "clamp(1.4rem, 4vw, 2rem)",
+            fontWeight: 700,
+            letterSpacing: "-0.03em",
+            lineHeight: 1.1,
+          }}
+        >
+          {elig.tier === null
+            ? "BELOW $100K — LINK MORE BAGS."
+            : elig.topAssets.length > 0
+              ? elig.topAssets.join(" · ")
+              : "VERIFIED HOLDER"}
+        </p>
+        <p className="fine" style={{ margin: "0.3rem 0 0" }}>
+          BAND {elig.portfolioBand}
+          {" · "}
+          {elig.verified
+            ? `VERIFIED ${new Date(elig.verifiedAt).toLocaleString()}`
+            : "UNVERIFIED — PROVE BELOW."}
+          {elig.stale && elig.verified ? " · REFRESHING…" : ""}
+        </p>
+
+        <div className="profile-fields">
+          <div>
+            <p
+              className="mono-label"
+              style={{ marginBottom: "0.4rem", justifySelf: "center" }}
+            >
+              USERNAME
+            </p>
+            <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
+              <input
+                className="field"
+                value={handle}
+                onChange={(e) => {
+                  setHandle(e.target.value);
+                }}
+                placeholder="handle (3–24 chars)"
+                style={{ maxWidth: "220px" }}
+              />
+              <button
+                className="chip"
+                disabled={savingHandle}
+                onClick={onSaveHandle}
+              >
+                {savingHandle ? "SAVING…" : "SAVE"}
+              </button>
+            </div>
+            {handleErr && <p className="err">{handleErr}</p>}
+          </div>
+          <div className="vis-block">
+            <p
+              className="mono-label"
+              style={{ marginBottom: "0.4rem", justifySelf: "center" }}
+            >
+              VISIBILITY
+            </p>
+            <div className="vis-chips">
+              {(["HIDDEN", "VISIBLE"] as const).map((v) => (
+                <button
+                  key={v}
+                  className={profile.visMode === v ? "chip active" : "chip"}
+                  style={{ padding: "0.9rem 1rem" }}
+                  onClick={() => onSaveVis(v)}
+                >
+                  {v}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+        <p className="fine" style={{ margin: "0.6rem 0 0" }}>
+          VISIBLE = your tier shows up for friends in the 1v1 tab. No amounts
+          are ever stored or shown.
+        </p>
+        {!profile.email && (
+          <div style={{ marginTop: "0.8rem" }}>
+            <button className="chip" onClick={onLink}>
+              {showLink ? "CANCEL" : "LINK EMAIL ↗"}
+            </button>
+            {showLink && (
+              <div style={{ marginTop: "0.6rem", maxWidth: "340px" }}>
+                <EmailAuth linkOnly onDone={onLinked} />
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      <div className="card">
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "0.6rem",
+            flexWrap: "wrap",
+          }}
+        >
+          <p className="mono-label" style={{ fontSize: 20 }}>
+            WALLETS
+          </p>
+          <span className="fine" style={{ marginLeft: "auto" }}>
+            {profile.wallets.length}/{MAX_WALLETS}
+          </span>
+        </div>
+        {profile.wallets.length === 0 ? (
+          <p className="fine">
+            No wallets enrolled. Prove your first wallet below.
+          </p>
+        ) : (
+          <div className="wallet-grid">
+            {profile.wallets.map((w) => {
+              const wname = w.name ?? w.chain.toUpperCase();
+              return (
+                <div key={w.id} className="wallet-row">
+                  <WalletIcon
+                    name={wname}
+                    letter={wname.slice(0, 1).toUpperCase()}
+                  />
+                  <div className="wallet-info">
+                    <strong style={{ fontSize: "1rem" }}>{wname}</strong>
+                    <span className="fine" style={{ margin: 0 }}>
+                      {w.chain.toUpperCase()} · ADDRESS HIDDEN BY DESIGN
+                    </span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+        {showProve ? (
+          <div style={{ marginTop: "0.8rem" }}>
+            <TeeProve
+              keepLabels={keepLabels}
+              onDone={onProveDone}
+              onCancel={onProveCancel}
+            />
+          </div>
+        ) : (
+          <div className="wallet-actions">
+            <button
+              className="btn-solid"
+              style={{ padding: "0.6rem 1rem" }}
+              onClick={onProve}
+            >
+              {profile.wallets.length === 0
+                ? "PROVE TIER ↗"
+                : "MANAGE WALLETS ↗"}
+            </button>
+            <button
+              className="btn-ghost"
+              style={{ padding: "0.6rem 1rem", margin: "0 auto" }}
+              disabled={checking}
+              onClick={onRecheck}
+            >
+              {checking ? "REFRESHING…" : "REFRESH TIER"}
+            </button>
+            <button
+              className="btn-ghost"
+              style={{ padding: "0.6rem 1rem" }}
+              onClick={onDisconnect}
+            >
+              DISCONNECT ALL
+            </button>
+          </div>
+        )}
+      </div>
+    </section>
+  );
+}
+
+/**
+ * Legacy path, kept for migration: exact totals from live balance reads.
+ * Tee users never reach here (eligibility.source === "tee").
+ */
+function LegacyProfile({
+  profile,
+  tiers,
+  checking,
+  savingHandle,
+  handle,
+  setHandle,
+  handleErr,
+  onConnected,
+  onRecheck,
+  onSaveVis,
+  onSaveHandle,
+  onRemoveWallet,
+  onDisconnect,
+}: {
+  profile: Profile;
+  tiers: TierInfo[];
+  checking: boolean;
+  savingHandle: boolean;
+  handle: string;
+  setHandle: (v: string) => void;
+  handleErr: string;
+  onConnected: (p?: Profile) => void;
+  onRecheck: () => void;
+  onSaveVis: (v: string) => void;
+  onSaveHandle: () => void;
+  onRemoveWallet: (id: string) => void;
+  onDisconnect: () => void;
+}) {
   const elig = profile.eligibility;
+  if (elig.source !== "legacy") return null;
   const username = profile.handle ?? `user_${profile.id.slice(-4)}`;
   const full = profile.wallets.length >= MAX_WALLETS;
 
@@ -337,8 +683,6 @@ export default function ProfilePage() {
                 value={handle}
                 onChange={(e) => {
                   setHandle(e.target.value);
-                  if (handleErr)
-                    setHandleErr(handleError(e.target.value) ?? "");
                 }}
                 placeholder="handle (3–24 chars)"
                 style={{ maxWidth: "220px" }}
@@ -346,7 +690,7 @@ export default function ProfilePage() {
               <button
                 className="chip"
                 disabled={savingHandle}
-                onClick={saveHandle}
+                onClick={onSaveHandle}
               >
                 {savingHandle ? "SAVING…" : "SAVE"}
               </button>
@@ -366,7 +710,7 @@ export default function ProfilePage() {
                   key={v}
                   className={profile.visMode === v ? "chip active" : "chip"}
                   style={{ padding: "0.9rem 1rem" }}
-                  onClick={() => saveVis(v)}
+                  onClick={() => onSaveVis(v)}
                 >
                   {v}
                 </button>
@@ -399,7 +743,7 @@ export default function ProfilePage() {
           {profile.wallets.map((w) => {
             const live = elig.balances.find((b) => b.walletId === w.id);
             const usd = live?.usd ?? 0;
-            const pct =
+            const wpct =
               elig.total > 0 ? Math.round((usd / elig.total) * 100) : 0;
             const wname = w.name ?? "Solana Wallet";
             return (
@@ -411,14 +755,14 @@ export default function ProfilePage() {
                 <div className="wallet-info">
                   <strong style={{ fontSize: "1rem" }}>{wname}</strong>
                   <span className="fine" style={{ margin: 0 }}>
-                    SOL {pct}% · ${Math.round(usd).toLocaleString()} OF $
+                    SOL {wpct}% · ${Math.round(usd).toLocaleString()} OF $
                     {Math.round(elig.total).toLocaleString()}
                   </span>
                 </div>
                 <button
                   className="chip"
                   style={{ marginLeft: "auto" }}
-                  onClick={() => removeWallet(w.id)}
+                  onClick={() => onRemoveWallet(w.id)}
                 >
                   ✕
                 </button>
@@ -438,14 +782,14 @@ export default function ProfilePage() {
             className="btn-ghost"
             style={{ padding: "0.6rem 1rem", margin: "0 auto" }}
             disabled={checking}
-            onClick={recheck}
+            onClick={onRecheck}
           >
             {checking ? "CHECKING…" : "PROVE COMBINED TOTAL ↗"}
           </button>
           <button
             className="btn-ghost"
             style={{ padding: "0.6rem 1rem" }}
-            onClick={disconnect}
+            onClick={onDisconnect}
           >
             DISCONNECT ALL
           </button>

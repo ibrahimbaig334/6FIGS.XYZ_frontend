@@ -97,7 +97,8 @@ export interface Wallet {
   id: string;
   chain: string;
   name: string | null;
-  address: string;
+  /** Null for tee-linked wallets: the backend stores no address. */
+  address: string | null;
   display: string;
 }
 
@@ -107,7 +108,30 @@ export interface WalletBalance {
   usd: number;
 }
 
-export interface Eligibility {
+export interface TeeWalletView {
+  family: string;
+  label: string | null;
+}
+
+/** Attested view: tier facts and disclosed symbols, never amounts. */
+export interface TeeEligibility {
+  source: "tee";
+  tier: string | null;
+  tierId: number;
+  portfolioBand: string;
+  topAssets: string[];
+  stableBps: number;
+  wallets: TeeWalletView[];
+  walletCount: number;
+  verifiedAt: string;
+  expiresAt: string;
+  stale: boolean;
+  verified: boolean;
+}
+
+/** Legacy view from live balance reads; superseded by the tee flow. */
+export interface LegacyEligibility {
+  source: "legacy";
   tier: string | null;
   total: number;
   assetPct: Record<string, number>;
@@ -115,6 +139,8 @@ export interface Eligibility {
   expiresAt: string | null;
   walletCount: number;
 }
+
+export type Eligibility = TeeEligibility | LegacyEligibility;
 
 export interface TierInfo {
   name: string;
@@ -145,10 +171,64 @@ export async function getTiers(): Promise<{
 export interface Profile {
   id: string;
   handle: string | null;
+  email?: string | null;
   visMode: string;
   tags: string[];
   eligibility: Eligibility;
   wallets: Wallet[];
+}
+
+/** Web2 accounts. Wallets attach to them through the tee prove flow. */
+export async function emailSignup(email: string, password: string) {
+  const res = await api<{ token: string }>("/auth/email/signup", {
+    method: "POST",
+    body: { email, password },
+    auth: false,
+  });
+  setToken(res.token);
+  if (typeof window !== "undefined")
+    window.dispatchEvent(new Event("sixfigs-auth"));
+  return res;
+}
+
+export async function emailLogin(email: string, password: string) {
+  const res = await api<{ token: string }>("/auth/email/login", {
+    method: "POST",
+    body: { email, password },
+    auth: false,
+  });
+  setToken(res.token);
+  if (typeof window !== "undefined")
+    window.dispatchEvent(new Event("sixfigs-auth"));
+  return res;
+}
+
+export async function emailLink(email: string, password: string) {
+  return api<{ token: string }>("/auth/email/link", {
+    method: "POST",
+    body: { email, password },
+  });
+}
+
+/** Single-use tee registration nonce bound to this session. */
+export async function teeNonce(): Promise<{ nonce: string }> {
+  return api("/eligibility/tee-nonce", { method: "POST" });
+}
+
+/** Submit an attested registration plus its escrow blob. */
+export async function teeRegister(
+  signed: unknown,
+  escrowBlob: unknown,
+): Promise<Profile> {
+  return api<Profile>("/eligibility/tee-register", {
+    method: "POST",
+    body: { signed, escrowBlob },
+  });
+}
+
+/** Force a silent freshness re-verification now. */
+export async function teeRecheck(): Promise<unknown> {
+  return api("/eligibility/tee-recheck", { method: "POST" });
 }
 
 export interface Peer {

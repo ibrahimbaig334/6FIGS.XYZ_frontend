@@ -19,9 +19,11 @@ import {
 function SolanaConnectInner({
   onDone,
   hideError,
+  label,
 }: {
   onDone: (p?: Profile) => void;
   hideError?: boolean;
+  label?: string;
 }) {
   const { publicKey, signMessage, wallet, connected, connecting, connect } =
     useWallet();
@@ -140,7 +142,7 @@ function SolanaConnectInner({
           setPhase("choose");
         }}
       >
-        {uiConnecting ? "CONNECTING…" : "CONNECT WALLET"}
+        {uiConnecting ? "CONNECTING…" : label ?? "CONNECT WALLET"}
       </button>
       {err && !hideError && <p className="err">{err}</p>}
     </div>

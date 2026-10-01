@@ -184,12 +184,13 @@ export default function ProfilePage() {
   const username = profile.handle ?? `user_${profile.id.slice(-4)}`;
   const full = profile.wallets.length >= MAX_WALLETS;
 
-  // Next tier + log-scale progress (thresholds span orders of magnitude).
+  // Next tier + linear progress: segment lengths mirror the dollar climbs,
+  // so TIER I is the shortest rung and TIER IV the longest (log inverted it —
+  // it crammed every marker into the bar's tail).
   const sortedTiers = [...tiers].sort((a, b) => a.min - b.min);
   const next = sortedTiers.find((t) => elig.total < t.min) ?? null;
   const scaleMax = Math.max(...sortedTiers.map((t) => t.min), 1) * 1.5;
-  const pos = (v: number) =>
-    v <= 0 ? 0 : Math.min(1, Math.log10(v) / Math.log10(scaleMax));
+  const pos = (v: number) => (v <= 0 ? 0 : Math.min(1, v / scaleMax));
   const pct = Math.round(pos(elig.total) * 100);
 
   return (
@@ -424,13 +425,6 @@ export default function ProfilePage() {
               </div>
             );
           })}
-          {/* Exactly ONE dotted connect card under the list (up to 20 wallets —
-              20 dashed boxes would look bad). */}
-          {!full && (
-            <div className="wallet-slot-empty">
-              <SolanaConnect onDone={onConnected} />
-            </div>
-          )}
         </div>
         <div className="wallet-actions">
           {full ? (
@@ -438,7 +432,7 @@ export default function ProfilePage() {
               Wallet limit reached ({MAX_WALLETS})
             </p>
           ) : (
-            <SolanaConnect onDone={onConnected} />
+            <SolanaConnect onDone={onConnected} label="CONNECT MORE WALLETS" />
           )}
           <button
             className="btn-ghost"

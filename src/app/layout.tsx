@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { DM_Mono, Space_Grotesk } from "next/font/google";
 import "./globals.css";
 import Header from "../components/Header";
+import ChallengeToast from "../components/ChallengeToast";
 import SolanaProviders from "../components/SolanaProviders";
 
 const grotesk = Space_Grotesk({
@@ -41,6 +42,7 @@ export default function RootLayout({
             </div>
           </div>
           <Header />
+          <ChallengeToast />
           <main>{children}</main>
           <footer
             className="site-footer"

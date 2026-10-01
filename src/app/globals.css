@@ -484,6 +484,11 @@ select.field option {
   text-align: center;
 }
 
+/* Friend tier badge sits centered above its action button. */
+.room-side .tier-badge {
+  align-self: center;
+}
+
 .room-del {
   color: var(--crimson) !important;
   border-color: var(--crimson) !important;
@@ -596,48 +601,10 @@ select.field option {
   margin-bottom: 0;
 }
 
-/* Dotted connect slot renders as a matching card inside the grid. */
-.wallet-grid .wallet-slot-empty {
-  margin-top: 0;
-  border: 2px dashed var(--ink);
-  padding: 0.9rem 1rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.wallet-grid .wallet-slot-empty .btn-solid {
-  width: auto;
-  border-style: solid;
-  background: var(--ink);
-  color: var(--paper);
-}
-
-.wallet-grid .wallet-slot-empty .btn-solid:hover {
-  background: var(--gold);
-  color: var(--on-dark);
-  border-color: var(--ink);
-}
-
 @media (min-width: 700px) {
   .wallet-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
-}
-
-.wallet-slot-empty .btn-solid {
-  width: 100%;
-  border-style: dashed;
-  background: transparent;
-  color: var(--muted);
-  text-align: center;
-}
-
-.wallet-slot-empty .btn-solid:hover {
-  border-style: solid;
-  border-color: var(--ink);
-  color: var(--on-dark);
-  background: var(--gold);
 }
 
 .wallet-addr {
@@ -881,6 +848,24 @@ select.field option {
     padding-top: 0.8rem;
     min-width: 0;
     width: 100%;
+  }
+  /* Friend rows keep the (smaller) avatar beside the handle. */
+  .room-row.friend-row {
+    flex-direction: row;
+    gap: 0.7rem;
+  }
+  .friend-row .friend-avatar {
+    width: 34px;
+    height: 34px;
+    font-size: 1rem;
+    outline-width: 2px;
+  }
+  .room-row.friend-row .room-side {
+    border-top: none;
+    border-left: 2px solid var(--ink);
+    padding-top: 0;
+    padding-left: 0.7rem;
+    width: auto;
   }
   /* Pager zones stack centered: nav, info, goto. */
   .pager {
@@ -1271,6 +1256,45 @@ select.field option {
   from {
     transform: translateY(-12px);
     opacity: 0;
+  }
+}
+
+/* Global challenge toast — fixed top-right on every page except /play
+ * (which shows the full inline banner). Auto-dismisses after 5s. */
+.toast-stack {
+  position: fixed;
+  top: 4.8rem;
+  right: 3vw;
+  z-index: 70;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  width: min(330px, 90vw);
+}
+
+.challenge-toast {
+  background: var(--gold);
+  color: var(--on-dark);
+  border: 2px solid var(--ink);
+  box-shadow: 4px 4px 0 var(--shadow);
+  padding: 0.7rem 0.85rem;
+  font-family: var(--font-dm-mono);
+  font-size: 0.78rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  animation: banner-drop 0.25s cubic-bezier(0.2, 0.9, 0.3, 1.2);
+}
+
+.challenge-toast .toast-actions {
+  display: flex;
+  gap: 0.4rem;
+}
+
+@media (max-width: 540px) {
+  /* Stacked masthead runs taller — sit below it. */
+  .toast-stack {
+    top: 9.4rem;
   }
 }
 

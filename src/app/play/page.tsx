@@ -326,8 +326,7 @@ export default function PlayPage() {
 
   function goToPage() {
     const n = parseInt(goto, 10);
-    if (!Number.isNaN(n))
-      setFriendPage(Math.min(friendPages, Math.max(1, n)));
+    if (!Number.isNaN(n)) setFriendPage(Math.min(friendPages, Math.max(1, n)));
     setGoto("");
   }
 
@@ -443,6 +442,7 @@ export default function PlayPage() {
             className="btn-solid"
             onClick={quickplay}
             disabled={!tier || searching}
+            style={{ marginBottom: "0.8rem" }}
           >
             RANDOM
           </button>
@@ -494,7 +494,7 @@ export default function PlayPage() {
                     .join(" · ")
                 : "";
             return (
-              <div key={p.id} className="room-row">
+              <div key={p.id} className="room-row friend-row">
                 <span
                   className={`friend-avatar${p.online ? " on" : ""}`}
                   aria-hidden="true"
@@ -506,28 +506,27 @@ export default function PlayPage() {
                     <strong className="room-name" title={p.handle}>
                       {p.handle}
                     </strong>
-                    <span
-                      className={
-                        p.tier === "TIER III" || p.tier === "TIER IV"
-                          ? "tier-badge t3"
-                          : "tier-badge"
-                      }
-                    >
-                      {p.tier ?? "UNVERIFIED"}
-                    </span>
                   </div>
                   <p className="fine room-meta">
                     <span
                       className={p.online ? "dot on" : "dot"}
                       title={p.online ? "Online" : "Offline"}
                     />{" "}
-                    {p.online
-                      ? "ONLINE"
-                      : `OFFLINE · ${timeAgo(p.lastSeenAt)}`}
+                    {p.online ? "ONLINE" : `OFFLINE · ${timeAgo(p.lastSeenAt)}`}
                     {holdings ? ` · ${holdings}` : ""}
                   </p>
                 </div>
                 <div className="room-side">
+                  <span
+                    className={
+                      p.tier === "TIER III" || p.tier === "TIER IV"
+                        ? "tier-badge t3"
+                        : "tier-badge"
+                    }
+                    style={{ width: "100%", textAlign: "center" }}
+                  >
+                    {p.tier ?? "UNVERIFIED"}
+                  </span>
                   {pend ? (
                     <>
                       <span className="fine" style={{ textAlign: "center" }}>

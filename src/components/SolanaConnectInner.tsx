@@ -71,7 +71,9 @@ function SolanaConnectInner({ onDone }: { onDone: (p?: Profile) => void }) {
     setBusy(true);
     setErr("");
     const sign = (m: Uint8Array) =>
-      signMessage(m) as unknown as Promise<Uint8Array | { signature: Uint8Array }>;
+      signMessage(m) as unknown as Promise<
+        Uint8Array | { signature: Uint8Array }
+      >;
     // Shared singleton flow: concurrent instances (and StrictMode's double
     // effect) all join ONE nonce→sign→verify, so nonces never collide.
     loginOnce(address, sign, wallet?.adapter.name ?? null)
@@ -81,7 +83,8 @@ function SolanaConnectInner({ onDone }: { onDone: (p?: Profile) => void }) {
         onDone(res.profile);
       })
       .catch((e) => {
-        if (!cancelled) setErr(e instanceof Error ? e.message : "Connect failed");
+        if (!cancelled)
+          setErr(e instanceof Error ? e.message : "Connect failed");
       })
       .finally(() => {
         if (!cancelled) setBusy(false);
@@ -110,7 +113,14 @@ function SolanaConnectInner({ onDone }: { onDone: (p?: Profile) => void }) {
   const uiConnecting = busy || connecting;
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem", alignItems: "center" }}>
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        gap: "0.5rem",
+        alignItems: "center",
+      }}
+    >
       {/* Same class/layout as the navbar dark buttons; opens the default adapter popup. */}
       <button
         className="btn-solid"

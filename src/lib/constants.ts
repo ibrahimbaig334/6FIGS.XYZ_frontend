@@ -19,7 +19,7 @@ export const ROOMS_PAGE_SIZE = 20;
 export const FRIENDS_PAGE_SIZE = 10;
 
 // Wallet cap (backend: MAX_WALLETS_PER_USER)
-export const MAX_WALLETS = 4;
+export const MAX_WALLETS = 20;
 
 // Emoji set for room descriptions + chats (tap to insert)
 export const CHAT_EMOJIS = [

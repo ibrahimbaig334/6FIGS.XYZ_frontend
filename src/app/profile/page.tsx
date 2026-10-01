@@ -404,17 +404,7 @@ export default function ProfilePage() {
             {profile.wallets.length}/{MAX_WALLETS}
           </span>
         </div>
-        {Array.from({ length: MAX_WALLETS }).map((_, i) => {
-          const w = profile.wallets[i];
-          if (!w) {
-            return (
-              <div key={`empty-${i}`} className="wallet-slot-empty">
-                <SolanaConnect
-              onDone={onConnected}
-                />
-              </div>
-            );
-          }
+        {profile.wallets.map((w) => {
           const live = elig.balances.find((b) => b.walletId === w.id);
           const usd = live?.usd ?? 0;
           const pct = elig.total > 0 ? Math.round((usd / elig.total) * 100) : 0;
@@ -455,10 +445,17 @@ export default function ProfilePage() {
             </div>
           );
         })}
+        {/* Exactly ONE dotted connect slot under the list (up to 20 wallets —
+            20 dashed boxes would look bad). */}
+        {!full && (
+          <div className="wallet-slot-empty">
+            <SolanaConnect onDone={onConnected} />
+          </div>
+        )}
         <div className="wallet-actions">
           {full ? (
             <p className="fine" style={{ margin: 0 }}>
-              Wallet limit reached ({MAX_WALLETS}) — remove one to add another.
+              Wallet limit reached ({MAX_WALLETS})
             </p>
           ) : (
             <SolanaConnect onDone={onConnected} />
@@ -479,11 +476,6 @@ export default function ProfilePage() {
             DISCONNECT ALL
           </button>
         </div>
-        {full && (
-          <p className="fine" style={{ marginBottom: 0 }}>
-            Remove a wallet above to connect a new one.
-          </p>
-        )}
       </div>
     </section>
   );

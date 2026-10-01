@@ -1,22 +1,20 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { useRouter, usePathname } from "next/navigation";
+import { useRouter } from "next/navigation";
 import type { Socket } from "socket.io-client";
 import { api, getToken, RoomRequestInfo } from "../lib/api";
+import { REQUEST_TIMEOUT_MS } from "../lib/constants";
 import { connectSocket } from "../lib/ws";
 
-const TOAST_MS = 5000;
-
 /**
- * Global top-right challenge notification on every page — the /play tab keeps
- * its own inline banner and hides this. Shows pending + live room requests and
- * auto-dismisses each after 5s unless accepted/declined.
+ * Global top-right challenge notification on every page (the /play list uses
+ * it too). Shows pending + live room requests and auto-dismisses each at the
+ * 15s request mark unless accepted/declined.
  */
 export default function ChallengeToast() {
   const [items, setItems] = useState<RoomRequestInfo[]>([]);
   const router = useRouter();
-  const pathname = usePathname();
   const timers = useRef(new Map<string, ReturnType<typeof setTimeout>>());
   const sock = useRef<Socket | null>(null);
 
@@ -28,6 +26,13 @@ export default function ChallengeToast() {
   }
 
   function show(r: RoomRequestInfo) {
+    // The offer's clock starts when the request was created — a reloaded page
+    // only sees whatever is left of the 15s window (stale offers never show).
+    const created = Date.parse(r.createdAt);
+    const left = Number.isNaN(created)
+      ? REQUEST_TIMEOUT_MS
+      : REQUEST_TIMEOUT_MS - (Date.now() - created);
+    if (left <= 0) return;
     setItems((prev) => (prev.some((x) => x.id === r.id) ? prev : [r, ...prev]));
     if (timers.current.has(r.id)) return;
     timers.current.set(
@@ -35,7 +40,7 @@ export default function ChallengeToast() {
       setTimeout(() => {
         timers.current.delete(r.id);
         setItems((prev) => prev.filter((x) => x.id !== r.id));
-      }, TOAST_MS),
+      }, left),
     );
   }
 
@@ -104,7 +109,7 @@ export default function ChallengeToast() {
     }
   }
 
-  if (pathname === "/play" || items.length === 0) return null;
+  if (items.length === 0) return null;
 
   return (
     <div className="toast-stack" aria-live="polite">

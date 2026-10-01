@@ -17,6 +17,7 @@ import {
   POLL_FRIENDS_MS,
   POLL_QUEUE_MS,
   POLL_REQUESTS_MS,
+  REQUEST_TIMEOUT_MS,
 } from "../../lib/constants";
 import { connectSocket } from "../../lib/ws";
 import SolanaConnect from "../../components/SolanaConnect";
@@ -53,21 +54,34 @@ export default function PlayPage() {
   const [ready, setReady] = useState(false);
   const [searching, setSearching] = useState(false);
   const [elapsed, setElapsed] = useState(0);
-  const [incoming, setIncoming] = useState<RoomRequestInfo[]>([]);
   const [outgoing, setOutgoing] = useState<RoomRequestInfo[]>([]);
+  // Per-friend status line under their online dot: "REQUEST DECLINED" /
+  // "DIDN'T RESPOND" (the offer outcome never lands in the RANDOM box).
+  const [notes, setNotes] = useState<Record<string, string>>({});
   const [joining, setJoining] = useState<string | null>(null); // overlay text while connecting to a room
   const [initialLoading, setInitialLoading] = useState(true);
   const [goto, setGoto] = useState("");
   const searchingRef = useRef(false);
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
+  // 15s response window per outgoing request — fires the no-response expiry.
+  const reqTimers = useRef(new Map<string, ReturnType<typeof setTimeout>>());
+  const outgoingRef = useRef<RoomRequestInfo[]>([]);
 
   useEffect(() => {
     setReady(true);
     const pending = timers.current;
+    const reqs = reqTimers.current;
     return () => {
       pending.forEach(clearTimeout);
+      reqs.forEach(clearTimeout);
+      reqs.clear();
     };
   }, []);
+
+  // WS handlers read the freshest outgoing list without stale closures.
+  useEffect(() => {
+    outgoingRef.current = outgoing;
+  }, [outgoing]);
 
   const refreshFriends = useCallback(async () => {
     try {
@@ -90,11 +104,8 @@ export default function PlayPage() {
   const load = useCallback(async () => {
     refreshFriends();
     try {
-      const [inc, out] = await Promise.all([
-        api<RoomRequestInfo[]>("/play/requests/incoming"),
-        api<RoomRequestInfo[]>("/play/requests/outgoing"),
-      ]);
-      setIncoming(inc);
+      const out = await api<RoomRequestInfo[]>("/play/requests/outgoing");
+      out.forEach(armRequestTimer);
       setOutgoing((prev) => {
         // requester side: an accepted outgoing means "join the game now"
         const acc = out.find((o) => o.status === "accepted" && o.gameId);
@@ -138,51 +149,46 @@ export default function PlayPage() {
   }, [load]);
 
   // Realtime matchmaking events (polling below is the fallback).
+  // Incoming offers live in the global ChallengeToast — this tab only tracks
+  // the requests WE sent (accept/decline outcomes land on the friend row).
   useEffect(() => {
     if (!ready || !getToken()) return;
     const s = connectSocket();
-    const onRequest = (r: RoomRequestInfo) =>
-      setIncoming((prev) =>
-        prev.some((x) => x.id === r.id) ? prev : [r, ...prev],
-      );
-    const onAccepted = (p: { requestId: string; gameId: string }) =>
-      setOutgoing((prev) => {
-        const hit = prev.find((o) => o.id === p.requestId);
-        if (hit) joinRoomWithOverlay("ACCEPTED — JOINING GAME…", p.gameId);
-        return prev.map((o) =>
+    const onAccepted = (p: { requestId: string; gameId: string }) => {
+      const hit = outgoingRef.current.find((o) => o.id === p.requestId);
+      clearRequestTimer(p.requestId);
+      if (hit) joinRoomWithOverlay("ACCEPTED — JOINING GAME…", p.gameId);
+      setOutgoing((prev) =>
+        prev.map((o) =>
           o.id === p.requestId
             ? { ...o, status: "accepted", gameId: p.gameId }
             : o,
-        );
-      });
-    const onDeclined = (p: { requestId: string }) => {
-      setOutgoing((prev) => prev.filter((o) => o.id !== p.requestId));
-      setErr("Room request declined.");
+        ),
+      );
     };
-    const onCancelled = (p: { requestId: string }) =>
-      setIncoming((prev) => prev.filter((o) => o.id !== p.requestId));
-    s.on("roomRequest", onRequest);
+    const onDeclined = (p: { requestId: string }) => {
+      clearRequestTimer(p.requestId);
+      const hit = outgoingRef.current.find((o) => o.id === p.requestId);
+      if (hit)
+        setNotes((prev) => ({ ...prev, [hit.toUserId]: "REQUEST DECLINED" }));
+      setOutgoing((prev) => prev.filter((o) => o.id !== p.requestId));
+    };
     s.on("requestAccepted", onAccepted);
     s.on("requestDeclined", onDeclined);
-    s.on("requestCancelled", onCancelled);
     return () => {
-      s.off("roomRequest", onRequest);
       s.off("requestAccepted", onAccepted);
       s.off("requestDeclined", onDeclined);
-      s.off("requestCancelled", onCancelled);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ready]);
 
-  // Poll incoming/outgoing while on the tab (covers missed WS events).
+  // Poll outgoing while on the tab (covers missed WS events).
   useEffect(() => {
     if (!ready || !getToken()) return;
     const t = setInterval(() => {
-      api<RoomRequestInfo[]>("/play/requests/incoming")
-        .then(setIncoming)
-        .catch(() => {});
       api<RoomRequestInfo[]>("/play/requests/outgoing")
         .then((out) => {
+          out.forEach(armRequestTimer);
           const acc = out.find((o) => o.status === "accepted" && o.gameId);
           if (acc)
             joinRoomWithOverlay(
@@ -267,6 +273,39 @@ export default function PlayPage() {
     }
   }
 
+  function clearRequestTimer(id: string) {
+    const t = reqTimers.current.get(id);
+    if (t) clearTimeout(t);
+    reqTimers.current.delete(id);
+  }
+
+  /** Start (or resume) the 15s window on an outgoing request; at the mark the
+   *  offer is withdrawn server-side and the friend row shows DIDN'T RESPOND. */
+  function armRequestTimer(r: RoomRequestInfo) {
+    if (r.status !== "pending" || reqTimers.current.has(r.id)) return;
+    const created = Date.parse(r.createdAt);
+    const left = Number.isNaN(created)
+      ? REQUEST_TIMEOUT_MS
+      : REQUEST_TIMEOUT_MS - (Date.now() - created);
+    reqTimers.current.set(
+      r.id,
+      setTimeout(() => expireRequest(r.id, r.toUserId), Math.max(0, left)),
+    );
+  }
+
+  function expireRequest(id: string, friendId: string) {
+    clearRequestTimer(id);
+    setOutgoing((prev) => prev.filter((o) => o.id !== id));
+    api(`/play/requests/${id}/cancel`, { method: "POST" })
+      .then(() =>
+        setNotes((prev) => ({ ...prev, [friendId]: "DIDN'T RESPOND" })),
+      )
+      .catch((e) => {
+        // Accepted in the same breath — the join flow takes over, no note.
+        console.error("request expire failed", e);
+      });
+  }
+
   async function sendRequest(f: Friend) {
     setErr("");
     try {
@@ -275,6 +314,12 @@ export default function PlayPage() {
         body: { userId: f.id },
       });
       setOutgoing((prev) => [r, ...prev]);
+      setNotes((prev) => {
+        const next = { ...prev };
+        delete next[f.id];
+        return next;
+      });
+      armRequestTimer(r);
     } catch (e) {
       console.error("request failed", e);
       setErr("Couldn't send the request — try again");
@@ -282,40 +327,13 @@ export default function PlayPage() {
   }
 
   async function cancelRequest(id: string) {
+    clearRequestTimer(id);
     try {
       await api(`/play/requests/${id}/cancel`, { method: "POST" });
       setOutgoing((prev) => prev.filter((o) => o.id !== id));
     } catch (e) {
       console.error("cancel request failed", e);
       setErr("Couldn't cancel — try again");
-    }
-  }
-
-  async function acceptRequest(r: RoomRequestInfo) {
-    setErr("");
-    try {
-      const acc = await api<RoomRequestInfo & { gameId: string }>(
-        `/play/requests/${r.id}/accept`,
-        { method: "POST" },
-      );
-      setIncoming((prev) => prev.filter((x) => x.id !== r.id));
-      joinRoomWithOverlay(
-        `JOINING ${acc.fromHandle.toUpperCase()}'S GAME…`,
-        acc.gameId,
-      );
-    } catch (e) {
-      console.error("accept failed", e);
-      setErr("Couldn't accept — try again");
-    }
-  }
-
-  async function declineRequest(id: string) {
-    try {
-      await api(`/play/requests/${id}/decline`, { method: "POST" });
-      setIncoming((prev) => prev.filter((x) => x.id !== id));
-    } catch (e) {
-      console.error("decline failed", e);
-      setErr("Couldn't decline — try again");
     }
   }
 
@@ -399,34 +417,10 @@ export default function PlayPage() {
             1v1 chat
           </a>
         </div>
-        <span className="tier-badge">
+        <span className="tier-badge" style={{ padding: "0.6rem 1.3rem" }}>
           {tier ? `YOU · ${tier}` : "UNVERIFIED"}
         </span>
       </div>
-
-      {incoming.map((r) => (
-        <div key={r.id} className="request-banner" role="alert">
-          <span>
-            <strong>{r.fromHandle}</strong> invites you to a private room
-          </span>
-          <span style={{ display: "flex", gap: "0.4rem" }}>
-            <button
-              className="btn-solid"
-              style={{ padding: "0.5rem 0.9rem" }}
-              onClick={() => acceptRequest(r)}
-            >
-              ACCEPT
-            </button>
-            <button
-              className="btn-ghost"
-              style={{ padding: "0.5rem 0.9rem" }}
-              onClick={() => declineRequest(r.id)}
-            >
-              DECLINE
-            </button>
-          </span>
-        </div>
-      ))}
 
       <div className="card">
         <div
@@ -515,6 +509,9 @@ export default function PlayPage() {
                     {p.online ? "ONLINE" : `OFFLINE · ${timeAgo(p.lastSeenAt)}`}
                     {holdings ? ` · ${holdings}` : ""}
                   </p>
+                  {notes[p.id] && (
+                    <p className="fine room-note">{notes[p.id]}</p>
+                  )}
                 </div>
                 <div className="room-side">
                   <span
@@ -528,17 +525,12 @@ export default function PlayPage() {
                     {p.tier ?? "UNVERIFIED"}
                   </span>
                   {pend ? (
-                    <>
-                      <span className="fine" style={{ textAlign: "center" }}>
-                        REQUEST SENT…
-                      </span>
-                      <button
-                        className="btn-ghost btn-sm"
-                        onClick={() => cancelRequest(pend.id)}
-                      >
-                        CANCEL
-                      </button>
-                    </>
+                    <button
+                      className="btn-ghost btn-sm"
+                      onClick={() => cancelRequest(pend.id)}
+                    >
+                      CANCEL
+                    </button>
                   ) : (
                     <button
                       className="btn-solid btn-sm"

@@ -103,3 +103,7 @@ export const POLL_QUEUE_MS = 2000;
 export const JOIN_REDIRECT_MS = 1800;
 export const OPP_GONE_REDIRECT_MS = 3000;
 export const ROOM_GONE_REDIRECT_MS = 3500;
+
+// A room request lives this long: the offer toast auto-hides at the mark and
+// the requester cancels + sees "DIDN'T RESPOND" if nobody answered (ms).
+export const REQUEST_TIMEOUT_MS = 15000;

@@ -407,7 +407,7 @@ select.field option {
   align-items: stretch;
   border: 2px solid var(--ink);
   background: var(--card);
-  padding: 0.9rem 1rem;
+  padding: 0.5rem 1rem;
 }
 
 .room-main {
@@ -416,6 +416,7 @@ select.field option {
   display: flex;
   flex-direction: column;
   gap: 0.3rem;
+  justify-content: center;
 }
 
 .room-topline {
@@ -447,6 +448,14 @@ select.field option {
   margin: 0;
   font-size: 0.72rem;
   letter-spacing: 0.06em;
+}
+
+/* Friend-row outcome line (REQUEST DECLINED / DIDN'T RESPOND). */
+.room-note {
+  margin: 0.2rem 0 0;
+  color: var(--crimson);
+  letter-spacing: 0.06em;
+  font-weight: 500;
 }
 
 .room-side {

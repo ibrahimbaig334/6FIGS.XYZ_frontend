@@ -471,6 +471,7 @@ select.field option {
 .room-occ {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 0.4rem;
   margin: 0;
 }
@@ -1188,6 +1189,7 @@ select.field option {
   background: #b9b2a2;
   border: 1.5px solid var(--ink);
   flex: none;
+  margin-bottom: 1.5px;
 }
 
 .dot.on {

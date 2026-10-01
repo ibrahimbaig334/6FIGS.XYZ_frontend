@@ -20,7 +20,26 @@ import {
 } from "../../lib/constants";
 import { connectSocket } from "../../lib/ws";
 import SolanaConnect from "../../components/SolanaConnect";
+import SelectMenu from "../../components/SelectMenu";
 import Loader from "../../components/Loader";
+
+/** Sliding page list with ellipsis: 1 … 4 5 6 … 12. */
+function pageWindow(cur: number, totalPages: number): (number | "…")[] {
+  if (totalPages <= 7)
+    return Array.from({ length: totalPages }, (_, i) => i + 1);
+  const keep = new Set(
+    [1, totalPages, cur - 1, cur, cur + 1].filter(
+      (p) => p >= 1 && p <= totalPages,
+    ),
+  );
+  const sorted = Array.from(keep).sort((a, b) => a - b);
+  const out: (number | "…")[] = [];
+  sorted.forEach((p, i) => {
+    if (i > 0 && p > sorted[i - 1] + 1) out.push("…");
+    out.push(p);
+  });
+  return out;
+}
 
 export default function PlayPage() {
   const router = useRouter();
@@ -38,6 +57,7 @@ export default function PlayPage() {
   const [outgoing, setOutgoing] = useState<RoomRequestInfo[]>([]);
   const [joining, setJoining] = useState<string | null>(null); // overlay text while connecting to a room
   const [initialLoading, setInitialLoading] = useState(true);
+  const [goto, setGoto] = useState("");
   const searchingRef = useRef(false);
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
 
@@ -56,6 +76,8 @@ export default function PlayPage() {
         limit: String(FRIENDS_PAGE_SIZE),
         sort: friendSort,
       });
+      // Name sort runs A→Z (user_… below SmithWagmi); the rest keep newest-first.
+      if (friendSort === "name") params.set("order", "asc");
       if (q) params.set("q", q);
       const res = await api<FriendList>(`/play/friends?${params.toString()}`);
       setFriends(res.items);
@@ -300,6 +322,20 @@ export default function PlayPage() {
   const pendingTo = (friendId: string) =>
     outgoing.find((o) => o.toUserId === friendId);
 
+  const friendPages = Math.max(1, Math.ceil(friendTotal / FRIENDS_PAGE_SIZE));
+
+  function goToPage() {
+    const n = parseInt(goto, 10);
+    if (!Number.isNaN(n))
+      setFriendPage(Math.min(friendPages, Math.max(1, n)));
+    setGoto("");
+  }
+
+  function pickSort(v: string) {
+    setFriendSort(v);
+    setFriendPage(1);
+  }
+
   // Mounted guard (see rooms page): localStorage token is client-only.
   if (!ready) {
     return (
@@ -351,6 +387,7 @@ export default function PlayPage() {
       className="page-enter"
       style={{
         padding: "2rem 5vw",
+        flex: 1,
         display: "flex",
         flexDirection: "column",
         gap: "1rem",
@@ -367,21 +404,6 @@ export default function PlayPage() {
           {tier ? `YOU · ${tier}` : "UNVERIFIED"}
         </span>
       </div>
-      {!tier && (
-        <div className="gate-note">
-          <p>
-            <strong>Locked.</strong> Verify ≥ $100K in{" "}
-            <a href="/profile">Profile</a> to play.
-          </p>
-          <a
-            href="/profile"
-            className="btn-solid"
-            style={{ padding: "0.6rem 0.9rem" }}
-          >
-            GO TO PROFILE ↗
-          </a>
-        </div>
-      )}
 
       {incoming.map((r) => (
         <div key={r.id} className="request-banner" role="alert">
@@ -432,17 +454,9 @@ export default function PlayPage() {
         {err && <p className="err-center">{err}</p>}
       </div>
 
-      <div
-        style={{
-          display: "flex",
-          gap: "0.5rem",
-          flexWrap: "wrap",
-          alignItems: "center",
-        }}
-      >
+      <div className="rooms-filter">
         <input
-          className="field"
-          style={{ maxWidth: "220px" }}
+          className="field rooms-q"
           value={q}
           onChange={(e) => {
             setQ(e.target.value);
@@ -450,111 +464,182 @@ export default function PlayPage() {
           }}
           placeholder="search friends…"
         />
-        <select
-          className="field"
-          style={{ maxWidth: "190px", flex: "none" }}
-          value={friendSort}
-          onChange={(e) => {
-            setFriendSort(e.target.value);
-            setFriendPage(1);
-          }}
-        >
-          <option value="created">SORT: NEWEST</option>
-          <option value="name">SORT: NAME</option>
-          <option value="online">SORT: ONLINE</option>
-        </select>
-        <span className="fine" style={{ marginLeft: "auto" }}>
-          {friendTotal} FRIENDS
-        </span>
+        <div className="sortmenu-wrap">
+          <SelectMenu
+            label="Sort friends"
+            value={friendSort}
+            onChange={pickSort}
+            options={[
+              { value: "created", label: "NEWEST" },
+              { value: "name", label: "NAME A–Z" },
+              { value: "online", label: "ONLINE FIRST" },
+            ]}
+          />
+        </div>
+        <span className="fine rooms-count">{friendTotal} FRIENDS</span>
       </div>
-      <div style={{ display: "flex", flexDirection: "column", gap: "0.7rem" }}>
-        {initialLoading ? (
-          <div className="card">
-            <Loader label="LOADING FRIENDS…" />
-          </div>
-        ) : (
-          friends.map((p) => {
+      {initialLoading ? (
+        <div className="loader-block">
+          <Loader label="LOADING FRIENDS…" />
+        </div>
+      ) : (
+        <div className="room-rows">
+          {friends.map((p) => {
             const pend = pendingTo(p.id);
+            const letter = (p.handle?.trim()?.[0] ?? "?").toUpperCase();
+            const holdings =
+              p.assetPct && Object.keys(p.assetPct).length > 0
+                ? Object.entries(p.assetPct)
+                    .map(([c, pct]) => `${c} ${pct}%`)
+                    .join(" · ")
+                : "";
             return (
-              <div key={p.id} className="peer-row">
+              <div key={p.id} className="room-row">
                 <span
-                  className={p.online ? "dot on" : "dot"}
-                  title={p.online ? "Online" : "Offline"}
-                />
-                <strong style={{ fontSize: "1.05rem" }}>{p.handle}</strong>
-                <span className="fine">{timeAgo(p.lastSeenAt)}</span>
-                <span className="fine">{p.online ? "ONLINE" : "OFFLINE"}</span>
-                <span
-                  className={
-                    p.tier === "TIER III" || p.tier === "TIER IV" ? "tier-badge t3" : "tier-badge"
-                  }
+                  className={`friend-avatar${p.online ? " on" : ""}`}
+                  aria-hidden="true"
                 >
-                  {p.tier ?? "UNVERIFIED"}
+                  {letter}
                 </span>
-                {p.assetPct && Object.keys(p.assetPct).length > 0 && (
-                  <span className="fine">
-                    {Object.entries(p.assetPct)
-                      .map(([c, pct]) => `${c} ${pct}%`)
-                      .join(" · ")}
-                  </span>
-                )}
-                {pend ? (
-                  <button
-                    className="btn-ghost btn-sm"
-                    style={{ marginLeft: "auto" }}
-                    onClick={() => cancelRequest(pend.id)}
-                  >
-                    CANCEL REQUEST
-                  </button>
-                ) : (
-                  <button
-                    className="btn-solid btn-sm"
-                    style={{ marginLeft: "auto" }}
-                    disabled={!tier || !p.online}
-                    onClick={() => sendRequest(p)}
-                  >
-                    {p.online ? "ROOM REQUEST ↗" : "OFFLINE"}
-                  </button>
-                )}
+                <div className="room-main">
+                  <div className="room-topline">
+                    <strong className="room-name" title={p.handle}>
+                      {p.handle}
+                    </strong>
+                    <span
+                      className={
+                        p.tier === "TIER III" || p.tier === "TIER IV"
+                          ? "tier-badge t3"
+                          : "tier-badge"
+                      }
+                    >
+                      {p.tier ?? "UNVERIFIED"}
+                    </span>
+                  </div>
+                  <p className="fine room-meta">
+                    <span
+                      className={p.online ? "dot on" : "dot"}
+                      title={p.online ? "Online" : "Offline"}
+                    />{" "}
+                    {p.online
+                      ? "ONLINE"
+                      : `OFFLINE · ${timeAgo(p.lastSeenAt)}`}
+                    {holdings ? ` · ${holdings}` : ""}
+                  </p>
+                </div>
+                <div className="room-side">
+                  {pend ? (
+                    <>
+                      <span className="fine" style={{ textAlign: "center" }}>
+                        REQUEST SENT…
+                      </span>
+                      <button
+                        className="btn-ghost btn-sm"
+                        onClick={() => cancelRequest(pend.id)}
+                      >
+                        CANCEL
+                      </button>
+                    </>
+                  ) : (
+                    <button
+                      className="btn-solid btn-sm"
+                      disabled={!tier || !p.online}
+                      onClick={() => sendRequest(p)}
+                    >
+                      {p.online ? "ROOM REQUEST ↗" : "OFFLINE"}
+                    </button>
+                  )}
+                </div>
               </div>
             );
-          })
-        )}
-      </div>
+          })}
+        </div>
+      )}
       {friends.length === 0 && !initialLoading && (
         <p className="fine">
           No friends yet — hit RANDOM to meet someone. One message each way
           makes you friends.
         </p>
       )}
-      {Math.ceil(friendTotal / FRIENDS_PAGE_SIZE) > 1 && (
-        <div
-          style={{
-            display: "flex",
-            gap: "0.5rem",
-            alignItems: "center",
-            justifyContent: "center",
-          }}
-        >
+      <div className="pager">
+        <span className="fine pager-stat">
+          PAGE {friendPage} / {friendPages} · {friendTotal} FRIENDS
+        </span>
+        <div className="pager-nav">
+          <button
+            className="chip"
+            disabled={friendPage <= 1}
+            onClick={() => setFriendPage(1)}
+            title="First page"
+            aria-label="First page"
+          >
+            «
+          </button>
           <button
             className="chip"
             disabled={friendPage <= 1}
             onClick={() => setFriendPage(friendPage - 1)}
+            title="Previous page"
+            aria-label="Previous page"
           >
-            ← PREV
+            ‹
           </button>
-          <span className="mono-label">
-            PAGE {friendPage} / {Math.ceil(friendTotal / FRIENDS_PAGE_SIZE)}
+          <span className="pager-nums">
+            {pageWindow(friendPage, friendPages).map((n, i) =>
+              n === "…" ? (
+                <span key={`gap-${i}`} className="pager-gap">
+                  …
+                </span>
+              ) : (
+                <button
+                  key={n}
+                  className={n === friendPage ? "chip active" : "chip"}
+                  onClick={() => setFriendPage(n)}
+                  aria-label={`Page ${n}`}
+                  aria-current={n === friendPage ? "page" : undefined}
+                >
+                  {n}
+                </button>
+              ),
+            )}
           </span>
           <button
             className="chip"
-            disabled={friendPage >= Math.ceil(friendTotal / FRIENDS_PAGE_SIZE)}
+            disabled={friendPage >= friendPages}
             onClick={() => setFriendPage(friendPage + 1)}
+            title="Next page"
+            aria-label="Next page"
           >
-            NEXT →
+            ›
+          </button>
+          <button
+            className="chip"
+            disabled={friendPage >= friendPages}
+            onClick={() => setFriendPage(friendPages)}
+            title="Last page"
+            aria-label="Last page"
+          >
+            »
           </button>
         </div>
-      )}
+        <label className="pager-goto">
+          <input
+            className="field"
+            inputMode="numeric"
+            pattern="[0-9]*"
+            placeholder="GO TO PAGE"
+            value={goto}
+            onChange={(e) => setGoto(e.target.value.replace(/[^0-9]/g, ""))}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") goToPage();
+            }}
+            aria-label="Go to page"
+          />
+          <button className="chip" onClick={goToPage}>
+            GO
+          </button>
+        </label>
+      </div>
 
       {(searching || joining) && (
         <div

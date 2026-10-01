@@ -494,6 +494,25 @@ select.field option {
   color: #fff !important;
 }
 
+/* Friend rows: letter avatar (gold ring = online). */
+.friend-avatar {
+  width: 46px;
+  height: 46px;
+  flex-shrink: 0;
+  align-self: center;
+  background: var(--ink);
+  color: var(--paper);
+  display: grid;
+  place-items: center;
+  font-family: var(--font-dm-mono);
+  font-size: 1.25rem;
+}
+
+.friend-avatar.on {
+  outline: 3px solid var(--gold);
+  outline-offset: 2px;
+}
+
 .loader-block {
   display: grid;
   place-items: center;
@@ -564,10 +583,46 @@ select.field option {
   font-size: 0.75rem;
 }
 
-/* Empty multi-wallet slot — trigger renders dashed like the old adapter slot. */
-.wallet-slot-empty {
-  width: 100%;
+/* Profile wallets: 1 column stacked, 2 side-by-side on wider screens. */
+.wallet-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.7rem;
   margin-top: 0.6rem;
+}
+
+/* Grid gap handles spacing — drop the row's own bottom margin inside. */
+.wallet-grid .wallet-row {
+  margin-bottom: 0;
+}
+
+/* Dotted connect slot renders as a matching card inside the grid. */
+.wallet-grid .wallet-slot-empty {
+  margin-top: 0;
+  border: 2px dashed var(--ink);
+  padding: 0.9rem 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.wallet-grid .wallet-slot-empty .btn-solid {
+  width: auto;
+  border-style: solid;
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.wallet-grid .wallet-slot-empty .btn-solid:hover {
+  background: var(--gold);
+  color: var(--on-dark);
+  border-color: var(--ink);
+}
+
+@media (min-width: 700px) {
+  .wallet-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 .wallet-slot-empty .btn-solid {

@@ -16,7 +16,13 @@ import {
  * popup closes we connect the chosen (or previously used) wallet, then run
  * nonce → sign → verify (first wallet) / attach (extra wallets).
  */
-function SolanaConnectInner({ onDone }: { onDone: (p?: Profile) => void }) {
+function SolanaConnectInner({
+  onDone,
+  hideError,
+}: {
+  onDone: (p?: Profile) => void;
+  hideError?: boolean;
+}) {
   const { publicKey, signMessage, wallet, connected, connecting, connect } =
     useWallet();
   const { visible, setVisible: setModalVisible } = useWalletModal();
@@ -136,7 +142,7 @@ function SolanaConnectInner({ onDone }: { onDone: (p?: Profile) => void }) {
       >
         {uiConnecting ? "CONNECTING…" : "CONNECT WALLET"}
       </button>
-      {err && <p className="err">{err}</p>}
+      {err && !hideError && <p className="err">{err}</p>}
     </div>
   );
 }

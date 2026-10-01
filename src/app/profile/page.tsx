@@ -23,6 +23,7 @@ export default function ProfilePage() {
   const [ready, setReady] = useState(false);
   const [loading, setLoading] = useState(true);
   const [checking, setChecking] = useState(false);
+  const [savingHandle, setSavingHandle] = useState(false);
   const [tiers, setTiers] = useState<TierInfo[]>([]);
 
   useEffect(() => {
@@ -88,13 +89,16 @@ export default function ProfilePage() {
   async function saveHandle() {
     const herr = handleError(handle);
     setHandleErr(herr ?? "");
-    if (herr) return; // no backend call on invalid input
+    if (herr || savingHandle) return; // no backend call on invalid input
+    setSavingHandle(true);
     try {
       await api("/profile/user", { method: "PATCH", body: { handle } });
       await load();
       window.dispatchEvent(new Event("sixfigs-auth"));
     } catch (e) {
       console.error("handle save failed", e);
+    } finally {
+      setSavingHandle(false);
     }
   }
 
@@ -338,8 +342,12 @@ export default function ProfilePage() {
                 placeholder="handle (3–24 chars)"
                 style={{ maxWidth: "220px" }}
               />
-              <button className="chip" onClick={saveHandle}>
-                SAVE
+              <button
+                className="chip"
+                disabled={savingHandle}
+                onClick={saveHandle}
+              >
+                {savingHandle ? "SAVING…" : "SAVE"}
               </button>
             </div>
             {handleErr && <p className="err">{handleErr}</p>}
@@ -386,17 +394,15 @@ export default function ProfilePage() {
             {profile.wallets.length}/{MAX_WALLETS}
           </span>
         </div>
-        {profile.wallets.map((w) => {
-          const live = elig.balances.find((b) => b.walletId === w.id);
-          const usd = live?.usd ?? 0;
-          const pct = elig.total > 0 ? Math.round((usd / elig.total) * 100) : 0;
-          const wname = w.name ?? "Solana Wallet";
-          return (
-            <div key={w.id}>
-              <div
-                className="wallet-row"
-                style={{ marginBottom: "0.6rem", marginTop: "0.6rem" }}
-              >
+        <div className="wallet-grid">
+          {profile.wallets.map((w) => {
+            const live = elig.balances.find((b) => b.walletId === w.id);
+            const usd = live?.usd ?? 0;
+            const pct =
+              elig.total > 0 ? Math.round((usd / elig.total) * 100) : 0;
+            const wname = w.name ?? "Solana Wallet";
+            return (
+              <div key={w.id} className="wallet-row">
                 <WalletIcon
                   name={wname}
                   letter={wname.slice(0, 1).toUpperCase()}
@@ -416,16 +422,16 @@ export default function ProfilePage() {
                   ✕
                 </button>
               </div>
+            );
+          })}
+          {/* Exactly ONE dotted connect card under the list (up to 20 wallets —
+              20 dashed boxes would look bad). */}
+          {!full && (
+            <div className="wallet-slot-empty">
+              <SolanaConnect onDone={onConnected} />
             </div>
-          );
-        })}
-        {/* Exactly ONE dotted connect slot under the list (up to 20 wallets —
-            20 dashed boxes would look bad). */}
-        {!full && (
-          <div className="wallet-slot-empty">
-            <SolanaConnect onDone={onConnected} />
-          </div>
-        )}
+          )}
+        </div>
         <div className="wallet-actions">
           {full ? (
             <p className="fine" style={{ margin: 0 }}>

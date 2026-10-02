@@ -1611,7 +1611,56 @@ select.field option {
 }
 
 .game-panel {
-  grid-template-columns: minmax(0, 1fr) minmax(300px, 360px);
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+}
+
+/* Room header card: info left, members + actions far right at every width. */
+.room-head {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.room-head-info {
+  flex: 1 1 220px;
+  min-width: 0;
+}
+
+.room-head-side {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  align-items: flex-end;
+  margin-left: auto;
+}
+
+.room-head-row {
+  display: flex;
+  gap: 0.6rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.room-head-side .room-head-row {
+  justify-content: flex-end;
+}
+
+@media (max-width: 750px) {
+  /* Stay side-by-side on phones too: the side block keeps the right edge,
+   * chips/buttons wrap internally instead of dropping below the info. */
+  .room-head {
+    flex-wrap: nowrap;
+    gap: 0.7rem;
+  }
+  .room-head-info {
+    flex: 1 1 auto;
+  }
+  .room-head-side {
+    flex: 0 0 auto;
+    max-width: 46%;
+  }
 }
 
 .game-main {
@@ -1662,6 +1711,13 @@ select.field option {
   font-size: 1.7rem;
   line-height: 1;
   font-weight: 700;
+  flex: none;
+}
+
+/* Text wrapper must shrink inside the flex seat, or long handles push the
+ * seat outside the box even with the name capped below. */
+.seat > span {
+  min-width: 0;
 }
 
 .seat-role {
@@ -1789,8 +1845,9 @@ select.field option {
   .arena-vs {
     display: none;
   }
+  /* Full-width stacked seats still truncate instead of overflowing. */
   .seat-name {
-    max-width: none;
+    max-width: 100%;
   }
 }
 

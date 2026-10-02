@@ -618,99 +618,89 @@ export default function RoomPage() {
       }}
     >
       <div className="card">
-        <div
-          style={{
-            display: "flex",
-            gap: "0.6rem",
-            alignItems: "center",
-            flexWrap: "wrap",
-          }}
-        >
-          <p className="mono-label">
-            1V1 ROOM · {meta?.onlineCount ?? 0}/2 ONLINE
-          </p>
-          <span
-            className={
-              meta?.accessType === "invite" ? "tier-badge t3" : "tier-badge"
-            }
-          >
-            {meta?.accessType === "invite"
-              ? "🔒 INVITE-ONLY"
-              : `✓ ${meta?.minTier}`}
-          </span>
-        </div>
-        <h2
-          style={{
-            margin: "0.4rem 0 0.2rem",
-            fontSize: "clamp(1.5rem, 3.5vw, 2.2rem)",
-            letterSpacing: "-0.03em",
-          }}
-        >
-          {meta?.name}
-        </h2>
-        <p className="fine" style={{ margin: "0 0 0.2rem" }}>
-          BY {meta?.creatorHandle.toUpperCase()}
-        </p>
-        {meta?.description && (
-          <p className="fine" style={{ margin: "0 0 0.6rem" }}>
-            {meta.description}
-          </p>
-        )}
-        <div
-          style={{
-            display: "flex",
-            gap: "0.8rem",
-            alignItems: "center",
-            flexWrap: "wrap",
-          }}
-        >
-          {members.map((m) => (
-            <span
-              key={m.id}
-              className="tier-badge"
-              title={m.online ? "On this room page" : "Not here right now"}
+        <div className="room-head">
+          <div className="room-head-info">
+            <div className="room-head-row">
+              <p className="mono-label">
+                1V1 ROOM · {meta?.onlineCount ?? 0}/2 ONLINE
+              </p>
+              <span
+                className={
+                  meta?.accessType === "invite" ? "tier-badge t3" : "tier-badge"
+                }
+              >
+                {meta?.accessType === "invite"
+                  ? "🔒 INVITE-ONLY"
+                  : `✓ ${meta?.minTier}`}
+              </span>
+            </div>
+            <h2
+              style={{
+                margin: "0.4rem 0 0.2rem",
+                fontSize: "clamp(1.5rem, 3.5vw, 2.2rem)",
+                letterSpacing: "-0.03em",
+              }}
             >
-              <span className={m.online ? "dot on" : "dot"} /> {m.handle}
-            </span>
-          ))}
-        </div>
-        {inviteCode && (
-          <div className="invite-box" style={{ margin: "0.8rem 0 0" }}>
-            INVITE LINK:{" "}
-            <a
-              href={`${location.origin}/rooms/${id}?code=${inviteCode}`}
-            >{`${location.origin}/rooms/${id}?code=${inviteCode}`}</a>
-            <button
-              className="chip"
-              style={{ marginLeft: "0.4rem" }}
-              onClick={() =>
-                copyText(`${location.origin}/rooms/${id}?code=${inviteCode}`)
-              }
-            >
-              COPY
-            </button>
+              {meta?.name}
+            </h2>
+            <p className="fine" style={{ margin: "0 0 0.2rem" }}>
+              BY {meta?.creatorHandle.toUpperCase()}
+            </p>
+            {meta?.description && (
+              <p className="fine" style={{ margin: "0 0 0.6rem" }}>
+                {meta.description}
+              </p>
+            )}
+            {inviteCode && (
+              <div className="invite-box" style={{ margin: "0.8rem 0 0" }}>
+                INVITE LINK:{" "}
+                <a
+                  href={`${location.origin}/rooms/${id}?code=${inviteCode}`}
+                >{`${location.origin}/rooms/${id}?code=${inviteCode}`}</a>
+                <button
+                  className="chip"
+                  style={{ marginLeft: "0.4rem" }}
+                  onClick={() =>
+                    copyText(
+                      `${location.origin}/rooms/${id}?code=${inviteCode}`,
+                    )
+                  }
+                >
+                  COPY
+                </button>
+              </div>
+            )}
           </div>
-        )}
-        <div
-          style={{
-            display: "flex",
-            gap: "0.4rem",
-            marginTop: "0.8rem",
-            flexWrap: "wrap",
-          }}
-        >
-          <button className="chip" onClick={leaveRoom}>
-            LEAVE ROOM
-          </button>
-          {meta?.isOwner && (
-            <button
-              className="chip"
-              style={{ color: "var(--crimson)", borderColor: "var(--crimson)" }}
-              onClick={() => setConfirmDelete(true)}
-            >
-              DELETE ROOM
-            </button>
-          )}
+          <div className="room-head-side">
+            <div className="room-head-row">
+              {members.map((m) => (
+                <span
+                  key={m.id}
+                  className="tier-badge"
+                  title={m.online ? "On this room page" : "Not here right now"}
+                >
+                  <span className={m.online ? "dot on" : "dot"} /> {m.handle}
+                </span>
+              ))}
+            </div>
+            <div className="room-head-row">
+              <button className="chip" onClick={leaveRoom}>
+                LEAVE ROOM
+              </button>
+              {meta?.isOwner && (
+                <button
+                  className="chip"
+                  style={{
+                    color: "var(--crimson)",
+                    borderColor: "var(--crimson)",
+                  }}
+                  onClick={() => setConfirmDelete(true)}
+                >
+                  DELETE ROOM
+                </button>
+              )}
+            </div>
+          </div>
         </div>
         {confirmDelete && meta && (
           <DeleteRoomDialog

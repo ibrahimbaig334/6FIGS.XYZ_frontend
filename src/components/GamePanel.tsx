@@ -74,6 +74,10 @@ export default function GamePanel({
   const won =
     game && game.status === "done" ? winCells(game.board) : new Set<number>();
   const oppMark = game ? (game.youAre === "X" ? "O" : "X") : undefined;
+  // Opponent away mid-game (tab closed, elsewhere): the DATA persists (they
+  // may return and resume) but the VIEW resets to waiting — no ghost turns,
+  // no active highlights, frozen board. Finished games still show the result.
+  const oppAway = !!game && game.status === "open" && !oppOnline;
 
   function send(e: React.FormEvent) {
     e.preventDefault();
@@ -91,7 +95,7 @@ export default function GamePanel({
           <>
             <div className="arena-head">
               <div
-                className={`seat${game.turn === game.youAre && game.status === "open" ? " active" : ""}`}
+                className={`seat${game.turn === game.youAre && game.status === "open" && !oppAway ? " active" : ""}`}
               >
                 <span className="seat-mark">{mark(game.youAre)}</span>
                 <span>
@@ -101,14 +105,16 @@ export default function GamePanel({
               </div>
               <span className="arena-vs">VS</span>
               <div
-                className={`seat${game.turn !== game.youAre && game.status === "open" ? " active" : ""}`}
+                className={`seat${game.turn !== game.youAre && game.status === "open" && !oppAway ? " active" : ""}`}
               >
                 <span>
                   <span className="seat-role">
                     <span className={oppOnline ? "dot on" : "dot"} /> OPPONENT
                   </span>
                   <span className="seat-name">
-                    {game.opponent?.handle ?? "WAITING…"}
+                    {oppAway
+                      ? "WAITING…"
+                      : (game.opponent?.handle ?? "WAITING…")}
                   </span>
                 </span>
                 <span className="seat-mark">{mark(oppMark)}</span>
@@ -116,7 +122,9 @@ export default function GamePanel({
             </div>
 
             <p className="arena-status">
-              <span className="mono-label">{statusLine(game)}</span>
+              <span className="mono-label">
+                {oppAway ? "WAITING FOR OPPONENT" : statusLine(game)}
+              </span>
               {game.status !== "open" && (
                 <button
                   className="btn-solid btn-sm"
@@ -135,7 +143,7 @@ export default function GamePanel({
                     key={i}
                     className={`board-cell${won.has(i) ? " win" : ""}`}
                     onClick={() => onMove(i)}
-                    disabled={cell !== "." || game.status !== "open"}
+                    disabled={cell !== "." || game.status !== "open" || oppAway}
                     aria-label={`cell ${i + 1}`}
                     style={{
                       color: cell === "O" ? "var(--crimson)" : "var(--ink)",

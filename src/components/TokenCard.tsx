@@ -126,7 +126,6 @@ export default function TokenCard({ symbol }: { symbol: string }) {
           <strong>{card.vol24h ? "$" + compact(card.vol24h) : "—"}</strong>
         </div>
       </div>
-      <p className="fine">Data: CoinGecko · server-cached 5 min</p>
     </div>
   );
 }

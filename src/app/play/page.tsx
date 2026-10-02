@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   api,
+  errMsg,
   Friend,
   FriendList,
   getToken,
@@ -20,6 +21,7 @@ import {
   REQUEST_TIMEOUT_MS,
 } from "../../lib/constants";
 import { connectSocket } from "../../lib/ws";
+import { notifyError } from "../../lib/notify";
 import SolanaConnect from "../../components/SolanaConnect";
 import SelectMenu from "../../components/SelectMenu";
 import Loader from "../../components/Loader";
@@ -50,7 +52,6 @@ export default function PlayPage() {
   const [friendSort, setFriendSort] = useState("created");
   const [profile, setProfile] = useState<Profile | null>(null);
   const [q, setQ] = useState("");
-  const [err, setErr] = useState("");
   const [ready, setReady] = useState(false);
   const [searching, setSearching] = useState(false);
   const [elapsed, setElapsed] = useState(0);
@@ -84,6 +85,7 @@ export default function PlayPage() {
   }, [outgoing]);
 
   const refreshFriends = useCallback(async () => {
+    if (!getToken()) return; // CONNECT FIRST gate is showing — no session, no calls
     try {
       const params = new URLSearchParams({
         page: String(friendPage),
@@ -96,12 +98,15 @@ export default function PlayPage() {
       const res = await api<FriendList>(`/play/friends?${params.toString()}`);
       setFriends(res.items);
       setFriendTotal(res.total);
-    } catch {
-      /* keep last known list through blips */
+    } catch (e) {
+      // Keep the last known list through blips — the WHY lands in the error box.
+      console.error("friends load failed", e);
+      notifyError(errMsg(e, "Couldn't load your friends — try again"));
     }
   }, [q, friendPage, friendSort]);
 
   const load = useCallback(async () => {
+    if (!getToken()) return; // CONNECT FIRST gate is showing — no session, no calls
     refreshFriends();
     try {
       const out = await api<RoomRequestInfo[]>("/play/requests/outgoing");
@@ -122,6 +127,7 @@ export default function PlayPage() {
       });
     } catch (e) {
       console.error("play load failed", e);
+      notifyError(errMsg(e, "Couldn't load your requests — try again"));
     }
     if (getToken()) {
       try {
@@ -169,8 +175,10 @@ export default function PlayPage() {
     const onDeclined = (p: { requestId: string }) => {
       clearRequestTimer(p.requestId);
       const hit = outgoingRef.current.find((o) => o.id === p.requestId);
-      if (hit)
+      if (hit) {
         setNotes((prev) => ({ ...prev, [hit.toUserId]: "REQUEST DECLINED" }));
+        notifyError(`${hit.toHandle} — REQUEST DECLINED`);
+      }
       setOutgoing((prev) => prev.filter((o) => o.id !== p.requestId));
     };
     s.on("requestAccepted", onAccepted);
@@ -245,7 +253,6 @@ export default function PlayPage() {
   }, [searching]);
 
   async function quickplay() {
-    setErr("");
     setElapsed(0);
     try {
       const r = await api<{ status: string; gameId?: string }>("/play/queue", {
@@ -259,7 +266,7 @@ export default function PlayPage() {
       setSearching(true); // animation locks the UI until matched/cancelled
     } catch (e) {
       console.error("queue failed", e);
-      setErr("Couldn't join the queue — try again");
+      notifyError(errMsg(e, "Couldn't join the queue — try again"));
     }
   }
 
@@ -289,17 +296,21 @@ export default function PlayPage() {
       : REQUEST_TIMEOUT_MS - (Date.now() - created);
     reqTimers.current.set(
       r.id,
-      setTimeout(() => expireRequest(r.id, r.toUserId), Math.max(0, left)),
+      setTimeout(
+        () => expireRequest(r.id, r.toUserId, r.toHandle),
+        Math.max(0, left),
+      ),
     );
   }
 
-  function expireRequest(id: string, friendId: string) {
+  function expireRequest(id: string, friendId: string, handle: string) {
     clearRequestTimer(id);
     setOutgoing((prev) => prev.filter((o) => o.id !== id));
     api(`/play/requests/${id}/cancel`, { method: "POST" })
-      .then(() =>
-        setNotes((prev) => ({ ...prev, [friendId]: "DIDN'T RESPOND" })),
-      )
+      .then(() => {
+        setNotes((prev) => ({ ...prev, [friendId]: "DIDN'T RESPOND" }));
+        notifyError(`${handle} — DIDN'T RESPOND`);
+      })
       .catch((e) => {
         // Accepted in the same breath — the join flow takes over, no note.
         console.error("request expire failed", e);
@@ -307,7 +318,6 @@ export default function PlayPage() {
   }
 
   async function sendRequest(f: Friend) {
-    setErr("");
     try {
       const r = await api<RoomRequestInfo>("/play/request", {
         method: "POST",
@@ -322,7 +332,7 @@ export default function PlayPage() {
       armRequestTimer(r);
     } catch (e) {
       console.error("request failed", e);
-      setErr("Couldn't send the request — try again");
+      notifyError(errMsg(e, "Couldn't send the request — try again"));
     }
   }
 
@@ -333,7 +343,7 @@ export default function PlayPage() {
       setOutgoing((prev) => prev.filter((o) => o.id !== id));
     } catch (e) {
       console.error("cancel request failed", e);
-      setErr("Couldn't cancel — try again");
+      notifyError(errMsg(e, "Couldn't cancel — try again"));
     }
   }
 
@@ -445,7 +455,6 @@ export default function PlayPage() {
           Random pairs you with another searching holder. Chat both ways to
           become friends, then invite friends to private rooms.
         </p>
-        {err && <p className="err-center">{err}</p>}
       </div>
 
       <div className="rooms-filter">

@@ -107,3 +107,21 @@ export const ROOM_GONE_REDIRECT_MS = 3500;
 // A room request lives this long: the offer toast auto-hides at the mark and
 // the requester cancels + sees "DIDN'T RESPOND" if nobody answered (ms).
 export const REQUEST_TIMEOUT_MS = 15000;
+
+// Global error toasts live this long (each also has an ✕ to dismiss now).
+export const ERROR_TOAST_MS = 10000;
+
+// A random-match opponent that drops mid-game gets this long to return before
+// the game is closed and both sides are kicked out (ms).
+export const OPP_RETURN_MS = 30000;
+
+// Newly matched opponents get this long to OPEN the game page before the
+// return countdown can trigger for a never-seen opponent (ms).
+export const OPP_JOIN_GRACE_MS = 30000;
+
+// Tier ladder (backend: common/tiers.ts). Used to hide room tiers above you.
+export const TIER_ORDER = ["TIER I", "TIER II", "TIER III", "TIER IV"] as const;
+export function tierRank(t: string | null | undefined): number {
+  const i = TIER_ORDER.indexOf((t ?? "") as (typeof TIER_ORDER)[number]);
+  return i < 0 ? 0 : i + 1;
+}

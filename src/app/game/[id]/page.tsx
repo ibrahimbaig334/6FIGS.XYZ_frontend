@@ -5,22 +5,21 @@ import { useParams, useRouter } from "next/navigation";
 import {
   api,
   ChatMessage,
-  extractTickers,
+  errMsg,
   GameState,
   getToken,
-  Peer,
   Profile,
 } from "../../../lib/api";
 import { connectSocket } from "../../../lib/ws";
-import { useChatScroll } from "../../../lib/useChatScroll";
+import { notifyError } from "../../../lib/notify";
 import {
-  OPP_GONE_REDIRECT_MS,
+  OPP_JOIN_GRACE_MS,
+  OPP_RETURN_MS,
   POLL_GAME_LIVE_MS,
 } from "../../../lib/constants";
-import TokenCard from "../../../components/TokenCard";
 import SolanaConnect from "../../../components/SolanaConnect";
-import ChatSuggestions from "../../../components/ChatSuggestions";
-import EmojiPicker from "../../../components/EmojiPicker";
+import GamePanel from "../../../components/GamePanel";
+import RematchToast from "../../../components/RematchToast";
 import Loader from "../../../components/Loader";
 
 export default function GamePage() {
@@ -29,15 +28,33 @@ export default function GamePage() {
   const [game, setGame] = useState<GameState | null>(null);
   const [me, setMe] = useState<Profile | null>(null);
   const [msgs, setMsgs] = useState<ChatMessage[]>([]);
-  const [draft, setDraft] = useState("");
   const [err, setErr] = useState("");
-  const [oppOnline, setOppOnline] = useState(false);
-  const [oppGone, setOppGone] = useState(false);
-  const offStreak = useRef(0);
-  const goneTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Opponent presence = IN THIS GAME (page open), not merely online elsewhere.
+  // Leaving for the homepage leaves the game room → the countdown below fires.
+  const [oppInGame, setOppInGame] = useState(false);
+  // Opponent-return countdown (seconds left, null = not waiting). Ticks in
+  // the toast + overlay; at zero the game is closed and both sides leave.
+  const [returnLeft, setReturnLeft] = useState<number | null>(null);
+  const returnTimer = useRef<ReturnType<typeof setInterval> | null>(null);
+  // Countdown label: seen-then-left vs never arrived since match.
+  const [wasSeen, setWasSeen] = useState(false);
+  const seenOpp = useRef(false);
+  const pageStart = useRef(Date.now());
+  // Close initiated (timer expired): polls/countdowns must never restart —
+  // the local game is still "open" until navigation unmounts us.
+  const closingRef = useRef(false);
+  // Tracks our own game-room membership so unmount always leaves it.
+  const joinedRef = useRef<string | null>(null);
+  // Rematch offer flow: incoming offer toast + our outgoing offer state.
+  const [offer, setOffer] = useState<{
+    gameId: string;
+    fromHandle: string;
+  } | null>(null);
+  const [rematchPending, setRematchPending] = useState(false);
+  // Close initiated: fullscreen exit — the game never flashes back.
+  const [leaving, setLeaving] = useState(false);
   const [ready, setReady] = useState(false);
   const sock = useRef<ReturnType<typeof connectSocket> | null>(null);
-  const chatRef = useChatScroll(msgs.length);
 
   function mergeState(prev: GameState | null, st: GameState): GameState {
     // youAre/oppId are viewer-relative: a broadcast computed for the mover must
@@ -58,48 +75,93 @@ export default function GamePage() {
     if (!getToken()) return;
     try {
       const g = await api<GameState>(`/games/${id}`);
+      if (g.status === "closed") {
+        // Kicked out: the game was closed while we were gone.
+        notifyError("This game was closed");
+        router.push("/play");
+        return;
+      }
       setGame(g);
+      setErr("");
       try {
         setMe(await api<Profile>("/profile/user"));
       } catch {
         setMe(null);
       }
-      try {
-        const peers = await api<Peer[]>("/play/online");
-        setOppOnline(peers.some((p) => p.id === g.oppId && p.online));
-      } catch {
-        setOppOnline(false);
-      }
+      // No global-online check here: the live poll below reports whether the
+      // opponent is actually IN this game (seat dot + countdown source).
     } catch (e) {
-      console.error("game load failed", e);
+      // Specific, human reason (e.g. a game that no longer exists) — never blank.
+      setErr(errMsg(e, "Couldn't load this game — try again"));
     }
-  }, [id]);
+  }, [id, router]);
 
   useEffect(() => {
     load();
   }, [load]);
 
-  // Opponent-left detection (random matches): two consecutive offline polls
-  // mid-game → notice + back to play. Reloads reconnect too fast to trip it.
+  // Opponent presence = IN THIS GAME ROOM (page open). Leaving for the
+  // homepage leaves the game room even while globally online — that starts
+  // the 30s return countdown. Never-arrived opponents get a join grace first.
+  // Reloads rejoin too fast (3s polls) to trip it.
+  function stopReturn() {
+    if (returnTimer.current) clearInterval(returnTimer.current);
+    returnTimer.current = null;
+    setReturnLeft(null);
+  }
+
+  async function closeAndLeave() {
+    closingRef.current = true; // polls below become no-ops from here on
+    stopReturn();
+    // Flip local state first: the poll effect tears itself down on the
+    // status change, so no new countdown can start before navigation.
+    setGame((g) => (g ? { ...g, status: "closed" } : g));
+    setLeaving(true); // instant fullscreen exit — no game flash
+    // Fire-and-forget: navigation must not wait on the round trip. If it
+    // ever fails, the returnee's own countdown closes the idle game.
+    api(`/games/${id}/close`, { method: "POST" }).catch((e) =>
+      console.error("close failed", e),
+    );
+    notifyError("Opponent didn't return — game closed");
+    router.push("/play");
+  }
+
+  function startReturn() {
+    if (closingRef.current) return;
+    stopReturn();
+    const deadline = Date.now() + OPP_RETURN_MS;
+    setReturnLeft(Math.ceil(OPP_RETURN_MS / 1000));
+    returnTimer.current = setInterval(() => {
+      const left = Math.max(0, Math.ceil((deadline - Date.now()) / 1000));
+      setReturnLeft(left);
+      if (left <= 0) {
+        stopReturn();
+        void closeAndLeave();
+      }
+    }, 500);
+  }
+
   useEffect(() => {
-    if (!game || game.status !== "open" || oppGone) return;
+    if (!game || game.status !== "open") return;
     const t = setInterval(async () => {
+      if (closingRef.current) return;
       try {
-        const live = await api<{ oppOnline: boolean; oppHere: boolean }>(
-          `/games/${id}/live`,
-        );
-        setOppOnline(live.oppOnline);
-        if (!live.oppOnline) {
-          offStreak.current += 1;
-          if (offStreak.current >= 2) {
-            setOppGone(true);
-            goneTimer.current = setTimeout(
-              () => router.push("/play"),
-              OPP_GONE_REDIRECT_MS,
-            );
-          }
-        } else {
-          offStreak.current = 0;
+        const live = await api<{
+          oppOnline: boolean;
+          oppHere: boolean;
+          oppInGame: boolean;
+        }>(`/games/${id}/live`);
+        setOppInGame(live.oppInGame);
+        if (live.oppInGame) {
+          seenOpp.current = true;
+          setWasSeen(true);
+          if (returnTimer.current !== null) stopReturn(); // back — cancelled
+        } else if (
+          returnTimer.current === null &&
+          (seenOpp.current ||
+            Date.now() - pageStart.current > OPP_JOIN_GRACE_MS)
+        ) {
+          startReturn();
         }
       } catch {
         /* blip — keep polling */
@@ -107,16 +169,38 @@ export default function GamePage() {
     }, POLL_GAME_LIVE_MS);
     return () => {
       clearInterval(t);
-      if (goneTimer.current) clearTimeout(goneTimer.current);
+      stopReturn();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [game?.status, game?.id, oppGone]);
+  }, [game?.status, game?.id]);
+
+  // Client-side navigation reuses this component for a new game id: drop ALL
+  // per-game state so the previous game can never bleed into the next one
+  // (restarted countdowns, stale offers, ghost boards auto-kicking the user).
+  // Socket cleanup (leaveGame) runs before this setup — joinedRef is intact.
+  useEffect(() => {
+    stopReturn();
+    closingRef.current = false;
+    seenOpp.current = false;
+    pageStart.current = Date.now();
+    setWasSeen(false);
+    setOffer(null);
+    setRematchPending(false);
+    setMsgs([]);
+    setGame(null);
+    setErr("");
+    setLeaving(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id]);
 
   useEffect(() => {
     if (!game) return;
     const s = connectSocket();
     sock.current = s;
     const joinAll = () => {
+      // Membership intent is synchronous — a slow ack must never strand us
+      // in the game room after unmount (leaveGame would never fire).
+      joinedRef.current = id;
       s.emit(
         "joinGame",
         { gameId: id },
@@ -127,33 +211,60 @@ export default function GamePage() {
       s.emit("joinScope", { scope: "dm", scopeId: game.matchId });
     };
     joinAll();
-    const onState = (st: GameState) => setGame((g) => mergeState(g, st));
+    const onState = (st: GameState) => {
+      if (st.status === "open") {
+        setRematchPending(false); // fresh board — offers resolved
+        setOffer(null);
+      }
+      setGame((g) => mergeState(g, st));
+    };
     const onChat = (p: { message: ChatMessage }) =>
       setMsgs((m) =>
         m.some((x) => x.id === p.message.id) ? m : [...m, p.message],
       );
+    const onOffer = (p: { gameId: string; fromHandle: string }) => {
+      if (p.gameId === id) setOffer(p);
+    };
+    const onDeclined = (p: { gameId: string; reason: string }) => {
+      if (p.gameId !== id) return;
+      setRematchPending(false);
+      notifyError(
+        p.reason === "noresponse"
+          ? "Opponent didn't respond to the rematch"
+          : "Opponent declined the rematch",
+      );
+    };
     s.on("gameState", onState);
     s.on("chatMessage", onChat);
+    s.on("rematchOffer", onOffer);
+    s.on("rematchDeclined", onDeclined);
     s.io.on("reconnect", joinAll); // new socket id = old rooms gone; rejoin
     // load dm history with the real match id
     api<{ items: ChatMessage[] }>(`/chat/dm/${game.matchId}?limit=50`)
       .then((h) => setMsgs(h.items))
       .catch(() => {});
     return () => {
+      // Leaving the page = leaving the game (broadcasts stop, presence
+      // drops) — even though the socket itself stays connected elsewhere.
+      if (joinedRef.current) {
+        s.emit("leaveGame", { gameId: joinedRef.current });
+        joinedRef.current = null;
+      }
       s.emit("leaveScope", { scope: "dm", scopeId: game.matchId });
       s.off("gameState", onState);
       s.off("chatMessage", onChat);
+      s.off("rematchOffer", onOffer);
+      s.off("rematchDeclined", onDeclined);
       s.io.off("reconnect", joinAll);
     };
   }, [game?.matchId, id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   function move(i: number) {
-    setErr("");
     sock.current?.emit(
       "makeMove",
       { gameId: id, index: i },
       (ack: { error?: string; state?: GameState }) => {
-        if (ack?.error) setErr(ack.error);
+        if (ack?.error) notifyError(ack.error);
         else if (ack?.state)
           setGame((g) => mergeState(g, ack.state as GameState));
       },
@@ -161,27 +272,40 @@ export default function GamePage() {
   }
 
   function rematch() {
+    // Offer flow: the opponent gets an accept/decline toast — the board
+    // resets ONLY on accept (server enforces it too).
+    if (!game || rematchPending) return;
     sock.current?.emit(
-      "rematch",
+      "rematchOffer",
       { gameId: id },
-      (ack: { error?: string; state?: GameState }) => {
-        if (ack?.error) setErr(ack.error);
-        else if (ack?.state)
-          setGame((g) => mergeState(g, ack.state as GameState));
+      (ack: { error?: string }) => {
+        if (ack?.error) notifyError(ack.error);
+        else setRematchPending(true);
       },
     );
   }
 
-  function send(e: React.FormEvent) {
-    e.preventDefault();
-    if (!draft.trim() || !game) return;
-    const body = draft;
-    setDraft("");
+  function answerOffer(accept: boolean) {
+    if (!offer) return;
+    sock.current?.emit(
+      "rematchAnswer",
+      { gameId: offer.gameId, accept },
+      (ack: { error?: string; state?: GameState }) => {
+        if (ack?.error) notifyError(ack.error);
+        else if (accept && ack?.state)
+          setGame((g) => mergeState(g, ack.state as GameState));
+      },
+    );
+    setOffer(null);
+  }
+
+  function send(body: string) {
+    if (!game) return;
     sock.current?.emit(
       "sendMessage",
       { scope: "dm", scopeId: game.matchId, body },
       (ack: { error?: string; message?: ChatMessage }) => {
-        if (ack?.error) setErr(ack.error);
+        if (ack?.error) notifyError(ack.error);
         else if (ack?.message) {
           const msg = ack.message;
           setMsgs((m) => (m.some((x) => x.id === msg.id) ? m : [...m, msg]));
@@ -190,10 +314,18 @@ export default function GamePage() {
     );
   }
 
+  // Closing: instant fullscreen exit — the game never flashes back while
+  // the close lands and navigation unmounts us.
+  if (leaving)
+    return (
+      <section className="page-enter loader-page">
+        <Loader label="CLOSING GAME…" />
+      </section>
+    );
   if (!ready)
     return (
       <section className="page-enter loader-page">
-        <Loader label="LOADING…" />
+        <Loader label="LOADING..." />
       </section>
     );
   if (!getToken()) {
@@ -207,15 +339,7 @@ export default function GamePage() {
           placeItems: "center",
         }}
       >
-        <div
-          className="card"
-          style={{
-            width: "100%",
-            maxWidth: "520px",
-            textAlign: "center",
-            padding: "2.5rem 2rem",
-          }}
-        >
+        <div className="card auth-card">
           <p className="mono-label">GAME — CONNECT FIRST</p>
           <div
             style={{
@@ -230,127 +354,88 @@ export default function GamePage() {
       </section>
     );
   }
-  if (err && !game)
+  if (err && !game) {
     return (
-      <section className="page-enter" style={{ padding: "2rem 5vw" }}>
-        <div className="card">
-          <p>{err}</p>
-          <a href="/play">← PLAY</a>
+      <section
+        className="page-enter"
+        style={{
+          padding: "2rem 5vw",
+          flex: 1,
+          display: "grid",
+          placeItems: "center",
+        }}
+      >
+        <div className="card gate-card">
+          <p className="mono-label">{"CAN'T JOIN THIS GAME"}</p>
+          <p className="gate-reason">{err}</p>
+          <a href="/play" className="btn-solid">
+            ← BACK TO PLAY
+          </a>
         </div>
       </section>
     );
+  }
   if (!game) {
     return (
       <section className="page-enter loader-page">
-        <Loader label="FINDING GAME…" />
+        <Loader label="FINDING GAME..." />
       </section>
     );
   }
 
   return (
-    <section className="page-enter layout-game" style={{ padding: "2rem 5vw" }}>
-      <div>
-        <p className="mono-label">
-          MATCHED · YOU ARE {game.youAre} · TURN: {game.turn}
-        </p>
-        <div
-          style={{
-            display: "flex",
-            gap: "0.5rem",
-            alignItems: "center",
-            flexWrap: "wrap",
-            margin: "0.5rem 0",
-          }}
+    <section className="page-enter game-page" style={{ padding: "1.6rem 5vw" }}>
+      <div className="game-topbar">
+        <span className="tier-badge">
+          {game.status === "open"
+            ? `LIVE · TURN ${game.turn}`
+            : game.status === "draw"
+              ? "DRAW"
+              : `${game.winner} WINS`}
+        </span>
+        <button
+          className="btn-ghost btn-sm"
+          onClick={() => router.push("/play")}
         >
-          <span className="tier-badge">YOU · {game.youAre}</span>
-          <span className="fine">VS</span>
-          <span className="tier-badge">
-            <span
-              className={oppOnline ? "dot on" : "dot"}
-              title={oppOnline ? "Online" : "Offline"}
-            />{" "}
-            {game.opponent?.handle ?? "?"} · {game.youAre === "X" ? "O" : "X"}
-          </span>
-          <button className="chip" onClick={() => router.push("/play")}>
-            EXIT
-          </button>
-        </div>
-        <p className="fine">
-          <a href="/play">← PLAY</a> · <a href="/rooms">ROOMS</a>
-        </p>
-        {game.status !== "open" && (
-          <p className="mono-label">
-            {game.status === "draw" ? "DRAW" : `${game.winner} WINS`} —{" "}
-            <button className="chip" onClick={rematch}>
-              REMATCH
-            </button>
-          </p>
-        )}
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(3, min(110px, 26vw))",
-            gap: "4px",
-            background: "var(--ink)",
-            padding: "4px",
-            width: "max-content",
-            border: "2px solid var(--ink)",
-            boxShadow: "8px 8px 0 var(--shadow)",
-          }}
-        >
-          {game.board.split("").map((cell, i) => (
-            <button
-              key={i}
-              className="board-cell"
-              onClick={() => move(i)}
-              disabled={cell !== "." || game.status !== "open"}
-              style={{ color: cell === "O" ? "var(--crimson)" : "var(--ink)" }}
-            >
-              {cell === "." ? "" : cell === "X" ? "×" : "○"}
-            </button>
-          ))}
-        </div>
-        {err && <p style={{ color: "var(--crimson)" }}>{err}</p>}
+          EXIT ✕
+        </button>
       </div>
-      <aside
-        className="card"
-        style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}
-      >
-        <p className="mono-label">TABLE TALK — $TICKERS UNFURL</p>
-        <ol className="chat-log" ref={chatRef}>
-          {msgs.map((m) => (
-            <li key={m.id} className={m.senderId === me?.id ? "msg me" : "msg"}>
-              <strong>{m.senderHandle}:</strong> {m.body}
-              {extractTickers(m.body).map((t) => (
-                <TokenCard key={t} symbol={t} />
-              ))}
-            </li>
-          ))}
-        </ol>
-        <ChatSuggestions
-          onPick={(t) => setDraft((d) => (d ? `${d} ${t}` : t))}
+      <GamePanel
+        game={game}
+        me={me}
+        msgs={msgs}
+        oppOnline={oppInGame}
+        onMove={move}
+        onRematch={rematch}
+        onSend={send}
+        rematchPending={rematchPending}
+        header={
+          <p className="mono-label">
+            RANDOM MATCH · {game.matchId.slice(-6).toUpperCase()}
+          </p>
+        }
+      />
+      {offer && offer.gameId === game.id && (
+        <RematchToast
+          fromHandle={offer.fromHandle}
+          onAccept={() => answerOffer(true)}
+          onDecline={() => answerOffer(false)}
         />
-        <form onSubmit={send} style={{ display: "flex", gap: "0.5rem" }}>
-          <input
-            className="field"
-            value={draft}
-            onChange={(e) => setDraft(e.target.value)}
-            placeholder="$BTC thoughts?"
-            maxLength={240}
-          />
-          <button
-            className="btn-solid"
-            style={{ padding: "0.7rem" }}
-            type="submit"
-          >
-            SEND
-          </button>
-        </form>
-      </aside>
-      {oppGone && (
+      )}
+      {returnLeft !== null && (
         <div className="search-overlay" role="alert">
-          <p className="mono-label">OPPONENT LEFT</p>
-          <p className="fine">Taking you back to play…</p>
+          <p className="mono-label">
+            {wasSeen ? "OPPONENT LEFT — WAITING" : "WAITING FOR OPPONENT"}
+          </p>
+          <p className="fine">
+            Closing the game in {returnLeft}s if they don&apos;t return…
+          </p>
+        </div>
+      )}
+      {returnLeft !== null && (
+        <div className="return-toast" role="alert">
+          {wasSeen ? "OPPONENT LEFT" : "WAITING FOR OPPONENT"} — CLOSING IN{" "}
+          {returnLeft}s
         </div>
       )}
     </section>

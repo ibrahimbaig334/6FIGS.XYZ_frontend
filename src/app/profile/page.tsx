@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import {
   api,
   clearToken,
+  errMsg,
   getToken,
   getTiers,
   Profile,
@@ -12,6 +13,7 @@ import {
 import { handleError } from "../../lib/validate";
 import { MAX_WALLETS } from "../../lib/constants";
 import { disconnectSocket } from "../../lib/ws";
+import { notifyError } from "../../lib/notify";
 import SolanaConnect from "../../components/SolanaConnect";
 import WalletIcon from "../../components/WalletIcon";
 import Loader from "../../components/Loader";
@@ -72,6 +74,7 @@ export default function ProfilePage() {
       window.dispatchEvent(new Event("sixfigs-auth"));
     } catch (e) {
       console.error("eligibility recheck failed", e);
+      notifyError(errMsg(e, "Couldn't recheck your holdings — try again"));
     } finally {
       setChecking(false);
     }
@@ -83,6 +86,7 @@ export default function ProfilePage() {
       await load();
     } catch (e) {
       console.error("visibility save failed", e);
+      notifyError(errMsg(e, "Couldn't save visibility — try again"));
     }
   }
 
@@ -97,6 +101,8 @@ export default function ProfilePage() {
       window.dispatchEvent(new Event("sixfigs-auth"));
     } catch (e) {
       console.error("handle save failed", e);
+      // Live typing validation stays inline; submission failures go to the box.
+      notifyError(errMsg(e, "Couldn't save the handle — try again"));
     } finally {
       setSavingHandle(false);
     }
@@ -108,6 +114,7 @@ export default function ProfilePage() {
       await load();
     } catch (e) {
       console.error("remove wallet failed", e);
+      notifyError(errMsg(e, "Couldn't remove that wallet — try again"));
     }
   }
 

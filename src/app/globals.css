@@ -494,9 +494,14 @@ select.field option {
   text-align: center;
 }
 
-/* Friend tier badge sits centered above its action button. */
+/* Friend-tier badge sits centered above its action button. */
 .room-side .tier-badge {
   align-self: center;
+}
+
+/* Join-reason note under a room's JOIN button (tier shortfall, room full…). */
+.room-side .room-note {
+  text-align: center;
 }
 
 .room-del {
@@ -1309,6 +1314,101 @@ select.field option {
   }
 }
 
+/* Global error box — fixed top-right on every page (challenges stack below
+ * it on the same side). Uniform look for every transient failure: 10s
+ * auto-dismiss + ✕. */
+.error-stack {
+  position: fixed;
+  top: 4.8rem;
+  right: 3vw;
+  z-index: 80;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  width: min(340px, 90vw);
+}
+
+.error-toast {
+  background: var(--paper);
+  color: var(--ink);
+  border: 2px solid var(--crimson);
+  border-left-width: 8px;
+  box-shadow: 4px 4px 0 var(--shadow);
+  padding: 0.7rem 0.85rem;
+  font-family: var(--font-dm-mono);
+  font-size: 0.78rem;
+  display: flex;
+  gap: 0.6rem;
+  align-items: flex-start;
+  animation: banner-drop 0.25s cubic-bezier(0.2, 0.9, 0.3, 1.2);
+}
+
+.error-toast p {
+  margin: 0;
+  flex: 1;
+  overflow-wrap: anywhere;
+}
+
+.error-close {
+  border: none;
+  background: none;
+  color: var(--crimson);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 0;
+  line-height: 1.4;
+}
+
+@media (max-width: 540px) {
+  /* Stacked masthead runs taller — sit below it. */
+  .error-stack {
+    top: 9.4rem;
+  }
+}
+
+/* Opponent-return countdown (random matches) — same corner as the error box,
+ * one rung below it; gold because it is a wait, not a failure. */
+.return-toast {
+  position: fixed;
+  top: 4.8rem;
+  right: 3vw;
+  z-index: 75;
+  width: min(340px, 90vw);
+  background: var(--gold);
+  color: var(--on-dark);
+  border: 2px solid var(--ink);
+  box-shadow: 4px 4px 0 var(--shadow);
+  padding: 0.7rem 0.85rem;
+  font-family: var(--font-dm-mono);
+  font-size: 0.78rem;
+  animation: banner-drop 0.25s cubic-bezier(0.2, 0.9, 0.3, 1.2);
+}
+
+@media (max-width: 540px) {
+  .return-toast {
+    top: 9.4rem;
+  }
+}
+
+/* Rematch-offer toast (game pages) — same corner, one rung above challenges. */
+.offer-stack {
+  position: fixed;
+  top: 4.8rem;
+  right: 3vw;
+  z-index: 76;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  width: min(330px, 90vw);
+}
+
+@media (max-width: 540px) {
+  .offer-stack {
+    top: 9.4rem;
+  }
+}
+
 /* Create-page ticket preview: tilted stub with corner ribbon. */
 .ticket {
   position: relative;
@@ -1490,6 +1590,208 @@ select.field option {
   grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
   gap: 2.5rem;
   align-items: start;
+}
+
+/* ===== Game surface — ONE design for random matches AND private rooms ===== */
+.game-page {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.game-topbar {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  flex-wrap: wrap;
+}
+
+.game-topbar .tier-badge {
+  margin-left: auto;
+}
+
+.game-panel {
+  grid-template-columns: minmax(0, 1fr) minmax(300px, 360px);
+}
+
+.game-main {
+  border: 2px solid var(--ink);
+  background: var(--card);
+  box-shadow: 8px 8px 0 var(--shadow);
+  padding: 1.1rem 1.2rem 1.3rem;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.game-chat {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  align-self: stretch;
+  min-width: 0;
+}
+
+/* Opponent / you scoreboard. */
+.arena-head {
+  display: flex;
+  align-items: stretch;
+  gap: 0.8rem;
+  margin-top: 0.7rem;
+}
+
+.seat {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+  border: 2px solid var(--ink);
+  background: var(--paper);
+  padding: 0.6rem 0.8rem;
+}
+
+.seat.active {
+  background: var(--gold);
+  color: var(--on-dark);
+  box-shadow: 4px 4px 0 var(--shadow);
+}
+
+.seat-mark {
+  font-size: 1.7rem;
+  line-height: 1;
+  font-weight: 700;
+}
+
+.seat-role {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-family: var(--font-dm-mono);
+  font-size: 0.6rem;
+  letter-spacing: 0.09em;
+  opacity: 0.8;
+}
+
+.seat-name {
+  display: block;
+  font-weight: 700;
+  font-size: 1rem;
+  letter-spacing: -0.02em;
+  max-width: 13ch;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.arena-vs {
+  align-self: center;
+  font-family: var(--font-dm-mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+}
+
+.arena-status {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.8rem;
+  margin: 0.9rem 0 0;
+  flex-wrap: wrap;
+}
+
+.board-frame {
+  display: flex;
+  justify-content: center;
+  margin-top: 0.9rem;
+}
+
+.board {
+  display: grid;
+  grid-template-columns: repeat(3, min(110px, 26vw));
+  gap: 4px;
+  background: var(--ink);
+  padding: 4px;
+  width: max-content;
+  border: 2px solid var(--ink);
+  box-shadow: 8px 8px 0 var(--shadow);
+}
+
+.board-idle {
+  flex-direction: column;
+  gap: 0.8rem;
+  border: 2px dashed var(--ink);
+  padding: 2.4rem 1.2rem;
+  min-height: 190px;
+  color: var(--muted);
+  text-align: center;
+}
+
+.board-cell.win {
+  background: var(--gold);
+  color: var(--on-dark) !important;
+  animation: cell-win 0.32s ease;
+}
+
+@keyframes cell-win {
+  from {
+    transform: scale(0.85);
+  }
+}
+
+.chat-send {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.chat-send .field {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+/* Auth / gate cards (centered, no dead ends). */
+.auth-card {
+  width: 100%;
+  max-width: 520px;
+  text-align: center;
+  padding: 2.5rem 2rem;
+}
+
+.gate-card {
+  width: 100%;
+  max-width: 440px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  align-items: center;
+}
+
+.gate-reason {
+  margin: 0;
+  width: 100%;
+  font-family: var(--font-dm-mono);
+  font-size: 0.82rem;
+  line-height: 1.5;
+  color: var(--crimson);
+  border: 2px solid var(--crimson);
+  background: color-mix(in srgb, var(--crimson) 8%, transparent);
+  padding: 0.6rem 0.8rem;
+}
+
+@media (max-width: 560px) {
+  .arena-head {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  .arena-vs {
+    display: none;
+  }
+  .seat-name {
+    max-width: none;
+  }
 }
 
 @media (max-width: 900px) {

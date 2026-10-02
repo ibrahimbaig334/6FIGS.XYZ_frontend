@@ -69,7 +69,12 @@ export default function ProfilePage() {
     if (checking) return;
     setChecking(true);
     try {
-      await api("/eligibility/check", { method: "POST" });
+      // force:true skips the 10-min RPC balance cache: PROVE always shows
+      // current truth (fresh balances → fresh tier), then reloads the page.
+      await api("/eligibility/check", {
+        method: "POST",
+        body: { force: true },
+      });
       await load();
       window.dispatchEvent(new Event("sixfigs-auth"));
     } catch (e) {

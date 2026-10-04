@@ -3,6 +3,7 @@
 import {
   encryptEscrowBlob,
   RegistrationClient,
+  type PreparedAddition,
   type PreparedRegistration,
   type WalletDescriptor,
 } from "@sixfigs/tee/client";
@@ -12,6 +13,7 @@ export interface EnclaveConfig {
   enclaveUrl: string;
   allowedImageDigests: string[];
   allowedProjects: string[];
+  requiredEscrowKeyProviders?: string[];
 }
 
 /** Fails closed when the enclave is not configured. */
@@ -25,12 +27,25 @@ export function enclaveConfig(): EnclaveConfig {
     .split(",")
     .map((s) => s.trim())
     .filter((s) => s.length > 0);
+  const requiredEscrowKeyProviders = (
+    process.env.NEXT_PUBLIC_REQUIRED_ESCROW_KEY_PROVIDERS ?? ""
+  )
+    .split(",")
+    .map((s) => s.trim())
+    .filter((s) => s.length > 0);
   if (!enclaveUrl || !allowedImageDigests.length || !allowedProjects.length) {
     throw new Error(
       "Enclave is not configured (NEXT_PUBLIC_ENCLAVE_URL / NEXT_PUBLIC_IMAGE_DIGEST / NEXT_PUBLIC_GCP_PROJECT)",
     );
   }
-  return { enclaveUrl, allowedImageDigests, allowedProjects };
+  return {
+    enclaveUrl,
+    allowedImageDigests,
+    allowedProjects,
+    ...(requiredEscrowKeyProviders.length
+      ? { requiredEscrowKeyProviders }
+      : {}),
+  };
 }
 
 export interface TeeWalletInput {
@@ -49,56 +64,50 @@ function toDescriptor(wallet: TeeWalletInput): WalletDescriptor {
   };
 }
 
-/**
- * Prepare the ownership message for a wallet set. The backend nonce binds the
- * attempt to this session; signatures are collected wallet by wallet.
- */
-export async function prepareSet(input: {
-  wallets: TeeWalletInput[];
-  remove?: TeeWalletInput[];
-}): Promise<{ client: RegistrationClient; prepared: PreparedRegistration }> {
+function newClient(): RegistrationClient {
   const config = enclaveConfig();
-  const client = new RegistrationClient({
+  return new RegistrationClient({
     enclaveUrl: config.enclaveUrl,
     policy: {
       allowedImageDigests: config.allowedImageDigests,
       allowedProjects: config.allowedProjects,
+      ...(config.requiredEscrowKeyProviders
+        ? { requiredEscrowKeyProviders: config.requiredEscrowKeyProviders }
+        : {}),
     },
   });
+}
+
+/**
+ * Establish: prepare the ownership message for a full wallet set. The backend
+ * nonce binds the attempt to this session; every wallet signs the same message.
+ */
+export async function prepareSet(input: {
+  wallets: TeeWalletInput[];
+}): Promise<{ client: RegistrationClient; prepared: PreparedRegistration }> {
+  const client = newClient();
   const { nonce } = await teeNonce();
   const prepared = client.prepare({
     wallets: input.wallets.map(toDescriptor),
-    ...(input.remove && input.remove.length > 0
-      ? { remove: input.remove.map(toDescriptor) }
-      : {}),
     disclosure: "hidden",
     nonce,
   });
   return { client, prepared };
 }
 
-/**
- * Submit collected signatures, escrow the wallet set to the enclave, and
- * register with the backend. Prefers calling only after every enrolled
- * wallet has signed; nothing is persisted on partial sets.
- */
+/** Establish: submit signatures, escrow the set, and register with the backend. */
 export async function submitSet(input: {
   client: RegistrationClient;
   prepared: PreparedRegistration;
-  keep: TeeWalletInput[];
+  wallets: TeeWalletInput[];
   signatures: Record<string, string>;
-  removalSignatures?: Record<string, string>;
 }): Promise<Profile> {
-  const { client, prepared, keep, signatures, removalSignatures } = input;
-  const signed = await client.submit({
-    prepared,
-    signatures,
-    ...(removalSignatures ? { removalSignatures } : {}),
-  });
+  const { client, prepared, wallets, signatures } = input;
+  const signed = await client.submit({ prepared, signatures });
   const hello = await client.hello();
   const escrowBlob = await encryptEscrowBlob(
     hello.escrowPublicKey,
-    keep.map((w) => ({
+    wallets.map((w) => ({
       family: w.family,
       chainId: w.chainId,
       address: w.address,
@@ -106,4 +115,39 @@ export async function submitSet(input: {
     })),
   );
   return teeRegister(signed, escrowBlob);
+}
+
+/**
+ * Add: prepare the compact consent for one or more new wallets. The backend
+ * returns the stored identity plus the opaque escrow blob, which the browser
+ * forwards untouched — the old wallets are never needed or re-signed.
+ */
+export async function prepareWalletAddition(input: {
+  added: TeeWalletInput[];
+}): Promise<{ client: RegistrationClient; prepared: PreparedAddition }> {
+  const client = newClient();
+  const prep = await teeNonce();
+  if (!prep.add) {
+    throw new Error("This account has no verified wallet set to extend yet");
+  }
+  const prepared = client.prepareAddition({
+    added: input.added.map(toDescriptor),
+    escrowBlob: prep.add.escrowBlob as Parameters<
+      RegistrationClient["prepareAddition"]
+    >[0]["escrowBlob"],
+    accountIdentityNullifier: prep.add.identityNullifier,
+    nonce: prep.nonce,
+  });
+  return { client, prepared };
+}
+
+/** Add: submit the new wallets' signatures; the enclave merges and re-escrows. */
+export async function submitWalletAddition(input: {
+  client: RegistrationClient;
+  prepared: PreparedAddition;
+  signatures: Record<string, string>;
+}): Promise<Profile> {
+  const { client, prepared, signatures } = input;
+  const signed = await client.submitAddition({ prepared, signatures });
+  return teeRegister(signed);
 }

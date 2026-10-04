@@ -4,12 +4,12 @@ import { useCallback, useEffect, useState } from "react";
 import {
   api,
   clearToken,
+  emailChangePassword,
+  emailResendVerification,
   getToken,
-  getTiers,
   teeRecheck,
   Profile,
   TeeEligibility,
-  TierInfo,
 } from "../../lib/api";
 import { handleError } from "../../lib/validate";
 import { MAX_WALLETS } from "../../lib/constants";
@@ -28,13 +28,12 @@ export default function ProfilePage() {
   const [loading, setLoading] = useState(true);
   const [checking, setChecking] = useState(false);
   const [savingHandle, setSavingHandle] = useState(false);
-  const [tiers, setTiers] = useState<TierInfo[]>([]);
   const [showProve, setShowProve] = useState(false);
   const [showLink, setShowLink] = useState(false);
+  const [banner, setBanner] = useState("");
 
   useEffect(() => {
     setReady(true);
-    getTiers().then((t) => setTiers(t.tiers));
   }, []);
 
   const applyProfile = (p: Profile) => {
@@ -74,7 +73,6 @@ export default function ProfilePage() {
     setChecking(true);
     try {
       if (profile && isTee(profile.eligibility)) await teeRecheck();
-      else await api("/eligibility/check", { method: "POST" });
       await load();
       window.dispatchEvent(new Event("sixfigs-auth"));
     } catch (e) {
@@ -109,12 +107,13 @@ export default function ProfilePage() {
     }
   }
 
-  async function removeWallet(id: string) {
+  async function resendVerification() {
+    setBanner("");
     try {
-      await api(`/wallet/${id}`, { method: "DELETE" });
-      await load();
+      await emailResendVerification();
+      setBanner("Verification email sent — check your inbox.");
     } catch (e) {
-      console.error("remove wallet failed", e);
+      setBanner(e instanceof Error ? e.message : "Could not send the email");
     }
   }
 
@@ -178,50 +177,32 @@ export default function ProfilePage() {
     );
   }
 
-  if (isTee(profile.eligibility)) {
-    return (
-      <TeeProfile
-        profile={profile}
-        checking={checking}
-        showProve={showProve}
-        showLink={showLink}
-        onProve={() => setShowProve(true)}
-        onProveDone={(p) => {
-          setShowProve(false);
-          applyProfile(p);
-        }}
-        onProveCancel={() => setShowProve(false)}
-        onLink={() => setShowLink((v) => !v)}
-        onLinked={() => {
-          setShowLink(false);
-          void load();
-        }}
-        onRecheck={() => void recheck()}
-        onSaveVis={(v) => void saveVis(v)}
-        handle={handle}
-        setHandle={setHandle}
-        handleErr={handleErr}
-        savingHandle={savingHandle}
-        onSaveHandle={() => void saveHandle()}
-        onDisconnect={disconnect}
-      />
-    );
-  }
-
   return (
-    <LegacyProfile
+    <ProfileView
       profile={profile}
-      tiers={tiers}
       checking={checking}
-      savingHandle={savingHandle}
+      showProve={showProve}
+      showLink={showLink}
+      banner={banner}
+      onProve={() => setShowProve(true)}
+      onProveDone={(p) => {
+        setShowProve(false);
+        applyProfile(p);
+      }}
+      onProveCancel={() => setShowProve(false)}
+      onLink={() => setShowLink((v) => !v)}
+      onLinked={() => {
+        setShowLink(false);
+        void load();
+      }}
+      onRecheck={() => void recheck()}
+      onResendVerification={() => void resendVerification()}
+      onSaveVis={(v) => void saveVis(v)}
       handle={handle}
       setHandle={setHandle}
       handleErr={handleErr}
-      onConnected={onConnected}
-      onRecheck={() => void recheck()}
-      onSaveVis={(v) => void saveVis(v)}
+      savingHandle={savingHandle}
       onSaveHandle={() => void saveHandle()}
-      onRemoveWallet={(id) => void removeWallet(id)}
       onDisconnect={disconnect}
     />
   );
@@ -231,17 +212,19 @@ function isTee(elig: Profile["eligibility"]): elig is TeeEligibility {
   return (elig as { source?: string }).source === "tee";
 }
 
-function TeeProfile({
+function ProfileView({
   profile,
   checking,
   showProve,
   showLink,
+  banner,
   onProve,
   onProveDone,
   onProveCancel,
   onLink,
   onLinked,
   onRecheck,
+  onResendVerification,
   onSaveVis,
   handle,
   setHandle,
@@ -254,12 +237,14 @@ function TeeProfile({
   checking: boolean;
   showProve: boolean;
   showLink: boolean;
+  banner: string;
   onProve: () => void;
   onProveDone: (p: Profile) => void;
   onProveCancel: () => void;
   onLink: () => void;
   onLinked: () => void;
   onRecheck: () => void;
+  onResendVerification: () => void;
   onSaveVis: (v: string) => void;
   handle: string;
   setHandle: (v: string) => void;
@@ -268,11 +253,17 @@ function TeeProfile({
   onSaveHandle: () => void;
   onDisconnect: () => void;
 }) {
-  const elig = profile.eligibility as TeeEligibility;
+  const tee = isTee(profile.eligibility) ? profile.eligibility : null;
   const username = profile.handle ?? `user_${profile.id.slice(-4)}`;
-  const keepLabels = elig.wallets
-    .map((w) => w.label ?? w.family.toUpperCase())
-    .filter((l, i, a) => a.indexOf(l) === i);
+  const enrolledLabels = tee
+    ? tee.wallets
+        .map((w) => w.label ?? w.family.toUpperCase())
+        .filter((l, i, a) => a.indexOf(l) === i)
+    : profile.wallets
+        .map((w) => w.name ?? w.chain.toUpperCase())
+        .filter((l, i, a) => a.indexOf(l) === i);
+  const hasIdentity = tee !== null;
+  const addOnly = hasIdentity && profile.wallets.length > 0;
 
   return (
     <section
@@ -315,7 +306,7 @@ function TeeProfile({
             className="tier-badge"
             style={{ alignSelf: "center", padding: "7px 30px" }}
           >
-            {elig.tier ?? "UNVERIFIED"}
+            {tee?.tier ?? "UNVERIFIED"}
           </span>
         </div>
 
@@ -328,20 +319,48 @@ function TeeProfile({
             lineHeight: 1.1,
           }}
         >
-          {elig.tier === null
+          {!tee || tee.tier === null
             ? "BELOW $100K — LINK MORE BAGS."
-            : elig.topAssets.length > 0
-              ? elig.topAssets.join(" · ")
+            : tee.topAssets.length > 0
+              ? tee.topAssets.join(" · ")
               : "VERIFIED HOLDER"}
         </p>
         <p className="fine" style={{ margin: "0.3rem 0 0" }}>
-          BAND {elig.portfolioBand}
-          {" · "}
-          {elig.verified
-            ? `VERIFIED ${new Date(elig.verifiedAt).toLocaleString()}`
-            : "UNVERIFIED — PROVE BELOW."}
-          {elig.stale && elig.verified ? " · REFRESHING…" : ""}
+          {tee ? (
+            <>
+              BAND {tee.portfolioBand}
+              {" · "}
+              {tee.verified
+                ? `VERIFIED ${new Date(tee.verifiedAt).toLocaleString()}`
+                : "UNVERIFIED — PROVE BELOW."}
+              {tee.stale && tee.verified ? " · REFRESHING…" : ""}
+            </>
+          ) : (
+            "NO VERIFIED IDENTITY YET — PROVE YOUR WALLETS BELOW."
+          )}
         </p>
+
+        {profile.email && profile.emailVerified === false && (
+          <div
+            style={{
+              marginTop: "0.9rem",
+              border: "2px solid var(--ink)",
+              padding: "0.7rem 0.9rem",
+              display: "flex",
+              gap: "0.6rem",
+              alignItems: "center",
+              flexWrap: "wrap",
+            }}
+          >
+            <span className="fine" style={{ margin: 0 }}>
+              VERIFY YOUR EMAIL TO SECURE RECOVERY.
+            </span>
+            <button className="chip" onClick={onResendVerification}>
+              RESEND LINK
+            </button>
+          </div>
+        )}
+        {banner && <p className="fine">{banner}</p>}
 
         <div className="profile-fields">
           <div>
@@ -408,6 +427,9 @@ function TeeProfile({
             )}
           </div>
         )}
+        {profile.email && (
+          <ChangePasswordForm />
+        )}
       </div>
 
       <div className="card">
@@ -454,7 +476,8 @@ function TeeProfile({
         {showProve ? (
           <div style={{ marginTop: "0.8rem" }}>
             <TeeProve
-              keepLabels={keepLabels}
+              mode={addOnly ? "add" : "establish"}
+              enrolledLabels={enrolledLabels}
               onDone={onProveDone}
               onCancel={onProveCancel}
             />
@@ -466,9 +489,7 @@ function TeeProfile({
               style={{ padding: "0.6rem 1rem" }}
               onClick={onProve}
             >
-              {profile.wallets.length === 0
-                ? "PROVE TIER ↗"
-                : "MANAGE WALLETS ↗"}
+              {addOnly ? "ADD WALLET ↗" : "PROVE TIER ↗"}
             </button>
             <button
               className="btn-ghost"
@@ -492,309 +513,67 @@ function TeeProfile({
   );
 }
 
-/**
- * Legacy path, kept for migration: exact totals from live balance reads.
- * Tee users never reach here (eligibility.source === "tee").
- */
-function LegacyProfile({
-  profile,
-  tiers,
-  checking,
-  savingHandle,
-  handle,
-  setHandle,
-  handleErr,
-  onConnected,
-  onRecheck,
-  onSaveVis,
-  onSaveHandle,
-  onRemoveWallet,
-  onDisconnect,
-}: {
-  profile: Profile;
-  tiers: TierInfo[];
-  checking: boolean;
-  savingHandle: boolean;
-  handle: string;
-  setHandle: (v: string) => void;
-  handleErr: string;
-  onConnected: (p?: Profile) => void;
-  onRecheck: () => void;
-  onSaveVis: (v: string) => void;
-  onSaveHandle: () => void;
-  onRemoveWallet: (id: string) => void;
-  onDisconnect: () => void;
-}) {
-  const elig = profile.eligibility;
-  if (elig.source !== "legacy") return null;
-  const username = profile.handle ?? `user_${profile.id.slice(-4)}`;
-  const full = profile.wallets.length >= MAX_WALLETS;
+function ChangePasswordForm() {
+  const [open, setOpen] = useState(false);
+  const [current, setCurrent] = useState("");
+  const [next, setNext] = useState("");
+  const [msg, setMsg] = useState("");
+  const [busy, setBusy] = useState(false);
 
-  // Next tier + linear progress: segment lengths mirror the dollar climbs,
-  // so TIER I is the shortest rung and TIER IV the longest (log inverted it —
-  // it crammed every marker into the bar's tail).
-  const sortedTiers = [...tiers].sort((a, b) => a.min - b.min);
-  const next = sortedTiers.find((t) => elig.total < t.min) ?? null;
-  const scaleMax = Math.max(...sortedTiers.map((t) => t.min), 1) * 1.5;
-  const pos = (v: number) => (v <= 0 ? 0 : Math.min(1, v / scaleMax));
-  const pct = Math.round(pos(elig.total) * 100);
+  async function submit() {
+    if (busy) return;
+    setBusy(true);
+    setMsg("");
+    try {
+      await emailChangePassword(current, next);
+      setMsg("Password updated. Other sessions were signed out.");
+      setCurrent("");
+      setNext("");
+      setOpen(false);
+    } catch (e) {
+      setMsg(e instanceof Error ? e.message : "Could not change the password");
+    } finally {
+      setBusy(false);
+    }
+  }
 
   return (
-    <section
-      className="page-enter"
-      style={{
-        padding: "2rem 5vw",
-        margin: "0 auto",
-        width: "100%",
-        display: "flex",
-        flexDirection: "column",
-        gap: "1rem",
-      }}
-    >
-      <div
-        className="card"
-        style={{ position: "relative", overflow: "hidden" }}
-      >
+    <div style={{ marginTop: "0.8rem" }}>
+      <button className="chip" onClick={() => setOpen((v) => !v)}>
+        {open ? "CANCEL" : "CHANGE PASSWORD"}
+      </button>
+      {open && (
         <div
           style={{
             display: "flex",
-            gap: "0.8rem",
-            alignItems: "flex-start",
-            justifyContent: "space-between",
-            flexWrap: "wrap",
+            flexDirection: "column",
+            gap: "0.5rem",
+            marginTop: "0.6rem",
+            maxWidth: "340px",
           }}
         >
-          <div>
-            <p className="mono-label" style={{ fontSize: 20 }}>
-              PROFILE PAGE
-            </p>
-            <h2
-              style={{
-                margin: "0.3rem 0 0",
-                fontSize: "clamp(1.6rem, 4vw, 2.2rem)",
-                letterSpacing: "-0.03em",
-                overflowWrap: "anywhere",
-              }}
-            >
-              {username}
-            </h2>
-          </div>
-          <span
-            className="tier-badge"
-            style={{ alignSelf: "center", padding: "7px 30px" }}
-          >
-            {elig.tier ?? "UNVERIFIED"}
-          </span>
-        </div>
-
-        <p
-          style={{
-            margin: "0.8rem 0 0",
-            fontSize: "clamp(2rem, 6vw, 3rem)",
-            fontWeight: 700,
-            letterSpacing: "-0.04em",
-            lineHeight: 1,
-          }}
-        >
-          ${elig.total.toLocaleString()}
-        </p>
-        <p className="fine" style={{ margin: "0.3rem 0 0" }}>
-          {next ? (
-            <>
-              NEED <strong>${(next.min - elig.total).toLocaleString()}</strong>{" "}
-              MORE FOR {next.name}
-            </>
-          ) : (
-            "MAX TIER — TOP OF THE HILL."
-          )}
-          {" · "}
-          {elig.expiresAt
-            ? `Refreshes ${new Date(elig.expiresAt).toLocaleString()}.`
-            : "Unverified — run PROVE below."}
-        </p>
-
-        <div
-          style={{
-            position: "relative",
-            height: "16px",
-            border: "2px solid var(--ink)",
-            background: "var(--input)",
-            marginTop: "0.9rem",
-          }}
-          role="progressbar"
-          aria-valuenow={pct}
-          aria-valuemin={0}
-          aria-valuemax={100}
-          aria-label="Progress to next tier"
-        >
-          <div
-            style={{
-              position: "absolute",
-              inset: 0,
-              width: `${pct}%`,
-              background: "var(--gold)",
-              transition: "width 0.5s ease",
-            }}
+          <input
+            className="field"
+            type="password"
+            autoComplete="current-password"
+            placeholder="current password"
+            value={current}
+            onChange={(e) => setCurrent(e.target.value)}
           />
-          {sortedTiers.map((t) => (
-            <span
-              key={t.name}
-              title={`${t.name} — $${t.min.toLocaleString()}`}
-              style={{
-                position: "absolute",
-                left: `${pos(t.min) * 100}%`,
-                top: -5,
-                bottom: -5,
-                width: 3,
-                background: "var(--ink)",
-              }}
-            />
-          ))}
-        </div>
-        <div
-          style={{
-            display: "flex",
-            gap: "0.8rem",
-            flexWrap: "wrap",
-            marginTop: "0.4rem",
-          }}
-        >
-          {sortedTiers.map((t) => (
-            <span key={t.name} className="fine">
-              {t.name} &gt; ${t.min.toLocaleString()}
-            </span>
-          ))}
-          {sortedTiers.length === 0 && (
-            <span className="fine">loading tiers…</span>
-          )}
-        </div>
-
-        <div className="profile-fields">
-          <div>
-            <p
-              className="mono-label"
-              style={{ marginBottom: "0.4rem", justifySelf: "center" }}
-            >
-              USERNAME
-            </p>
-            <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
-              <input
-                className="field"
-                value={handle}
-                onChange={(e) => {
-                  setHandle(e.target.value);
-                }}
-                placeholder="handle (3–24 chars)"
-                style={{ maxWidth: "220px" }}
-              />
-              <button
-                className="chip"
-                disabled={savingHandle}
-                onClick={onSaveHandle}
-              >
-                {savingHandle ? "SAVING…" : "SAVE"}
-              </button>
-            </div>
-            {handleErr && <p className="err">{handleErr}</p>}
-          </div>
-          <div className="vis-block">
-            <p
-              className="mono-label"
-              style={{ marginBottom: "0.4rem", justifySelf: "center" }}
-            >
-              VISIBILITY
-            </p>
-            <div className="vis-chips">
-              {(["HIDDEN", "VISIBLE"] as const).map((v) => (
-                <button
-                  key={v}
-                  className={profile.visMode === v ? "chip active" : "chip"}
-                  style={{ padding: "0.9rem 1rem" }}
-                  onClick={() => onSaveVis(v)}
-                >
-                  {v}
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-        <p className="fine" style={{ margin: "0.6rem 0 0" }}>
-          VISIBLE = your holdings % show up for friends in the 1v1 tab.
-        </p>
-      </div>
-
-      <div className="card">
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "0.6rem",
-            flexWrap: "wrap",
-          }}
-        >
-          <p className="mono-label" style={{ fontSize: 20 }}>
-            WALLETS
-          </p>
-          <span className="fine" style={{ marginLeft: "auto" }}>
-            {profile.wallets.length}/{MAX_WALLETS}
-          </span>
-        </div>
-        <div className="wallet-grid">
-          {profile.wallets.map((w) => {
-            const live = elig.balances.find((b) => b.walletId === w.id);
-            const usd = live?.usd ?? 0;
-            const wpct =
-              elig.total > 0 ? Math.round((usd / elig.total) * 100) : 0;
-            const wname = w.name ?? "Solana Wallet";
-            return (
-              <div key={w.id} className="wallet-row">
-                <WalletIcon
-                  name={wname}
-                  letter={wname.slice(0, 1).toUpperCase()}
-                />
-                <div className="wallet-info">
-                  <strong style={{ fontSize: "1rem" }}>{wname}</strong>
-                  <span className="fine" style={{ margin: 0 }}>
-                    SOL {wpct}% · ${Math.round(usd).toLocaleString()} OF $
-                    {Math.round(elig.total).toLocaleString()}
-                  </span>
-                </div>
-                <button
-                  className="chip"
-                  style={{ marginLeft: "auto" }}
-                  onClick={() => onRemoveWallet(w.id)}
-                >
-                  ✕
-                </button>
-              </div>
-            );
-          })}
-        </div>
-        <div className="wallet-actions">
-          {full ? (
-            <p className="fine" style={{ margin: 0 }}>
-              Wallet limit reached ({MAX_WALLETS})
-            </p>
-          ) : (
-            <SolanaConnect onDone={onConnected} label="CONNECT MORE WALLETS" />
-          )}
-          <button
-            className="btn-ghost"
-            style={{ padding: "0.6rem 1rem", margin: "0 auto" }}
-            disabled={checking}
-            onClick={onRecheck}
-          >
-            {checking ? "CHECKING…" : "PROVE COMBINED TOTAL ↗"}
-          </button>
-          <button
-            className="btn-ghost"
-            style={{ padding: "0.6rem 1rem" }}
-            onClick={onDisconnect}
-          >
-            DISCONNECT ALL
+          <input
+            className="field"
+            type="password"
+            autoComplete="new-password"
+            placeholder="new password (10+ chars)"
+            value={next}
+            onChange={(e) => setNext(e.target.value)}
+          />
+          <button className="btn-solid" disabled={busy} onClick={() => void submit()}>
+            {busy ? "SAVING…" : "UPDATE PASSWORD"}
           </button>
         </div>
-      </div>
-    </section>
+      )}
+      {msg && <p className="fine">{msg}</p>}
+    </div>
   );
 }

@@ -312,9 +312,9 @@
   resolved "https://registry.yarnpkg.com/@rushstack/eslint-patch/-/eslint-patch-1.16.1.tgz#4f97581e114fc79f246cee3723a5c4edd3b62415"
   integrity sha512-TvZbIpeKqGQQ7X0zSCvPH9riMSFQFSggnfBjFZ1mEoILW+UuXCKwOoPcgjMwiUtRqFZ8jWhPJc4um14vC6I4ag==
 
-"@sixfigs/tee@github:A-Mannan/6figs-tee#b94e177":
+"@sixfigs/tee@github:A-Mannan/6figs-tee#30dde9f":
   version "0.1.0"
-  resolved "https://codeload.github.com/A-Mannan/6figs-tee/tar.gz/b94e17759bd78c5dbae1f0baa02292debadb7a3c"
+  resolved "https://codeload.github.com/A-Mannan/6figs-tee/tar.gz/30dde9fc689acc7ebab6bf0487826f75b326d5cb"
   dependencies:
     "@noble/curves" "^1.6.0"
     "@noble/hashes" "^1.5.0"

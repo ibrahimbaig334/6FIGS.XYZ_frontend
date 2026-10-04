@@ -10,7 +10,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@sixfigs/tee": "github:A-Mannan/6figs-tee#b94e177",
+    "@sixfigs/tee": "github:A-Mannan/6figs-tee#30dde9f",
     "@solana/wallet-adapter-base": "^0.9.28",
     "@solana/wallet-adapter-coinbase": "^0.1.24",
     "@solana/wallet-adapter-ledger": "^0.9.30",

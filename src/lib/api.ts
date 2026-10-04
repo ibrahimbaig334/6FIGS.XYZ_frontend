@@ -129,15 +129,13 @@ export interface TeeEligibility {
   verified: boolean;
 }
 
-/** Legacy view from live balance reads; superseded by the tee flow. */
+/** Wallet-only accounts get no tier: live balance reads and address columns
+ *  are gone. Shown as an unverified profile until they prove through the tee. */
 export interface LegacyEligibility {
   source: "legacy";
-  tier: string | null;
-  total: number;
-  assetPct: Record<string, number>;
-  balances: WalletBalance[];
-  expiresAt: string | null;
+  tier: null;
   walletCount: number;
+  expiresAt: null;
 }
 
 export type Eligibility = TeeEligibility | LegacyEligibility;
@@ -172,6 +170,7 @@ export interface Profile {
   id: string;
   handle: string | null;
   email?: string | null;
+  emailVerified?: boolean;
   visMode: string;
   tags: string[];
   eligibility: Eligibility;
@@ -210,19 +209,72 @@ export async function emailLink(email: string, password: string) {
   });
 }
 
-/** Single-use tee registration nonce bound to this session. */
-export async function teeNonce(): Promise<{ nonce: string }> {
+/** Consume an emailed verification link. */
+export async function emailVerify(token: string) {
+  return api<{ verified: boolean }>("/auth/email/verify", {
+    method: "POST",
+    body: { token },
+    auth: false,
+  });
+}
+
+/** Re-send the verification email for the current account. */
+export async function emailResendVerification() {
+  return api<{ sent?: boolean; verified?: boolean }>(
+    "/auth/email/resend-verification",
+    { method: "POST" },
+  );
+}
+
+/** Start a password reset; the response is generic either way. */
+export async function emailForgot(email: string) {
+  return api<{ ok: boolean }>("/auth/email/forgot", {
+    method: "POST",
+    body: { email },
+    auth: false,
+  });
+}
+
+/** Finish a password reset with the emailed token. */
+export async function emailReset(token: string, password: string) {
+  return api<{ ok: boolean }>("/auth/email/reset", {
+    method: "POST",
+    body: { token, password },
+    auth: false,
+  });
+}
+
+/** Rotate the password for the current session. */
+export async function emailChangePassword(
+  currentPassword: string,
+  newPassword: string,
+) {
+  return api<{ ok: boolean }>("/auth/email/change-password", {
+    method: "POST",
+    body: { currentPassword, newPassword },
+  });
+}
+
+export interface TeeAddPrep {
+  identityNullifier: string;
+  escrowBlob: unknown;
+}
+
+/** Single-use tee registration nonce bound to this session. Verified users
+ *  also receive the stored identity and opaque escrow blob for an addition. */
+export async function teeNonce(): Promise<{ nonce: string; add?: TeeAddPrep }> {
   return api("/eligibility/tee-nonce", { method: "POST" });
 }
 
-/** Submit an attested registration plus its escrow blob. */
+/** Submit an attested registration. Additions carry the merged escrow blob
+ *  inside the signed result, so no separate blob is needed. */
 export async function teeRegister(
   signed: unknown,
-  escrowBlob: unknown,
+  escrowBlob?: unknown,
 ): Promise<Profile> {
   return api<Profile>("/eligibility/tee-register", {
     method: "POST",
-    body: { signed, escrowBlob },
+    body: escrowBlob ? { signed, escrowBlob } : { signed },
   });
 }
 

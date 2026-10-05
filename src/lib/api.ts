@@ -280,15 +280,18 @@ export async function teeNonce(): Promise<{ nonce: string; add?: TeeAddPrep }> {
 }
 
 /** Submit an attested registration. Additions carry the merged escrow blob
- *  inside the signed result, so no separate blob is needed. */
+ *  inside the signed result, so no separate blob is needed. The endpoint
+ *  returns the attested eligibility view; callers get the full refreshed
+ *  profile (registration is persisted synchronously before this fetch). */
 export async function teeRegister(
   signed: unknown,
   escrowBlob?: unknown,
 ): Promise<Profile> {
-  return api<Profile>("/eligibility/tee-register", {
+  await api("/eligibility/tee-register", {
     method: "POST",
     body: escrowBlob ? { signed, escrowBlob } : { signed },
   });
+  return api<Profile>("/profile/user");
 }
 
 /** Force a silent freshness re-verification now. */

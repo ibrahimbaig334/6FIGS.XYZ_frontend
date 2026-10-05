@@ -1,7 +1,8 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useWallet } from "@solana/wallet-adapter-react";
+import { useWalletModal } from "@solana/wallet-adapter-react-ui";
 import type {
   PreparedAddition,
   PreparedRegistration,
@@ -56,7 +57,9 @@ export default function TeeProve({
   onDone: (profile: Profile) => void;
   onCancel: () => void;
 }) {
-  const { publicKey, signMessage, wallet, connected } = useWallet();
+  const { publicKey, signMessage, wallet, connected, connect, connecting } =
+    useWallet();
+  const { visible: modalVisible, setVisible: setModalVisible } = useWalletModal();
   const [wallets, setWallets] = useState<TeeWalletInput[]>([]);
   const [removeAddress, setRemoveAddress] = useState("");
   const [client, setClient] = useState<RegistrationClient | null>(null);
@@ -69,9 +72,40 @@ export default function TeeProve({
   const [sigs, setSigs] = useState<SigState>({});
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
+  const [phase, setPhase] = useState<"idle" | "choose" | "connect">("idle");
+  const connRef = useRef(false);
 
   const connectedAddress = publicKey?.toString() ?? null;
   const sigStore = useRef<Record<string, string>>({});
+
+  // Adapter modal only selects — connect once it closes (mirrors SolanaConnect).
+  useEffect(() => {
+    if (!modalVisible && phase === "choose") setPhase("connect");
+  }, [modalVisible, phase]);
+
+  useEffect(() => {
+    if (phase !== "connect") return;
+    if (connected) {
+      setPhase("idle");
+      return;
+    }
+    if (!wallet) {
+      if (!modalVisible) setPhase("idle");
+      return;
+    }
+    if (connecting || connRef.current) return;
+    connRef.current = true;
+    connect()
+      .catch((e) => {
+        console.error("wallet connect failed", e);
+        setErr("Connection failed — try again");
+      })
+      .finally(() => {
+        connRef.current = false;
+        setPhase("idle");
+      });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phase, wallet, connected, connecting, modalVisible]);
 
   function addConnected() {
     if (!connected || !connectedAddress) {
@@ -241,13 +275,28 @@ export default function TeeProve({
             />
           )}
           <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
+            <button
+              className="btn-ghost"
+              disabled={connecting}
+              onClick={() => {
+                setModalVisible(true);
+                setPhase("choose");
+              }}
+            >
+              {connecting
+                ? "CONNECTING..."
+                : connected
+                  ? "SWITCH WALLET"
+                  : "CONNECT WALLET ↗"}
+            </button>
             <button className="btn-solid" onClick={addConnected} disabled={!connected}>
               {mode === "remove" ? "ADD KEPT WALLET" : "ADD CONNECTED WALLET"}
             </button>
           </div>
           {!connected && (
             <p className="fine" style={{ margin: 0 }}>
-              Connect a wallet with the button above first (adapter popup).
+              Connect a wallet first (adapter popup), then press ADD. It signs a
+              message — no transaction, no gas.
             </p>
           )}
           {wallets.length === 0 ? (

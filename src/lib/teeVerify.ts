@@ -49,6 +49,46 @@ export function enclaveConfig(): EnclaveConfig {
   };
 }
 
+/**
+ * Google Confidential Space OIDC JWKS. The SDK's default path fetches the
+ * issuer's `.well-known/openid-configuration` first, but that document is
+ * served as `text/html` with no `access-control-allow-origin`, so the browser
+ * (Firefox especially) rejects it with a generic "NetworkError" before the
+ * attestation is ever checked. This JWKS endpoint is CORS-enabled, so we pin
+ * it and skip the discovery hop. The key is still fetched live from Google —
+ * nothing is baked in — preserving the attestation trust anchor.
+ */
+const GOOGLE_CS_JWKS_URL =
+  "https://www.googleapis.com/service_accounts/v1/metadata/jwk/signer@confidentialspace-sign.iam.gserviceaccount.com";
+
+let jwksPromise: Promise<{ keys: Array<Record<string, unknown>> }> | null = null;
+
+function loadGoogleJwks(): Promise<{ keys: Array<Record<string, unknown>> }> {
+  if (!jwksPromise) {
+    jwksPromise = (async () => {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 10_000);
+      try {
+        const res = await fetch(GOOGLE_CS_JWKS_URL, {
+          signal: controller.signal,
+        });
+        if (!res.ok) throw new Error(`JWKS fetch failed (${res.status})`);
+        const jwks = (await res.json()) as { keys?: unknown };
+        if (!Array.isArray(jwks.keys) || jwks.keys.length === 0) {
+          throw new Error("JWKS document has no keys");
+        }
+        return jwks as { keys: Array<Record<string, unknown>> };
+      } finally {
+        clearTimeout(timer);
+      }
+    })().catch((e) => {
+      jwksPromise = null; // allow retry on a transient network failure
+      throw e;
+    });
+  }
+  return jwksPromise;
+}
+
 export interface TeeWalletInput {
   family: "evm" | "solana";
   chainId: number;
@@ -65,16 +105,23 @@ function toDescriptor(wallet: TeeWalletInput): WalletDescriptor {
   };
 }
 
-function newClient(): RegistrationClient {
+async function newClient(): Promise<RegistrationClient> {
   const config = enclaveConfig();
+  const jwks = await loadGoogleJwks();
   return new RegistrationClient({
     enclaveUrl: config.enclaveUrl,
+    // Bound wrapper: the SDK calls `this.fetchImpl(...)`, which makes `this` the
+    // client instance. Firefox's native fetch rejects that ("'fetch' called on
+    // an object that does not implement interface Window"), so bind to window.
+    fetchImpl: (...args: Parameters<typeof fetch>) => fetch(...args),
     policy: {
       allowedImageDigests: config.allowedImageDigests,
       allowedProjects: config.allowedProjects,
       ...(config.requiredEscrowKeyProviders
         ? { requiredEscrowKeyProviders: config.requiredEscrowKeyProviders }
         : {}),
+      // Skips the non-CORS discovery fetch (see loadGoogleJwks).
+      jwks,
     },
   });
 }
@@ -86,7 +133,7 @@ function newClient(): RegistrationClient {
 export async function prepareSet(input: {
   wallets: TeeWalletInput[];
 }): Promise<{ client: RegistrationClient; prepared: PreparedRegistration }> {
-  const client = newClient();
+  const client = await newClient();
   const { nonce } = await teeNonce();
   const prepared = client.prepare({
     wallets: input.wallets.map(toDescriptor),
@@ -126,7 +173,7 @@ export async function submitSet(input: {
 export async function prepareWalletAddition(input: {
   added: TeeWalletInput[];
 }): Promise<{ client: RegistrationClient; prepared: PreparedAddition }> {
-  const client = newClient();
+  const client = await newClient();
   const prep = await teeNonce();
   if (!prep.add) {
     throw new Error("This account has no verified wallet set to extend yet");
@@ -161,7 +208,7 @@ export async function prepareWalletRemoval(input: {
   kept: TeeWalletInput[];
   remove: TeeWalletInput[];
 }): Promise<{ client: RegistrationClient; prepared: PreparedRemoval }> {
-  const client = newClient();
+  const client = await newClient();
   const prep = await teeNonce();
   if (!prep.add) {
     throw new Error("This account has no verified wallet set to remove from yet");

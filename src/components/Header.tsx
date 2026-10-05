@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { api, ApiError, clearToken, getToken, Profile } from "../lib/api";
 import { connectSocket, disconnectSocket } from "../lib/ws";
-import SolanaConnect from "./SolanaConnect";
+import LoginModal from "./LoginModal";
 
 const NAV = [
   { href: "/", label: "HOME" },
@@ -16,6 +16,7 @@ const NAV = [
 export default function Header() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [menu, setMenu] = useState(false);
+  const [login, setLogin] = useState(false);
   const [dark, setDark] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const profileFreshRef = useRef(false);
@@ -86,7 +87,7 @@ export default function Header() {
   }, []);
 
   /** Login success: the response already carries the profile — render the
-   *  tier badge immediately (no follow-up fetch → no CONNECT WALLET flash). */
+   *  tier badge immediately (no follow-up fetch → no LOG IN flash). */
   function authed(p?: Profile) {
     if (p) {
       profileFreshRef.current = true;
@@ -164,9 +165,12 @@ export default function Header() {
             )}
           </div>
         ) : (
-          <SolanaConnect onDone={authed} />
+          <button className="btn-solid" onClick={() => setLogin(true)}>
+            LOG IN
+          </button>
         )}
       </div>
+      {login && <LoginModal onClose={() => setLogin(false)} onDone={authed} />}
     </header>
   );
 }

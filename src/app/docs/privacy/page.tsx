@@ -49,7 +49,8 @@ export default function Privacy() {
         </div>
         <div className="docs-table-row">
           <span>The 6figs server</span>
-          <span>Tier, coarse band, chosen top-3 symbols, pseudonyms. No
+          <span>Tier, coarse band, top-3 token symbols (disclosed
+            automatically, symbols only), pseudonyms. No
             addresses, no amounts, anywhere.</span>
         </div>
         <div className="docs-table-row">

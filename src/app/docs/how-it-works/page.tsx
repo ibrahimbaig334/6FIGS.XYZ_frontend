@@ -84,10 +84,11 @@ export default function HowItWorks() {
           <p className="mono-label">SERVER VERIFIES, STORES ALMOST NOTHING</p>
           <p className="docs-body-text">
             Your browser checks the signed result first, then forwards it. The
-            6figs server independently verifies the signature and the
+            6figs server independently            verifies the signature and the
             attestation — same image fingerprint, fresh nonce, no debug mode —
-            and stores: your tier, a coarse band, up to three token symbols
-            you chose to show, and the wallet pseudonyms. There is no column
+            and stores: your tier, a coarse band, your top three token
+            symbols (disclosed automatically, symbols only — never amounts),
+            and the wallet pseudonyms. There is no column
             anywhere for an address or an amount; the database schema makes
             storing one impossible.
           </p>

@@ -56,8 +56,8 @@ export default function Tiers() {
           <span>Only you, on your profile</span>
         </div>
         <div className="docs-table-row">
-          <span>Up to 3 token symbols (e.g. &ldquo;SOL · ETH · HYPE&rdquo;)</span>
-          <span>Only you, on your profile</span>
+          <span>Top 3 token symbols (e.g. &ldquo;SOL · ETH · HYPE&rdquo;)</span>
+          <span>Only you, on your profile — symbols only, never amounts</span>
         </div>
         <div className="docs-table-row">
           <span>Wallet pseudonyms (one-way, reversible by no one)</span>

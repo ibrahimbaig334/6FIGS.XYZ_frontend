@@ -481,12 +481,6 @@ export default function PlayPage() {
           {friends.map((p) => {
             const pend = pendingTo(p.id);
             const letter = (p.handle?.trim()?.[0] ?? "?").toUpperCase();
-            const holdings =
-              p.assetPct && Object.keys(p.assetPct).length > 0
-                ? Object.entries(p.assetPct)
-                    .map(([c, pct]) => `${c} ${pct}%`)
-                    .join(" · ")
-                : "";
             return (
               <div key={p.id} className="room-row friend-row">
                 <span
@@ -507,7 +501,6 @@ export default function PlayPage() {
                       title={p.online ? "Online" : "Offline"}
                     />{" "}
                     {p.online ? "ONLINE" : `OFFLINE · ${timeAgo(p.lastSeenAt)}`}
-                    {holdings ? ` · ${holdings}` : ""}
                   </p>
                   {notes[p.id] && (
                     <p className="fine room-note">{notes[p.id]}</p>

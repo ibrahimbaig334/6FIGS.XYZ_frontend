@@ -120,7 +120,6 @@ export interface TeeEligibility {
   tierId: number;
   portfolioBand: string;
   topAssets: string[];
-  stableBps: number;
   wallets: TeeWalletView[];
   walletCount: number;
   verifiedAt: string;
@@ -349,7 +348,6 @@ export interface Friend {
   tags: string[];
   online: boolean;
   lastSeenAt: string | null;
-  assetPct: Record<string, number> | null;
 }
 
 export interface RoomRequestInfo {

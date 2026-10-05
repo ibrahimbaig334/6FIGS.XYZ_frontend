@@ -1,7 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { api, getToken, Room, RoomList } from "../../lib/api";
+import { api, errMsg, getToken, Room, RoomList, RoomMeta } from "../../lib/api";
+import { notifyError } from "../../lib/notify";
 import { ROOMS_PAGE_SIZE, MAX_ROOMS_PER_USER } from "../../lib/constants";
 import SolanaConnect from "../../components/SolanaConnect";
 import SelectMenu from "../../components/SelectMenu";
@@ -34,7 +35,6 @@ export default function RoomsPage() {
   const [total, setTotal] = useState(0);
   const [owned, setOwned] = useState(0);
   const [page, setPage] = useState(1);
-  const [err, setErr] = useState("");
   const [ready, setReady] = useState(false);
   const [accessFilter, setAccessFilter] = useState("");
   const [q, setQ] = useState("");
@@ -66,6 +66,7 @@ export default function RoomsPage() {
       setOwned(res.ownedCount ?? 0);
     } catch (e) {
       console.error("rooms load failed", e);
+      notifyError(errMsg(e, "Couldn't load rooms — try again"));
     } finally {
       setLoading(false);
     }
@@ -78,21 +79,38 @@ export default function RoomsPage() {
   }, [load]);
 
   async function join(r: Room, code?: string) {
-    setErr("");
     try {
       await api(`/rooms/${r.id}/join`, { method: "POST", body: { code } });
       setInviteFor(null);
       location.href = `/rooms/${r.id}`;
     } catch (e) {
-      // Invite-code problems surface inside the dialog; anything else stays
-      // out of the UI (backend text is never rendered).
-      if (r.accessType === "invite") setErr("Wrong invite code — try again");
-      else console.error("join failed", e);
+      console.error("join failed", e);
+      if (r.accessType === "invite") {
+        // Dialog stays open for a retry; the reason lands in the error box.
+        notifyError(errMsg(e, "Wrong invite code — try again"));
+        return;
+      }
+      // Tier room: read the entry gate — it carries the specific REASON
+      // (tier shortfall, room full, …). The box names the room for context.
+      let reason = "";
+      try {
+        const m = await api<RoomMeta>(`/rooms/${r.id}/meta`);
+        reason = m.joinReason ?? "";
+      } catch {
+        /* meta unavailable — fall back below */
+      }
+      if (!reason)
+        reason = errMsg(
+          e,
+          r.minTier
+            ? `Couldn't join this ${r.minTier} room — try again`
+            : "Couldn't join this room — try again",
+        );
+      notifyError(`${r.name}: ${reason}`);
     }
   }
 
   function askJoin(r: Room) {
-    setErr("");
     // Invite rooms enforce the password for everyone — even the creator/members.
     if (r.accessType === "invite") {
       setInviteFor(r);
@@ -428,12 +446,8 @@ export default function RoomsPage() {
       {inviteFor && (
         <InviteDialog
           roomName={inviteFor.name}
-          onClose={() => {
-            setInviteFor(null);
-            setErr("");
-          }}
+          onClose={() => setInviteFor(null)}
           onSubmit={(code) => join(inviteFor, code)}
-          error={err}
         />
       )}
       {deleteFor && (

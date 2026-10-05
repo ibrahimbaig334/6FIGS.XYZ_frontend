@@ -3,8 +3,9 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { Socket } from "socket.io-client";
-import { api, getToken, RoomRequestInfo } from "../lib/api";
+import { api, errMsg, getToken, RoomRequestInfo } from "../lib/api";
 import { REQUEST_TIMEOUT_MS } from "../lib/constants";
+import { notifyError } from "../lib/notify";
 import { connectSocket } from "../lib/ws";
 
 /**
@@ -97,6 +98,7 @@ export default function ChallengeToast() {
       router.push(`/game/${acc.gameId}`);
     } catch (e) {
       console.error("accept failed", e);
+      notifyError(errMsg(e, "Couldn't accept the invite — try again"));
     }
   }
 
@@ -106,6 +108,7 @@ export default function ChallengeToast() {
       await api(`/play/requests/${r.id}/decline`, { method: "POST" });
     } catch (e) {
       console.error("decline failed", e);
+      notifyError(errMsg(e, "Couldn't decline the invite — try again"));
     }
   }
 

@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { useWalletModal } from "@solana/wallet-adapter-react-ui";
 import { getToken, Profile } from "../lib/api";
+import { notifyError } from "../lib/notify";
 import {
   alreadySignedIn,
   lastLoggedInProfile,
@@ -18,18 +19,15 @@ import {
  */
 function SolanaConnectInner({
   onDone,
-  hideError,
   label,
 }: {
   onDone: (p?: Profile) => void;
-  hideError?: boolean;
   label?: string;
 }) {
   const { publicKey, signMessage, wallet, connected, connecting, connect } =
     useWallet();
   const { visible, setVisible: setModalVisible } = useWalletModal();
   const [busy, setBusy] = useState(false);
-  const [err, setErr] = useState("");
   const [attempt, setAttempt] = useState(0);
   const [phase, setPhase] = useState<"idle" | "choose" | "connect">("idle");
   const doneFor = useRef<string | null>(null);
@@ -58,7 +56,7 @@ function SolanaConnectInner({
     connect()
       .catch((e) => {
         console.error("wallet connect failed", e);
-        setErr("Connection failed — try again");
+        notifyError("Connection failed — try again");
       })
       .finally(() => {
         connRef.current = false;
@@ -78,7 +76,6 @@ function SolanaConnectInner({
     }
     let cancelled = false;
     setBusy(true);
-    setErr("");
     const sign = (m: Uint8Array) =>
       signMessage(m) as unknown as Promise<
         Uint8Array | { signature: Uint8Array }
@@ -94,7 +91,7 @@ function SolanaConnectInner({
       .catch((e) => {
         if (!cancelled) {
           console.error("wallet sign-in failed", e);
-          setErr("Connection failed — try again");
+          notifyError("Connection failed — try again");
         }
       })
       .finally(() => {
@@ -137,14 +134,12 @@ function SolanaConnectInner({
         className="btn-solid"
         disabled={uiConnecting}
         onClick={() => {
-          setErr("");
           setModalVisible(true);
           setPhase("choose");
         }}
       >
         {uiConnecting ? "CONNECTING…" : (label ?? "CONNECT WALLET")}
       </button>
-      {err && !hideError && <p className="err">{err}</p>}
     </div>
   );
 }

@@ -2,17 +2,17 @@
 
 import { useState } from "react";
 
-/** Proper invite-code dialog (replaces window.prompt). */
+/** Proper invite-code dialog (replaces window.prompt). Empty-submit nudges
+ *  stay inline (live validation); wrong-code failures land in the error box
+ *  and the dialog stays open for a retry. */
 export default function InviteDialog({
   roomName,
   onSubmit,
   onClose,
-  error,
 }: {
   roomName: string;
   onSubmit: (code: string) => void;
   onClose: () => void;
-  error?: string;
 }) {
   const [code, setCode] = useState("");
   const [err, setErr] = useState("");
@@ -53,7 +53,7 @@ export default function InviteDialog({
             JOIN ↗
           </button>
         </form>
-        {(err || error) && (
+        {err && (
           <p
             style={{
               color: "var(--crimson)",
@@ -61,7 +61,7 @@ export default function InviteDialog({
               fontSize: "0.7rem",
             }}
           >
-            {err || error}
+            {err}
           </p>
         )}
         <button

@@ -164,7 +164,7 @@ export default function Header() {
             )}
           </div>
         ) : (
-          <SolanaConnect onDone={authed} hideError />
+          <SolanaConnect onDone={authed} />
         )}
       </div>
     </header>

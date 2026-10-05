@@ -1,12 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { api, ApiError, getToken, Profile, RoomList } from "../../lib/api";
+import { api, errMsg, getToken, Profile, RoomList } from "../../lib/api";
 import {
   ROOM_PUNCH_LINES,
   ROOM_NAME_MAX,
   ROOM_DESC_MAX,
   MAX_ROOMS_PER_USER,
+  TIER_ORDER,
+  tierRank,
 } from "../../lib/constants";
 import {
   clampGraphemes,
@@ -14,6 +16,7 @@ import {
   roomDescriptionError,
   roomNameError,
 } from "../../lib/validate";
+import { notifyError } from "../../lib/notify";
 import SelectMenu from "../../components/SelectMenu";
 import EmojiPicker from "../../components/EmojiPicker";
 import SolanaConnect from "../../components/SolanaConnect";
@@ -27,7 +30,6 @@ export default function CreateRoomPage() {
     minTier: "TIER I",
     inviteCode: "",
   });
-  const [err, setErr] = useState("");
   const [fieldErrs, setFieldErrs] = useState<{
     name?: string;
     description?: string;
@@ -40,6 +42,11 @@ export default function CreateRoomPage() {
   // Same display rule as room cards: saved handle, else the generated fallback.
   const [username, setUsername] = useState("");
   const [owned, setOwned] = useState<number | null>(null);
+  // Your tier caps the MINIMUM TIER options — a room can never demand more
+  // than you hold (higher options are hidden; backend enforces the same).
+  const [myTier, setMyTier] = useState<string | null>(null);
+  const allowedTiers = myTier ? TIER_ORDER.slice(0, tierRank(myTier)) : [];
+  const tierOptions = allowedTiers.map((t) => ({ value: t, label: t }));
 
   // Specific, actionable limit message (not the generic create failure).
   const roomsFull = owned !== null && owned >= MAX_ROOMS_PER_USER;
@@ -54,7 +61,10 @@ export default function CreateRoomPage() {
     );
     if (getToken()) {
       api<Profile>("/profile/user")
-        .then((p) => setUsername(p.handle ?? `user_${p.id.slice(-4)}`))
+        .then((p) => {
+          setUsername(p.handle ?? `user_${p.id.slice(-4)}`);
+          setMyTier(p.eligibility.tier);
+        })
         .catch(() => {});
       api<RoomList>("/rooms?limit=1")
         .then((r) => setOwned(r.ownedCount ?? 0))
@@ -97,14 +107,21 @@ export default function CreateRoomPage() {
   async function create(e: React.FormEvent) {
     e.preventDefault();
     if (busy) return;
-    if (roomsFull) {
-      setErr(roomsFullMsg);
+    if (roomsFull) return; // the cap note is already showing inline
+    if (
+      form.accessType === "tier" &&
+      tierRank(form.minTier) > tierRank(myTier)
+    ) {
+      notifyError(
+        myTier
+          ? `You are ${myTier} — you cannot require a higher tier`
+          : "Verify your holdings in Profile to create a tier room",
+      );
       return;
     }
     const fe = validate(form);
     setFieldErrs(fe);
     if (fe.name || fe.description || fe.inviteCode) return; // no backend call on invalid input
-    setErr("");
     setBusy(true);
     try {
       const room = await api<{ id: string; inviteCode?: string }>("/rooms", {
@@ -116,12 +133,9 @@ export default function CreateRoomPage() {
       location.href = `/rooms/${room.id}`;
     } catch (err2) {
       console.error("create room failed", err2);
-      // 403 on this route is only the ownership cap — say so specifically.
-      setErr(
-        err2 instanceof ApiError && err2.status === 403
-          ? roomsFullMsg
-          : "Couldn't create room — try again",
-      );
+      // 4xx reasons come straight from the backend: room cap, tier cap, bad
+      // fields. Anything else gets the fixed fallback — never a raw failure.
+      notifyError(errMsg(err2, "Couldn't create room — try again"));
       setBusy(false);
     }
   }
@@ -275,17 +289,20 @@ export default function CreateRoomPage() {
               <p className="mono-label" style={{ marginBottom: "0.4rem" }}>
                 MINIMUM TIER
               </p>
-              <SelectMenu
-                label="Minimum tier"
-                value={form.minTier}
-                onChange={(v) => setField("minTier", v)}
-                options={[
-                  { value: "TIER I", label: "TIER I" },
-                  { value: "TIER II", label: "TIER II" },
-                  { value: "TIER III", label: "TIER III" },
-                  { value: "TIER IV", label: "TIER IV" },
-                ]}
-              />
+              {tierOptions.length > 0 ? (
+                <SelectMenu
+                  label="Minimum tier"
+                  value={form.minTier}
+                  onChange={(v) => setField("minTier", v)}
+                  options={tierOptions}
+                />
+              ) : (
+                <p className="err" style={{ margin: 0 }}>
+                  {myTier === null
+                    ? "Tier options load with your profile."
+                    : "Verify your holdings in Profile to create a tier room."}
+                </p>
+              )}
             </div>
           ) : (
             <>
@@ -312,11 +329,6 @@ export default function CreateRoomPage() {
           {roomsFull && (
             <p className="err" style={{ margin: 0 }}>
               {roomsFullMsg}
-            </p>
-          )}
-          {err && (
-            <p className="err" style={{ margin: 0 }}>
-              {err}
             </p>
           )}
           <div>

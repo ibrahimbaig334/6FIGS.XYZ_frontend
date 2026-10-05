@@ -75,6 +75,20 @@ export async function api<T>(
   return rawFetch<T>(method, path, opts?.body, token);
 }
 
+/**
+ * Turn a caught error into a user-facing REASON (never a blank failure):
+ * - network down → "Can't reach the server…"
+ * - 4xx → the backend's own curated message ("Handle already taken", "Room is full…")
+ * - anything else → the caller's action-specific fallback
+ */
+export function errMsg(e: unknown, fallback: string): string {
+  if (e instanceof ApiError) {
+    if (e.status === 0) return "Can't reach the server — try again";
+    if (e.status >= 400 && e.status < 500) return e.message;
+  }
+  return fallback;
+}
+
 /** Prompt-free copy (legacy execCommand) — navigator.clipboard can raise permission dialogs. */
 export function copyText(text: string): boolean {
   try {
@@ -337,6 +351,8 @@ export interface RoomMeta {
   onlineCount: number;
   isMember: boolean;
   isOwner: boolean;
+  canEnter: boolean;
+  joinReason: string | null;
   creatorHandle: string;
 }
 

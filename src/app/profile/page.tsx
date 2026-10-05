@@ -28,7 +28,9 @@ export default function ProfilePage() {
   const [loading, setLoading] = useState(true);
   const [checking, setChecking] = useState(false);
   const [savingHandle, setSavingHandle] = useState(false);
-  const [showProve, setShowProve] = useState(false);
+  const [proveMode, setProveMode] = useState<
+    "establish" | "add" | "remove" | null
+  >(null);
   const [showLink, setShowLink] = useState(false);
   const [banner, setBanner] = useState("");
 
@@ -181,15 +183,15 @@ export default function ProfilePage() {
     <ProfileView
       profile={profile}
       checking={checking}
-      showProve={showProve}
+      proveMode={proveMode}
       showLink={showLink}
       banner={banner}
-      onProve={() => setShowProve(true)}
+      onProve={(mode) => setProveMode(mode)}
       onProveDone={(p) => {
-        setShowProve(false);
+        setProveMode(null);
         applyProfile(p);
       }}
-      onProveCancel={() => setShowProve(false)}
+      onProveCancel={() => setProveMode(null)}
       onLink={() => setShowLink((v) => !v)}
       onLinked={() => {
         setShowLink(false);
@@ -215,7 +217,7 @@ function isTee(elig: Profile["eligibility"]): elig is TeeEligibility {
 function ProfileView({
   profile,
   checking,
-  showProve,
+  proveMode,
   showLink,
   banner,
   onProve,
@@ -235,10 +237,10 @@ function ProfileView({
 }: {
   profile: Profile;
   checking: boolean;
-  showProve: boolean;
+  proveMode: "establish" | "add" | "remove" | null;
   showLink: boolean;
   banner: string;
-  onProve: () => void;
+  onProve: (mode: "establish" | "add" | "remove") => void;
   onProveDone: (p: Profile) => void;
   onProveCancel: () => void;
   onLink: () => void;
@@ -473,10 +475,10 @@ function ProfileView({
             })}
           </div>
         )}
-        {showProve ? (
+        {proveMode ? (
           <div style={{ marginTop: "0.8rem" }}>
             <TeeProve
-              mode={addOnly ? "add" : "establish"}
+              mode={proveMode}
               enrolledLabels={enrolledLabels}
               onDone={onProveDone}
               onCancel={onProveCancel}
@@ -487,10 +489,19 @@ function ProfileView({
             <button
               className="btn-solid"
               style={{ padding: "0.6rem 1rem" }}
-              onClick={onProve}
+              onClick={() => onProve(addOnly ? "add" : "establish")}
             >
               {addOnly ? "ADD WALLET ↗" : "PROVE TIER ↗"}
             </button>
+            {addOnly && (
+              <button
+                className="btn-ghost"
+                style={{ padding: "0.6rem 1rem" }}
+                onClick={() => onProve("remove")}
+              >
+                REMOVE WALLET ↗
+              </button>
+            )}
             <button
               className="btn-ghost"
               style={{ padding: "0.6rem 1rem", margin: "0 auto" }}

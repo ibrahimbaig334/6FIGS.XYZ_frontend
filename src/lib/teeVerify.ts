@@ -5,6 +5,7 @@ import {
   RegistrationClient,
   type PreparedAddition,
   type PreparedRegistration,
+  type PreparedRemoval,
   type WalletDescriptor,
 } from "@sixfigs/tee/client";
 import { teeNonce, teeRegister, type Profile } from "./api";
@@ -149,5 +150,41 @@ export async function submitWalletAddition(input: {
 }): Promise<Profile> {
   const { client, prepared, signatures } = input;
   const signed = await client.submitAddition({ prepared, signatures });
+  return teeRegister(signed);
+}
+
+/**
+ * Remove: prepare the threshold consent. The kept wallets must all be
+ * connected; the removed wallet is only an address (it may be lost).
+ */
+export async function prepareWalletRemoval(input: {
+  kept: TeeWalletInput[];
+  remove: TeeWalletInput[];
+}): Promise<{ client: RegistrationClient; prepared: PreparedRemoval }> {
+  const client = newClient();
+  const prep = await teeNonce();
+  if (!prep.add) {
+    throw new Error("This account has no verified wallet set to remove from yet");
+  }
+  const prepared = client.prepareRemoval({
+    kept: input.kept.map(toDescriptor),
+    remove: input.remove.map(toDescriptor),
+    escrowBlob: prep.add.escrowBlob as Parameters<
+      RegistrationClient["prepareRemoval"]
+    >[0]["escrowBlob"],
+    accountIdentityNullifier: prep.add.identityNullifier,
+    nonce: prep.nonce,
+  });
+  return { client, prepared };
+}
+
+/** Remove: submit the kept wallets' signatures; the enclave prunes and re-escrows. */
+export async function submitWalletRemoval(input: {
+  client: RegistrationClient;
+  prepared: PreparedRemoval;
+  signatures: Record<string, string>;
+}): Promise<Profile> {
+  const { client, prepared, signatures } = input;
+  const signed = await client.submitRemoval({ prepared, signatures });
   return teeRegister(signed);
 }

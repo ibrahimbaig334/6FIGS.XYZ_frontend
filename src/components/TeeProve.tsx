@@ -5,6 +5,7 @@ import { useWallet } from "@solana/wallet-adapter-react";
 import type {
   PreparedAddition,
   PreparedRegistration,
+  PreparedRemoval,
   RegistrationClient,
 } from "@sixfigs/tee/client";
 import { base58Encode } from "@sixfigs/tee/shared";
@@ -13,10 +14,23 @@ import type { Profile } from "../lib/api";
 import {
   prepareSet,
   prepareWalletAddition,
+  prepareWalletRemoval,
   submitSet,
   submitWalletAddition,
+  submitWalletRemoval,
   type TeeWalletInput,
 } from "../lib/teeVerify";
+
+type ProveMode = "establish" | "add" | "remove";
+
+/** The removed wallet is entered by address; it is never connected or signed. */
+function descriptorFromAddress(address: string): TeeWalletInput {
+  const trimmed = address.trim();
+  if (trimmed.startsWith("0x")) {
+    return { family: "evm", chainId: 0, address: trimmed };
+  }
+  return { family: "solana", chainId: 0, address: trimmed };
+}
 
 function descriptorKey(wallet: TeeWalletInput): string {
   return `${wallet.family}:${wallet.address.toLowerCase()}`;
@@ -36,18 +50,20 @@ export default function TeeProve({
   onDone,
   onCancel,
 }: {
-  mode: "establish" | "add";
-  /** Labels of currently enrolled wallets, for context while adding. */
+  mode: ProveMode;
+  /** Labels of currently enrolled wallets, for context while adding/removing. */
   enrolledLabels: string[];
   onDone: (profile: Profile) => void;
   onCancel: () => void;
 }) {
   const { publicKey, signMessage, wallet, connected } = useWallet();
   const [wallets, setWallets] = useState<TeeWalletInput[]>([]);
+  const [removeAddress, setRemoveAddress] = useState("");
   const [client, setClient] = useState<RegistrationClient | null>(null);
   const [prepared, setPrepared] = useState<
     | { kind: "establish"; value: PreparedRegistration }
     | { kind: "add"; value: PreparedAddition }
+    | { kind: "remove"; value: PreparedRemoval }
     | null
   >(null);
   const [sigs, setSigs] = useState<SigState>({});
@@ -91,7 +107,19 @@ export default function TeeProve({
     setBusy(true);
     setErr("");
     try {
-      if (mode === "add") {
+      if (mode === "remove") {
+        if (removeAddress.trim().length < 8) {
+          setErr("Enter the address of the wallet you want to remove");
+          setBusy(false);
+          return;
+        }
+        const { client: c, prepared: p } = await prepareWalletRemoval({
+          kept: wallets,
+          remove: [descriptorFromAddress(removeAddress)],
+        });
+        setClient(c);
+        setPrepared({ kind: "remove", value: p });
+      } else if (mode === "add") {
         const { client: c, prepared: p } = await prepareWalletAddition({
           added: wallets,
         });
@@ -114,7 +142,9 @@ export default function TeeProve({
 
   function messageFor(target: TeeWalletInput): string | null {
     if (!prepared) return null;
-    if (prepared.kind === "establish") return prepared.value.message;
+    if (prepared.kind === "establish" || prepared.kind === "remove") {
+      return prepared.value.message;
+    }
     return prepared.value.addMessages[descriptorKey(target)] ?? null;
   }
 
@@ -163,7 +193,13 @@ export default function TeeProve({
         }
       }
       let profile: Profile;
-      if (prepared.kind === "add") {
+      if (prepared.kind === "remove") {
+        profile = await submitWalletRemoval({
+          client,
+          prepared: prepared.value,
+          signatures: { ...sigStore.current },
+        });
+      } else if (prepared.kind === "add") {
         profile = await submitWalletAddition({
           client,
           prepared: prepared.value,
@@ -192,11 +228,21 @@ export default function TeeProve({
           <p className="fine" style={{ margin: 0 }}>
             {mode === "add"
               ? `Currently enrolled: ${enrolledLabels.join(", ")}. Connect the new wallet only — it signs one short message; the rest stay untouched.`
-              : "Connect each wallet to enroll, then sign once each. Your addresses never leave the enclave's encryption."}
+              : mode === "remove"
+                ? `Currently enrolled: ${enrolledLabels.join(", ")}. Enter the wallet to remove (it need not be connected), then connect every wallet you keep and sign once each.`
+                : "Connect each wallet to enroll, then sign once each. Your addresses never leave the enclave's encryption."}
           </p>
+          {mode === "remove" && (
+            <input
+              className="field"
+              placeholder="address of the wallet to remove"
+              value={removeAddress}
+              onChange={(e) => setRemoveAddress(e.target.value)}
+            />
+          )}
           <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
             <button className="btn-solid" onClick={addConnected} disabled={!connected}>
-              ADD CONNECTED WALLET
+              {mode === "remove" ? "ADD KEPT WALLET" : "ADD CONNECTED WALLET"}
             </button>
           </div>
           {!connected && (
@@ -235,7 +281,9 @@ export default function TeeProve({
           <p className="fine" style={{ margin: 0 }}>
             {mode === "add"
               ? "Sign with the new wallet below. Nothing on your existing wallets is touched."
-              : "Sign with each wallet below. Switch wallets in your extension — press SIGN only when the connected wallet matches the row."}
+              : mode === "remove"
+                ? "Every kept wallet signs the same removal message. The wallet being removed is not signed for."
+                : "Sign with each wallet below. Switch wallets in your extension — press SIGN only when the connected wallet matches the row."}
           </p>
           {wallets.map((w) => (
             <SignRow
@@ -249,7 +297,11 @@ export default function TeeProve({
           ))}
           <div style={{ display: "flex", gap: "0.5rem" }}>
             <button className="btn-solid" disabled={!ready || busy} onClick={() => void submit()}>
-              {busy ? "SUBMITTING…" : mode === "add" ? "ADD WALLET" : "SUBMIT SET"}
+              {busy ? "SUBMITTING…" : mode === "add"
+                  ? "ADD WALLET"
+                  : mode === "remove"
+                    ? "REMOVE WALLET"
+                    : "SUBMIT SET"}
             </button>
             <button className="btn-ghost" onClick={onCancel}>
               CANCEL

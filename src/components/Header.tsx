@@ -10,6 +10,7 @@ const NAV = [
   { href: "/profile", label: "PROFILE" },
   { href: "/play", label: "PLAY" },
   { href: "/create", label: "CREATE" },
+  { href: "/docs", label: "DOCS" },
 ];
 
 export default function Header() {

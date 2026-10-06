@@ -8,6 +8,7 @@ import {
   type PreparedRemoval,
   type WalletDescriptor,
 } from "@sixfigs/tee/client";
+import type { SignedRegistration } from "@sixfigs/tee/shared";
 import { teeNonce, teeRegister, type Profile } from "./api";
 
 export interface EnclaveConfig {
@@ -169,7 +170,7 @@ export async function submitSet(input: {
   prepared: PreparedRegistration;
   wallets: TeeWalletInput[];
   signatures: Record<string, string>;
-}): Promise<Profile> {
+}): Promise<{ profile: Profile; signed: SignedRegistration }> {
   const { client, prepared, wallets, signatures } = input;
   const signed = await client.submit({ prepared, signatures });
   const hello = await client.hello();
@@ -182,7 +183,7 @@ export async function submitSet(input: {
       ...(w.label ? { label: w.label } : {}),
     })),
   );
-  return teeRegister(signed, escrowBlob);
+  return { profile: await teeRegister(signed, escrowBlob), signed };
 }
 
 /**
@@ -214,10 +215,10 @@ export async function submitWalletAddition(input: {
   client: RegistrationClient;
   prepared: PreparedAddition;
   signatures: Record<string, string>;
-}): Promise<Profile> {
+}): Promise<{ profile: Profile; signed: SignedRegistration }> {
   const { client, prepared, signatures } = input;
   const signed = await client.submitAddition({ prepared, signatures });
-  return teeRegister(signed);
+  return { profile: await teeRegister(signed), signed };
 }
 
 /**

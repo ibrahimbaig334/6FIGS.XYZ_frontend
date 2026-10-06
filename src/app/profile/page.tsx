@@ -8,12 +8,19 @@ import {
   emailResendVerification,
   errMsg,
   getToken,
+  removeTeeWallet,
   teeRecheck,
   Profile,
   TeeEligibility,
   Wallet,
 } from "../../lib/api";
 import { clearProvedWallets } from "../../lib/teeVerify";
+import {
+  forgetWalletAddress,
+  formatAddress,
+  readWalletAddressMap,
+  type WalletAddressMap,
+} from "../../lib/walletAddresses";
 import { handleError } from "../../lib/validate";
 import { MAX_WALLETS } from "../../lib/constants";
 import { disconnectSocket } from "../../lib/ws";
@@ -38,10 +45,16 @@ export default function ProfilePage() {
   const [confirmAll, setConfirmAll] = useState(false);
   const [showLink, setShowLink] = useState(false);
   const [banner, setBanner] = useState("");
+  const [walletAddrs, setWalletAddrs] = useState<WalletAddressMap>({});
 
   useEffect(() => {
     setReady(true);
   }, []);
+
+  // Address captions are browser-local; the backend never returns addresses.
+  useEffect(() => {
+    if (profile) setWalletAddrs(readWalletAddressMap());
+  }, [profile]);
 
   const applyProfile = (p: Profile) => {
     setProfile(p);
@@ -131,21 +144,34 @@ export default function ProfilePage() {
     location.href = "/";
   }
 
-  /** Single-wallet disconnect (tick-confirmed): only that wallet leaves —
-   *  the rest stay enrolled, the tier resets. Press CONNECT WALLET to
-   *  restore the badge. */
+  /** Single-wallet removal (tick-confirmed). For a tee account the session
+   *  authorizes the enclave to detach the wallet and re-sign the remaining
+   *  set; no wallet signature or address is involved. Legacy wallet rows keep
+   *  the old disconnect behavior. */
   async function disconnectOne() {
     if (!confirmOne) return;
+    if ((profile?.wallets.length ?? 0) <= 1) {
+      setConfirmOne(null);
+      notifyError("You cannot remove your only wallet");
+      return;
+    }
+    const teeAccount = profile?.eligibility.source === "tee";
     try {
-      await api(`/wallet/${confirmOne.id}`, { method: "DELETE" });
+      if (teeAccount) {
+        applyProfile(await removeTeeWallet(confirmOne.id));
+        forgetWalletAddress(confirmOne.id);
+        setBanner("Wallet removed — your tier now reflects the remaining wallets.");
+      } else {
+        await api(`/wallet/${confirmOne.id}`, { method: "DELETE" });
+        await load();
+        setBanner("Wallet disconnected — press CONNECT WALLET to restore your tier.");
+      }
       setConfirmOne(null);
       clearProvedWallets();
-      await load();
       window.dispatchEvent(new Event("sixfigs-auth"));
-      setBanner("Wallet disconnected — press CONNECT WALLET to restore your tier.");
     } catch (e) {
       console.error("wallet disconnect failed", e);
-      notifyError(errMsg(e, "Couldn't disconnect that wallet — try again"));
+      notifyError(errMsg(e, "Couldn't remove that wallet — try again"));
     }
   }
 
@@ -216,6 +242,7 @@ export default function ProfilePage() {
     <>
       <ProfileView
         profile={profile}
+        walletAddrs={walletAddrs}
         checking={checking}
         proveMode={proveMode}
         showLink={showLink}
@@ -244,10 +271,10 @@ export default function ProfilePage() {
       />
       {confirmOne && (
         <ConfirmDialog
-          title="DISCONNECT WALLET"
-          message={`Disconnect ${confirmOne.name ?? confirmOne.chain.toUpperCase()}? Your tier resets immediately — re-prove your remaining wallets any time to restore it.`}
-          ackLabel="Yes, disconnect this wallet and reset my tier — tick to confirm."
-          confirmLabel="DISCONNECT WALLET"
+          title="REMOVE WALLET"
+          message={`Remove ${confirmOne.name ?? confirmOne.chain.toUpperCase()}? Your tier is recalculated from the remaining wallets and you can add it back any time.`}
+          ackLabel="Yes, remove this wallet from my account — tick to confirm."
+          confirmLabel="REMOVE WALLET"
           onConfirm={() => disconnectOne()}
           onClose={() => setConfirmOne(null)}
         />
@@ -272,6 +299,7 @@ function isTee(elig: Profile["eligibility"]): elig is TeeEligibility {
 
 function ProfileView({
   profile,
+  walletAddrs,
   checking,
   proveMode,
   showLink,
@@ -293,6 +321,7 @@ function ProfileView({
   onLogout,
 }: {
   profile: Profile;
+  walletAddrs: WalletAddressMap;
   checking: boolean;
   proveMode: "establish" | "add" | null;
   showLink: boolean;
@@ -511,6 +540,7 @@ function ProfileView({
           <div className="wallet-grid">
             {profile.wallets.map((w) => {
               const wname = w.name ?? w.chain.toUpperCase();
+              const shownAddress = formatAddress(walletAddrs[w.id]);
               return (
                 <div key={w.id} className="wallet-row">
                   <WalletIcon
@@ -520,13 +550,15 @@ function ProfileView({
                   <div className="wallet-info">
                     <strong style={{ fontSize: "1rem" }}>{wname}</strong>
                     <span className="fine" style={{ margin: 0 }}>
-                      {w.chain.toUpperCase()} · ADDRESS HIDDEN BY DESIGN
+                      {shownAddress
+                        ? `${w.chain.toUpperCase()} · ${shownAddress}`
+                        : `${w.chain.toUpperCase()} · ADDRESS HIDDEN BY DESIGN`}
                     </span>
                   </div>
                   <button
                     className="chip"
                     style={{ marginLeft: "auto" }}
-                    title={`Disconnect ${wname}`}
+                    title={`Remove ${wname}`}
                     onClick={() => onDisconnectOne(w)}
                   >
                     ✕

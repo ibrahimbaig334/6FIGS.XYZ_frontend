@@ -300,6 +300,18 @@ export async function teeRecheck(): Promise<unknown> {
   return api("/eligibility/tee-recheck", { method: "POST" });
 }
 
+/**
+ * Session-authorized wallet removal. `walletId` is the opaque wallet
+ * nullifier from the tee view; no wallet signature or address is involved.
+ * Returns the refreshed profile with the new tier and wallet set.
+ */
+export async function removeTeeWallet(walletId: string): Promise<Profile> {
+  await api(`/eligibility/tee-wallet/${encodeURIComponent(walletId)}`, {
+    method: "DELETE",
+  });
+  return api<Profile>("/profile/user");
+}
+
 export interface Peer {
   id: string;
   handle: string;

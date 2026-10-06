@@ -15,6 +15,7 @@ import {
   markWalletProved,
   type TeeWalletInput,
 } from "../lib/teeVerify";
+import { rememberWalletAddresses } from "../lib/walletAddresses";
 
 type ProveMode = "establish" | "add";
 
@@ -214,7 +215,7 @@ export default function TeeProve({
         onDismiss();
         return;
       }
-      const profile =
+      const submitted =
         prepped.kind === "add"
           ? await submitWalletAddition({
               client: prepped.client,
@@ -228,8 +229,18 @@ export default function TeeProve({
               signatures: { [key]: sig },
             });
       if (!alive()) return;
+      const binding =
+        prepped.kind === "add"
+          ? submitted.signed.body.addedWalletNullifiers?.[0]
+          : submitted.signed.body.walletNullifiers[0];
+      if (binding) {
+        // Local-only caption; the backend never learns the address.
+        rememberWalletAddresses([
+          { walletNullifier: binding.walletNullifier, address: addr },
+        ]);
+      }
       markWalletProved(key);
-      onDone(profile);
+      onDone(submitted.profile);
     } catch (e) {
       console.error("prove flow failed", e);
       if (!alive()) return;

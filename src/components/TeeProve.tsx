@@ -43,7 +43,8 @@ type SigState = Record<string, { status: "pending" | "signed" | "failed"; note?:
  * Guided tee flow. "establish" enrolls a full new set: every staged wallet
  * signs the membership message. "add" extends an existing account: only the
  * new wallets sign a compact consent, and the enclave merges them into the
- * escrowed set. Removal is not a product path and has no UI.
+ * escrowed set. "remove" prunes by typed address: the removed wallet signs
+ * nothing, every kept wallet co-signs the threshold removal.
  */
 export default function TeeProve({
   mode,
@@ -78,7 +79,7 @@ export default function TeeProve({
   const connectedAddress = publicKey?.toString() ?? null;
   const sigStore = useRef<Record<string, string>>({});
 
-  // Adapter modal only selects — connect once it closes (mirrors SolanaConnect).
+  // Adapter modal only selects — connect once it closes.
   useEffect(() => {
     if (!modalVisible && phase === "choose") setPhase("connect");
   }, [modalVisible, phase]);

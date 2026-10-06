@@ -2,12 +2,11 @@
 
 import { useEffect } from "react";
 import EmailAuth from "./EmailAuth";
-import SolanaConnect from "./SolanaConnect";
 import type { Profile } from "../lib/api";
 
 /**
- * Top-bar login: email signup/login is the primary path (accounts are created
- * with email). Wallet connect stays as legacy sign-in below the divider.
+ * Top-bar login: email signup/login. Wallets connect only after login,
+ * through the tee prove flow on the profile page.
  */
 export default function LoginModal({
   onClose,
@@ -40,18 +39,6 @@ export default function LoginModal({
             onClose();
           }}
         />
-        <p className="fine" style={{ margin: "0.4rem 0 0" }}>
-          ...or connect a wallet (legacy sign-in)
-        </p>
-        <div style={{ display: "flex", justifyContent: "center" }}>
-          <SolanaConnect
-            label="CONNECT WALLET ↗"
-            onDone={(p) => {
-              onDone(p);
-              onClose();
-            }}
-          />
-        </div>
       </div>
     </div>
   );

@@ -18,7 +18,7 @@ import { connectSocket } from "../../../lib/ws";
 import { notifyError } from "../../../lib/notify";
 import GamePanel from "../../../components/GamePanel";
 import RematchToast from "../../../components/RematchToast";
-import SolanaConnect from "../../../components/SolanaConnect";
+import EmailAuth from "../../../components/EmailAuth";
 import InviteDialog from "../../../components/InviteDialog";
 import DeleteRoomDialog from "../../../components/DeleteRoomDialog";
 import Loader from "../../../components/Loader";
@@ -443,7 +443,7 @@ export default function RoomPage() {
             padding: "2.5rem 2rem",
           }}
         >
-          <p className="mono-label">ROOM — CONNECT FIRST</p>
+          <p className="mono-label">ROOM — LOG IN FIRST</p>
           <div
             style={{
               marginTop: "1.2rem",
@@ -451,7 +451,7 @@ export default function RoomPage() {
               justifyContent: "center",
             }}
           >
-            <SolanaConnect onDone={load} />
+            <EmailAuth onDone={load} />
           </div>
         </div>
       </section>

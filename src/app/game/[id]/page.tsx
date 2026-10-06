@@ -17,7 +17,7 @@ import {
   OPP_RETURN_MS,
   POLL_GAME_LIVE_MS,
 } from "../../../lib/constants";
-import SolanaConnect from "../../../components/SolanaConnect";
+import EmailAuth from "../../../components/EmailAuth";
 import GamePanel from "../../../components/GamePanel";
 import RematchToast from "../../../components/RematchToast";
 import Loader from "../../../components/Loader";
@@ -340,7 +340,7 @@ export default function GamePage() {
         }}
       >
         <div className="card auth-card">
-          <p className="mono-label">GAME — CONNECT FIRST</p>
+          <p className="mono-label">GAME — LOG IN FIRST</p>
           <div
             style={{
               marginTop: "1.2rem",
@@ -348,7 +348,7 @@ export default function GamePage() {
               justifyContent: "center",
             }}
           >
-            <SolanaConnect onDone={load} />
+            <EmailAuth onDone={load} />
           </div>
         </div>
       </section>

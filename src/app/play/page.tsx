@@ -22,7 +22,7 @@ import {
 } from "../../lib/constants";
 import { connectSocket } from "../../lib/ws";
 import { notifyError } from "../../lib/notify";
-import SolanaConnect from "../../components/SolanaConnect";
+import EmailAuth from "../../components/EmailAuth";
 import SelectMenu from "../../components/SelectMenu";
 import Loader from "../../components/Loader";
 
@@ -392,7 +392,7 @@ export default function PlayPage() {
             padding: "2.5rem 2rem",
           }}
         >
-          <p className="mono-label">PLAY — CONNECT FIRST</p>
+          <p className="mono-label">PLAY — LOG IN FIRST</p>
           <div
             style={{
               marginTop: "1.2rem",
@@ -400,7 +400,7 @@ export default function PlayPage() {
               justifyContent: "center",
             }}
           >
-            <SolanaConnect onDone={load} />
+            <EmailAuth onDone={load} />
           </div>
         </div>
       </section>

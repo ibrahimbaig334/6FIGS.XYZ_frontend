@@ -16,7 +16,6 @@ import { handleError } from "../../lib/validate";
 import { MAX_WALLETS } from "../../lib/constants";
 import { disconnectSocket } from "../../lib/ws";
 import { notifyError } from "../../lib/notify";
-import SolanaConnect from "../../components/SolanaConnect";
 import EmailAuth from "../../components/EmailAuth";
 import TeeProve from "../../components/TeeProve";
 import WalletIcon from "../../components/WalletIcon";
@@ -60,13 +59,6 @@ export default function ProfilePage() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  /** Connect done: use the profile from the login response when present —
-   *  no dispatch (Header/create get their own copy from their own instance). */
-  const onConnected = (p?: Profile) => {
-    if (p) applyProfile(p);
-    else void load();
-  };
 
   useEffect(() => {
     load();
@@ -166,12 +158,6 @@ export default function ProfilePage() {
         >
           <p className="mono-label">PROFILE — SIGN IN FIRST</p>
           <EmailAuth onDone={() => void load()} />
-          <p className="fine" style={{ margin: "0.4rem 0 0" }}>
-            …or link a wallet (legacy sign-in)
-          </p>
-          <div style={{ display: "flex", justifyContent: "center" }}>
-            <SolanaConnect onDone={onConnected} />
-          </div>
         </div>
       </section>
     );

@@ -19,7 +19,7 @@ import {
 import { notifyError } from "../../lib/notify";
 import SelectMenu from "../../components/SelectMenu";
 import EmojiPicker from "../../components/EmojiPicker";
-import SolanaConnect from "../../components/SolanaConnect";
+import EmailAuth from "../../components/EmailAuth";
 import Loader from "../../components/Loader";
 
 export default function CreateRoomPage() {
@@ -168,9 +168,9 @@ export default function CreateRoomPage() {
             padding: "2.5rem 2rem",
           }}
         >
-          <p className="mono-label">CREATE ROOM — CONNECT FIRST</p>
+          <p className="mono-label">CREATE ROOM — LOG IN FIRST</p>
           <p className="fine" style={{ margin: "0.6rem 0 0", fontSize: 14 }}>
-            Connect a wallet to spin up your 1v1 room.
+            Log in to spin up your 1v1 room.
           </p>
           <div
             style={{
@@ -179,7 +179,7 @@ export default function CreateRoomPage() {
               justifyContent: "center",
             }}
           >
-            <SolanaConnect
+            <EmailAuth
               onDone={() => {
                 setTokenState(getToken());
               }}

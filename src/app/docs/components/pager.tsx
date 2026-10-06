@@ -17,17 +17,19 @@ export function Pager({ current }: { current: string }) {
     <div className="docs-pager">
       {prev ? (
         <Link href={prev.href} className="docs-pager-link">
-          ← {prev.label}
+          <span className="kicker">← PREV</span>
+          <span className="title">{prev.label}</span>
         </Link>
       ) : (
-        <span />
+        <span className="docs-pager-filler">YOU ARE HERE: START</span>
       )}
       {next ? (
         <Link href={next.href} className="docs-pager-link next">
-          {next.label} →
+          <span className="kicker">NEXT →</span>
+          <span className="title">{next.label}</span>
         </Link>
       ) : (
-        <span />
+        <span className="docs-pager-filler">END OF HANDBOOK ✓</span>
       )}
     </div>
   );

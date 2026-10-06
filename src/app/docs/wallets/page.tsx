@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Pager } from "../components/pager";
+import { DocHeader } from "../components/doc-header";
 
 export const metadata: Metadata = {
   title: "6FIGS.XYZ — Docs: Wallets & accounts",
@@ -8,27 +9,38 @@ export const metadata: Metadata = {
 export default function Wallets() {
   return (
     <>
-      <h1 className="docs-title">Wallets &amp; accounts</h1>
-      <p className="docs-lede">
-        There is no separate account to create and no secret to lose. Your
-        account is the set of wallets you enrolled — here&apos;s what that
-        means in practice.
-      </p>
+      <DocHeader
+        index="04"
+        chapter="WALLETS & ACCOUNTS"
+        title={
+          <>
+            Your wallet set <span className="accent">is your account.</span>
+          </>
+        }
+        lede={
+          <>
+            You log in with email — then your account is the set of wallets
+            you enrolled. No secret to lose, no seed phrase to hide in a
+            drawer.
+          </>
+        }
+      />
 
-      <h2 className="docs-h2">Your wallet set is your account</h2>
+      <h2 className="docs-h2">Log in with email, prove with wallets</h2>
       <p className="docs-body-text">
-        Sign in with the same wallets and you&apos;re back in — same profile,
-        same tier, same rooms. No password was ever the root of your account,
-        so there is no seed phrase to save and no recovery phrase to hide in a
-        drawer. Coming back after a year is just signing the same proof again.
+        Your login is an email and password — that&apos;s how you get back
+        in from any device. Your tier, rooms, and profile hang off the set
+        of wallets you enrolled: connect them on your profile, sign one
+        message each, and the enclave does the rest. Lose your session and
+        your email brings you back; the wallets re-prove what you hold.
       </p>
-      <div className="docs-card">
+      <div className="docs-callout">
         <p className="mono-label">WHY THIS MATTERS</p>
-        <p className="docs-body-text">
+        <p>
           Most platforms make you choose between &ldquo;one stolen password =
           account stolen&rdquo; and &ldquo;one lost secret = account gone
-          forever.&rdquo; Anchoring identity in a set of wallets (plus an
-          optional email) means recovery is re-proving what you still hold —
+          forever.&rdquo; Anchoring holdings in a set of wallets (plus an
+          email login) means recovery is re-proving what you still hold —
           not guessing what you lost.
         </p>
       </div>
@@ -66,19 +78,19 @@ export default function Wallets() {
         <li>An account always keeps at least one wallet — you can&apos;t
           remove your way to zero.</li>
       </ul>
-      <p className="fine">
-        The flip side, stated honestly: anyone holding all-but-one of your
-        wallets could remove the last one. That&apos;s the price of
-        recoverability, and it&apos;s why the wallets you enroll should be
-        the ones you actually control.
-      </p>
+      <div className="docs-callout danger">
+        <p className="mono-label">⚠️ THE HONEST FLIP SIDE</p>
+        <p>
+          Anyone holding all-but-one of your wallets could remove the last
+          one. That&apos;s the price of recoverability, and it&apos;s why
+          the wallets you enroll should be the ones you actually control.
+        </p>
+      </div>
 
-      <h2 className="docs-h2">Email — the optional safety net</h2>
+      <h2 className="docs-h2">Email — login and safety net in one</h2>
       <p className="docs-body-text">
-        You can link an email and password to your account. It is not your
-        identity — the wallet set is — but a verified email lets you authorize
-        wallet additions and recover your login if you&apos;re signed out.
-        Verify it and you get:
+        Your email and password are how you log in — and a verified email
+        gets you more:
       </p>
       <ul className="docs-list">
         <li>One-signature wallet additions (the email session authorizes them).</li>

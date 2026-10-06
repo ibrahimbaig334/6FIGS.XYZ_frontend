@@ -1,19 +1,82 @@
 import type { Metadata } from "next";
 import { Pager } from "../components/pager";
+import { DocHeader } from "../components/doc-header";
 
 export const metadata: Metadata = {
   title: "6FIGS.XYZ — Docs: Privacy & trust",
 };
 
+const TRADEOFFS = [
+  {
+    title: "RPC PROVIDERS SEE QUERIED ADDRESSES",
+    body: (
+      <>
+        To read a balance, the enclave must ask a blockchain node, and the
+        address is in the question by definition. Those providers could, in
+        principle, correlate queries. Mitigations (provider rotation, and
+        longer-term self-hosted nodes) are on the roadmap; today this is the
+        main residual leak, and we&apos;d rather name it than bury it.
+      </>
+    ),
+  },
+  {
+    title: "PRICES COME FROM MARKET APIs",
+    body: (
+      <>
+        Valuations come from public price APIs. There is no token
+        allowlist: everything you hold gets priced, and anything
+        unpriceable is skipped — never guessed. Every value is
+        overflow-checked, dollar-pegged assets are capped at $1.00, and the
+        final total is bucketed into a band so small price errors rarely
+        move your tier.
+      </>
+    ),
+  },
+  {
+    title: "PSEUDONYMS ARE ONE-WAY, NOT MAGIC",
+    body: (
+      <>
+        Wallet pseudonyms are keyed hashes: nobody can reverse them into an
+        address. In production they are keyed with a secret only the
+        enclave holds, so even a leaked database can&apos;t be matched
+        against a list of guessed addresses. The registry is treated as
+        write-only and never published.
+      </>
+    ),
+  },
+  {
+    title: "A TEE IS NOT SORCERY",
+    body: (
+      <>
+        Attestation makes the enclave&apos;s behavior <em>checkable</em>,
+        not physically impossible to subvert. Google sits in the trust
+        base — the difference is that its claims are verified, not
+        assumed. We publish this so you can decide what it&apos;s worth to
+        you.
+      </>
+    ),
+  },
+];
+
 export default function Privacy() {
   return (
     <>
-      <h1 className="docs-title">Privacy &amp; trust</h1>
-      <p className="docs-lede">
-        The promise is &ldquo;not even we can see your bags.&rdquo; Here is
-        the machinery behind that sentence — and the places where we say
-        plainly what remains.
-      </p>
+      <DocHeader
+        index="05"
+        chapter="PRIVACY & TRUST"
+        title={
+          <>
+            &ldquo;Not even we <span className="accent">can see</span> your
+            bags.&rdquo;
+          </>
+        }
+        lede={
+          <>
+            The machinery behind that sentence — and the places where we say
+            plainly what remains.
+          </>
+        }
+      />
 
       <h2 className="docs-h2">Why you don&apos;t have to take our word for it</h2>
       <p className="docs-body-text">
@@ -71,57 +134,26 @@ export default function Privacy() {
       </div>
 
       <h2 className="docs-h2">The honest tradeoffs</h2>
-      <div className="docs-card">
-        <p className="mono-label">RPC PROVIDERS SEE QUERIED ADDRESSES</p>
-        <p className="docs-body-text">
-          To read a balance, the enclave must ask a blockchain node, and the
-          address is in the question by definition. Those providers could, in
-          principle, correlate queries. Mitigations (provider rotation, and
-          longer-term self-hosted nodes) are on the roadmap; today this is the
-          main residual leak, and we&apos;d rather name it than bury it.
-        </p>
-      </div>
-      <div className="docs-card">
-        <p className="mono-label">PRICES COME FROM MARKET APIs</p>
-        <p className="docs-body-text">
-          Valuations come from public price APIs. There is no token
-          allowlist: everything you hold gets priced, and anything
-          unpriceable is skipped — never guessed. Every value is
-          overflow-checked, dollar-pegged assets are capped at $1.00, and the
-          final total is bucketed into a band so small price errors rarely
-          move your tier.
-        </p>
-      </div>
-      <div className="docs-card">
-        <p className="mono-label">PSEUDONYMS ARE ONE-WAY, NOT MAGIC</p>
-        <p className="docs-body-text">
-          Wallet pseudonyms are keyed hashes: nobody can reverse them into an
-          address. In production they are keyed with a secret only the
-          enclave holds, so even a leaked database can&apos;t be matched
-          against a list of guessed addresses. The registry is treated as
-          write-only and never published.
-        </p>
-      </div>
-      <div className="docs-card">
-        <p className="mono-label">A TEE IS NOT SORCERY</p>
-        <p className="docs-body-text">
-          Attestation makes the enclave&apos;s behavior <em>checkable</em>,
-          not physically impossible to subvert. Google sits in the trust
-          base — the difference is that its claims are verified, not
-          assumed. We publish this so you can decide what it&apos;s worth to
-          you.
-        </p>
-      </div>
+      {TRADEOFFS.map((t, i) => (
+        <div className="docs-callout" key={t.title}>
+          <p className="mono-label">
+            {String(i + 1).padStart(2, "0")} — {t.title}
+          </p>
+          <p>{t.body}</p>
+        </div>
+      ))}
 
-      <h2 className="docs-h2">Fails closed, not open</h2>
-      <p className="docs-body-text">
-        Every check in the chain — attestation, signature, nonce, expiry,
-        policy version, image fingerprint — must pass or the whole
-        verification is rejected. There are no &ldquo;accepted with
-        warnings&rdquo; paths. If the enclave can&apos;t prove itself, your
-        browser stops. If the result can&apos;t prove itself, the server
-        stops. Nobody can talk either side into a lower standard.
-      </p>
+      <div className="docs-callout ink">
+        <p className="mono-label">FAILS CLOSED, NOT OPEN</p>
+        <p>
+          Every check in the chain — attestation, signature, nonce, expiry,
+          policy version, image fingerprint — must pass or the whole
+          verification is rejected. There are no &ldquo;accepted with
+          warnings&rdquo; paths. If the enclave can&apos;t prove itself, your
+          browser stops. If the result can&apos;t prove itself, the server
+          stops. Nobody can talk either side into a lower standard.
+        </p>
+      </div>
 
       <Pager current="/docs/privacy" />
     </>

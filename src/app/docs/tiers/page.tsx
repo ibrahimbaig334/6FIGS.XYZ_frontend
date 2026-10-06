@@ -1,42 +1,55 @@
 import type { Metadata } from "next";
 import { BandDiagram, RecheckDiagram } from "../components/diagrams";
 import { Pager } from "../components/pager";
+import { DocHeader } from "../components/doc-header";
 
 export const metadata: Metadata = {
   title: "6FIGS.XYZ — Docs: Tiers & what's shown",
 };
 
+const RUNGS = [
+  { tier: "TIER I", range: "$100K – $300K", locked: false },
+  { tier: "TIER II", range: "$300K – $500K", locked: false },
+  { tier: "TIER III", range: "$500K – $1M", locked: false },
+  { tier: "TIER IV", range: "$1M+", locked: false },
+];
+
 export default function Tiers() {
   return (
     <>
-      <h1 className="docs-title">Tiers &amp; what&apos;s shown</h1>
-      <p className="docs-lede">
-        Verification answers one question — which tier? — and deliberately
-        nothing else. Here is the full map of what exists and who can see it.
-      </p>
+      <DocHeader
+        index="03"
+        chapter="TIERS & WHAT'S SHOWN"
+        title={
+          <>
+            Which tier — <span className="accent">and nothing else.</span>
+          </>
+        }
+        lede={
+          <>
+            Verification answers one question — which tier? — and deliberately
+            nothing else. Here is the full map of what exists and who can see it.
+          </>
+        }
+      />
 
       <h2 className="docs-h2">The four tiers</h2>
-      <div className="docs-tier-table">
-        <div className="docs-tier-row">
-          <span className="tier-badge">TIER I</span>
-          <span className="docs-body-text">$100K+ portfolio value</span>
+      <div className="docs-ladder">
+        <div className="docs-rung locked">
+          <span className="tier-badge">LOCKED</span>
+          <span className="docs-rung-range">UNDER $100K — NOT ADMITTED</span>
         </div>
-        <div className="docs-tier-row">
-          <span className="tier-badge">TIER II</span>
-          <span className="docs-body-text">$300K+</span>
-        </div>
-        <div className="docs-tier-row">
-          <span className="tier-badge">TIER III</span>
-          <span className="docs-body-text">$500K+</span>
-        </div>
-        <div className="docs-tier-row">
-          <span className="tier-badge">TIER IV</span>
-          <span className="docs-body-text">$1M+</span>
-        </div>
+        {RUNGS.map((r) => (
+          <div className="docs-rung" key={r.tier}>
+            <span className="tier-badge">{r.tier}</span>
+            <span className="docs-rung-range">{r.range}</span>
+          </div>
+        ))}
       </div>
       <p className="fine">
         Tiers are lower bounds — a Tier II badge means &ldquo;at least
         $300K,&rdquo; whether you hold $310K or $3M short of Tier III.
+        Production thresholds shown; devnet uses lower test values.
       </p>
 
       <BandDiagram />
@@ -69,9 +82,9 @@ export default function Tiers() {
         </div>
       </div>
 
-      <div className="docs-card">
-        <p className="mono-label">WHAT IS NEVER STORED, NEVER SENT, NEVER ASKED</p>
-        <p className="docs-body-text">
+      <div className="docs-callout danger">
+        <p className="mono-label">⛔ WHAT IS NEVER STORED, NEVER SENT, NEVER ASKED</p>
+        <p>
           Your exact total. Any token amount. Any allocation percentage. Any
           address. Not in the database, not in logs, not in a backup. The
           schema has no place to put them — the strongest kind of promise.

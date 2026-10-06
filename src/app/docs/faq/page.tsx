@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Pager } from "../components/pager";
+import { DocHeader } from "../components/doc-header";
 
 export const metadata: Metadata = {
   title: "6FIGS.XYZ — Docs: FAQ",
@@ -142,16 +143,26 @@ const QA: { q: string; a: React.ReactNode }[] = [
 export default function Faq() {
   return (
     <>
-      <h1 className="docs-title">FAQ</h1>
-      <p className="docs-lede">
-        The questions people actually ask, answered the way we&apos;d want
-        them answered.
-      </p>
-      {QA.map((item) => (
-        <div className="docs-qa" key={item.q}>
-          <p className="docs-q">{item.q}</p>
-          <div className="docs-body-text">{item.a}</div>
-        </div>
+      <DocHeader
+        index="06"
+        chapter="FAQ"
+        title={
+          <>
+            Questions, <span className="accent">answered straight.</span>
+          </>
+        }
+        lede={
+          <>
+            The questions people actually ask, answered the way we&apos;d
+            want them answered. Click to open.
+          </>
+        }
+      />
+      {QA.map((item, i) => (
+        <details className="docs-qa" key={item.q} open={i === 0}>
+          <summary className="docs-q">{item.q}</summary>
+          <div className="docs-a">{item.a}</div>
+        </details>
       ))}
       <Pager current="/docs/faq" />
     </>

@@ -59,31 +59,30 @@ export default function Wallets() {
         <li>One wallet can belong to only one 6figs account, ever.</li>
       </ul>
 
-      <h2 className="docs-h2">Removing a wallet — including a lost one</h2>
+      <h2 className="docs-h2">Removing a wallet — one tick</h2>
       <p className="docs-body-text">
-        This is the part most platforms can&apos;t do. If a wallet is lost or
-        compromised, the wallets you still hold can evict it: every remaining
-        wallet signs one shared message naming the removed address. The
-        removed wallet signs nothing — it can&apos;t, it&apos;s gone.
+        Every wallet row has an ✕ at the far right. Press it, tick the
+        confirmation box, and the wallet is disconnected. Your tier resets
+        immediately — because the tier attests the full wallet set, it
+        can&apos;t survive a smaller one. Re-prove your remaining wallets
+        any time to restore it. DISCONNECT ALL wipes every wallet at once;
+        LOG OUT just signs you out.
       </p>
       <ul className="docs-list">
         <li>
-          <strong>Removing a wallet you hold:</strong> type its address,
-          sign with the rest. It&apos;s out.
+          <strong>Disconnecting one wallet:</strong> ✕ on its row, tick to
+          confirm. Verification resets on the spot.
         </li>
-        <li>
-          <strong>Lost a wallet:</strong> same flow. N−1 wallets can always
-          remove the Nth.
-        </li>
-        <li>An account always keeps at least one wallet — you can&apos;t
-          remove your way to zero.</li>
+        <li>Even the last wallet can be disconnected — the account simply
+          becomes unverified until you prove again.</li>
       </ul>
       <div className="docs-callout danger">
         <p className="mono-label">⚠️ THE HONEST FLIP SIDE</p>
         <p>
-          Anyone holding all-but-one of your wallets could remove the last
-          one. That&apos;s the price of recoverability, and it&apos;s why
-          the wallets you enroll should be the ones you actually control.
+          Anyone signed in as you can disconnect a wallet the same way.
+          That&apos;s the price of one-click removal, and it&apos;s why
+          your email login (plus a verified address) stands guard in front
+          of it.
         </p>
       </div>
 

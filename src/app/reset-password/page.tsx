@@ -3,12 +3,12 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { emailReset } from "../../lib/api";
+import { notifyError } from "../../lib/notify";
 
 export default function ResetPasswordPage() {
   const [token, setToken] = useState("");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
-  const [err, setErr] = useState("");
   const [done, setDone] = useState(false);
   const [busy, setBusy] = useState(false);
 
@@ -19,13 +19,12 @@ export default function ResetPasswordPage() {
 
   async function submit() {
     if (busy) return;
-    setErr("");
     if (password.length < 10) {
-      setErr("Password must be at least 10 characters");
+      notifyError("Password must be at least 10 characters");
       return;
     }
     if (password !== confirm) {
-      setErr("Passwords do not match");
+      notifyError("Passwords do not match");
       return;
     }
     setBusy(true);
@@ -33,7 +32,7 @@ export default function ResetPasswordPage() {
       await emailReset(token, password);
       setDone(true);
     } catch (e) {
-      setErr(e instanceof Error ? e.message : "Reset failed — request a new link");
+      notifyError(e instanceof Error ? e.message : "Reset failed — request a new link");
     } finally {
       setBusy(false);
     }
@@ -78,7 +77,6 @@ export default function ResetPasswordPage() {
             <button className="btn-solid" disabled={busy || !token} onClick={() => void submit()}>
               {busy ? "SAVING…" : "SET NEW PASSWORD"}
             </button>
-            {err && <p className="err">{err}</p>}
           </>
         )}
       </div>

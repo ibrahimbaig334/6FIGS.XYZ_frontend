@@ -54,6 +54,18 @@ export default function RoomPage() {
   const retiredRef = useRef<Set<string>>(new Set());
   // Our own game-room membership (leave on exit/turnover, like the game page).
   const joinedRef = useRef<string | null>(null);
+  // Join-gate reasons live in the error toast (toast once per new reason —
+  // the meta poll re-sets the same object every few seconds).
+  const joinReasonRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    const r = meta?.joinReason ?? null;
+    if (r && r !== joinReasonRef.current) {
+      joinReasonRef.current = r;
+      notifyError(r);
+    }
+    if (!r) joinReasonRef.current = null;
+  }, [meta?.joinReason]);
 
   useEffect(() => {
     gameRef.current = game;
@@ -381,13 +393,10 @@ export default function RoomPage() {
       await load();
     } catch (e) {
       console.error("tier join failed", e);
-      // Re-read the gate AND toast the reason: the gate keeps the persistent
-      // entry requirement, the box gives the immediate failure feedback.
+      // Re-read the gate (the joinReason effect above toasts the new
+      // reason); fall back to the raw failure if the re-read fails.
       try {
-        const m = await api<RoomMeta>(`/rooms/${id}/meta`);
-        setMeta(m);
-        if (m.joinReason) notifyError(m.joinReason);
-        else notifyError(errMsg(e, "Couldn't join — try again"));
+        setMeta(await api<RoomMeta>(`/rooms/${id}/meta`));
       } catch {
         notifyError(errMsg(e, "Couldn't join — try again"));
       }
@@ -491,7 +500,6 @@ export default function RoomPage() {
           <p className="fine" style={{ margin: 0 }}>
             {meta.onlineCount}/2 ONLINE · {meta.memberCount}/2 SEATED · 1V1 ONLY
           </p>
-          {meta.joinReason && <p className="gate-reason">{meta.joinReason}</p>}
           {invite ? (
             meta.isMember ? (
               <a
@@ -578,9 +586,6 @@ export default function RoomPage() {
       >
         <div className="card gate-card">
           <p className="mono-label">{"COULDN'T OPEN THIS ROOM"}</p>
-          <p className="gate-reason">
-            {"The room didn't load — see the error box, then try again."}
-          </p>
           <div
             style={{
               display: "flex",

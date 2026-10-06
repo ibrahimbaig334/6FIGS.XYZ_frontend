@@ -1,10 +1,11 @@
 "use client";
 
 import { useState } from "react";
+import { notifyError } from "../lib/notify";
 
 /** Proper invite-code dialog (replaces window.prompt). Empty-submit nudges
- *  stay inline (live validation); wrong-code failures land in the error box
- *  and the dialog stays open for a retry. */
+ *  and wrong-code failures land in the error toast; the dialog stays open
+ *  for a retry. */
 export default function InviteDialog({
   roomName,
   onSubmit,
@@ -15,12 +16,11 @@ export default function InviteDialog({
   onClose: () => void;
 }) {
   const [code, setCode] = useState("");
-  const [err, setErr] = useState("");
 
   function submit(e: React.FormEvent) {
     e.preventDefault();
     if (!code.trim()) {
-      setErr("Enter the invite code");
+      notifyError("Enter the invite code");
       return;
     }
     onSubmit(code.trim());
@@ -53,17 +53,6 @@ export default function InviteDialog({
             JOIN ↗
           </button>
         </form>
-        {err && (
-          <p
-            style={{
-              color: "var(--crimson)",
-              fontFamily: "var(--font-dm-mono)",
-              fontSize: "0.7rem",
-            }}
-          >
-            {err}
-          </p>
-        )}
         <button
           className="btn-ghost"
           style={{ padding: "0.5rem 0.8rem" }}

@@ -56,9 +56,7 @@ export default function PlayPage() {
   const [searching, setSearching] = useState(false);
   const [elapsed, setElapsed] = useState(0);
   const [outgoing, setOutgoing] = useState<RoomRequestInfo[]>([]);
-  // Per-friend status line under their online dot: "REQUEST DECLINED" /
-  // "DIDN'T RESPOND" (the offer outcome never lands in the RANDOM box).
-  const [notes, setNotes] = useState<Record<string, string>>({});
+// Offer outcomes (declined / no response) land in the error toast only.
   const [joining, setJoining] = useState<string | null>(null); // overlay text while connecting to a room
   const [initialLoading, setInitialLoading] = useState(true);
   const [goto, setGoto] = useState("");
@@ -176,7 +174,6 @@ export default function PlayPage() {
       clearRequestTimer(p.requestId);
       const hit = outgoingRef.current.find((o) => o.id === p.requestId);
       if (hit) {
-        setNotes((prev) => ({ ...prev, [hit.toUserId]: "REQUEST DECLINED" }));
         notifyError(`${hit.toHandle} — REQUEST DECLINED`);
       }
       setOutgoing((prev) => prev.filter((o) => o.id !== p.requestId));
@@ -308,7 +305,6 @@ export default function PlayPage() {
     setOutgoing((prev) => prev.filter((o) => o.id !== id));
     api(`/play/requests/${id}/cancel`, { method: "POST" })
       .then(() => {
-        setNotes((prev) => ({ ...prev, [friendId]: "DIDN'T RESPOND" }));
         notifyError(`${handle} — DIDN'T RESPOND`);
       })
       .catch((e) => {
@@ -324,11 +320,6 @@ export default function PlayPage() {
         body: { userId: f.id },
       });
       setOutgoing((prev) => [r, ...prev]);
-      setNotes((prev) => {
-        const next = { ...prev };
-        delete next[f.id];
-        return next;
-      });
       armRequestTimer(r);
     } catch (e) {
       console.error("request failed", e);
@@ -511,9 +502,6 @@ export default function PlayPage() {
                     />{" "}
                     {p.online ? "ONLINE" : `OFFLINE · ${timeAgo(p.lastSeenAt)}`}
                   </p>
-                  {notes[p.id] && (
-                    <p className="fine room-note">{notes[p.id]}</p>
-                  )}
                 </div>
                 <div className="room-side">
                   <span

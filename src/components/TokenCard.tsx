@@ -48,25 +48,9 @@ export default function TokenCard({ symbol }: { symbol: string }) {
   if (!card)
     return <div className="token-card mono-label">LOADING ${symbol}…</div>;
 
-  if (card.status !== "live" && card.status !== "stale") {
-    return (
-      <div className="token-card">
-        <div
-          style={{
-            display: "flex",
-            gap: "0.5rem",
-            alignItems: "center",
-            fontSize: "0.72rem",
-          }}
-        >
-          <strong>${symbol}</strong>
-          <span className="tier-badge" style={{ marginLeft: "auto" }}>
-            {card.status.toUpperCase()}
-          </span>
-        </div>
-      </div>
-    );
-  }
+  // Unpriceable / failed lookups render nothing — the chat line stays, and
+  // per-message fetch failures never touch the error toast.
+  if (card.status !== "live" && card.status !== "stale") return null;
 
   const chg = card.change24h;
   return (

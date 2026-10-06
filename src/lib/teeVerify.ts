@@ -96,6 +96,26 @@ export interface TeeWalletInput {
   label?: string;
 }
 
+/**
+ * Wallets proven in this browser session (by address key). Lets the add
+ * flow warn "already connected" BEFORE any popup when the user re-picks a
+ * wallet they just proved — the backend still rejects cross-session
+ * duplicates. Cleared on any disconnect (a freed wallet may be re-added).
+ */
+const sessionProvedKeys = new Set<string>();
+
+export function markWalletProved(key: string) {
+  sessionProvedKeys.add(key);
+}
+
+export function isWalletProved(key: string) {
+  return sessionProvedKeys.has(key);
+}
+
+export function clearProvedWallets() {
+  sessionProvedKeys.clear();
+}
+
 function toDescriptor(wallet: TeeWalletInput): WalletDescriptor {
   return {
     family: wallet.family,

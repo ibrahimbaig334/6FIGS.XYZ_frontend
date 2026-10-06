@@ -8,6 +8,7 @@ import {
   emailLogin,
   emailSignup,
 } from "../lib/api";
+import { notifyError } from "../lib/notify";
 
 /**
  * Email signup/login. Wallets attach later through the tee prove flow.
@@ -23,13 +24,11 @@ export default function EmailAuth({
   const [mode, setMode] = useState<"login" | "signup" | "forgot">("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [err, setErr] = useState("");
   const [notice, setNotice] = useState("");
   const [busy, setBusy] = useState(false);
 
   async function submit() {
     if (busy) return;
-    setErr("");
     setNotice("");
     setBusy(true);
     try {
@@ -47,7 +46,7 @@ export default function EmailAuth({
       } else await emailLogin(email, password);
       onDone();
     } catch (e) {
-      setErr(
+      notifyError(
         e instanceof ApiError
           ? e.message
           : "Authentication failed — try again",
@@ -67,7 +66,6 @@ export default function EmailAuth({
               className={mode === m ? "chip active" : "chip"}
               onClick={() => {
                 setMode(m);
-                setErr("");
                 setNotice("");
               }}
             >
@@ -114,7 +112,6 @@ export default function EmailAuth({
           style={{ alignSelf: "center" }}
           onClick={() => {
             setMode(mode === "forgot" ? "login" : "forgot");
-            setErr("");
             setNotice("");
           }}
         >
@@ -122,7 +119,6 @@ export default function EmailAuth({
         </button>
       )}
       {notice && <p className="fine">{notice}</p>}
-      {err && <p className="err">{err}</p>}
     </div>
   );
 }

@@ -1,15 +1,23 @@
 "use client";
 
 import { useState } from "react";
-import { notifyError } from "../lib/notify";
 
-/** Delete-room confirmation: explicit checkbox + red button, no accidents. */
-export default function DeleteRoomDialog({
-  roomName,
+/**
+ * Generic destructive-action confirm: explicit tick (checkbox) + confirm
+ * button, no accidents. Failures are toasted by the caller's onConfirm.
+ */
+export default function ConfirmDialog({
+  title,
+  message,
+  ackLabel,
+  confirmLabel,
   onConfirm,
   onClose,
 }: {
-  roomName: string;
+  title: string;
+  message: string;
+  ackLabel: string;
+  confirmLabel: string;
   onConfirm: () => Promise<void>;
   onClose: () => void;
 }) {
@@ -22,9 +30,7 @@ export default function DeleteRoomDialog({
     setBusy(true);
     try {
       await onConfirm();
-    } catch (e2) {
-      console.error("delete room failed", e2);
-      notifyError("Delete failed — try again");
+    } finally {
       setBusy(false);
     }
   }
@@ -35,15 +41,13 @@ export default function DeleteRoomDialog({
         className="dialog-box"
         onClick={(e) => e.stopPropagation()}
         role="dialog"
-        aria-label="Delete room"
+        aria-label={title}
       >
         <p className="mono-label" style={{ color: "var(--crimson)" }}>
-          ⚠ DELETE ROOM
+          ⚠ {title}
         </p>
-        <h3 style={{ margin: "0.2rem 0" }}>{roomName}</h3>
         <p className="fine" style={{ margin: "0.4rem 0" }}>
-          This permanently deletes the room for <strong>both</strong> players —
-          members and all room messages go with it. This cannot be undone.
+          {message}
         </p>
         <form onSubmit={submit}>
           <label
@@ -68,9 +72,8 @@ export default function DeleteRoomDialog({
                 accentColor: "var(--crimson)",
               }}
             />
-            I understand this room and its messages will be deleted forever.
-          </label>
-          <div style={{ display: "flex", gap: "0.5rem" }}>
+            {ackLabel}
+          </label>          <div style={{ display: "flex", gap: "0.5rem" }}>
             <button
               className="btn-solid"
               type="submit"
@@ -84,7 +87,7 @@ export default function DeleteRoomDialog({
                 cursor: !ack || busy ? "not-allowed" : "pointer",
               }}
             >
-              {busy ? "DELETING…" : "DELETE ROOM"}
+              {busy ? "WORKING…" : confirmLabel}
             </button>
             <button
               className="btn-ghost"

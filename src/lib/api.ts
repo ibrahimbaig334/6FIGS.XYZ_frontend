@@ -123,6 +123,7 @@ export interface WalletBalance {
 }
 
 export interface TeeWalletView {
+  id: string;
   family: string;
   label: string | null;
 }

@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { emailVerify } from "../../lib/api";
+import { notifyError } from "../../lib/notify";
 
 export default function VerifyEmailPage() {
   const [status, setStatus] = useState<"working" | "ok" | "error">("working");
@@ -16,7 +17,8 @@ export default function VerifyEmailPage() {
     const token = params.get("token") ?? "";
     if (!token) {
       setStatus("error");
-      setMessage("This link is missing its token. Open the link from the email again.");
+      setMessage("Verification failed.");
+      notifyError("This link is missing its token. Open the link from the email again.");
       return;
     }
     emailVerify(token)
@@ -27,7 +29,8 @@ export default function VerifyEmailPage() {
       })
       .catch((e: unknown) => {
         setStatus("error");
-        setMessage(e instanceof Error ? e.message : "This link is invalid or expired.");
+        setMessage("Verification failed.");
+        notifyError(e instanceof Error ? e.message : "This link is invalid or expired.");
       });
   }, []);
 

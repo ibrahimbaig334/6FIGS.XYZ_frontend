@@ -11,27 +11,31 @@ import {
   teeRecheck,
   Profile,
   TeeEligibility,
+  Wallet,
 } from "../../lib/api";
+import { clearProvedWallets } from "../../lib/teeVerify";
 import { handleError } from "../../lib/validate";
 import { MAX_WALLETS } from "../../lib/constants";
 import { disconnectSocket } from "../../lib/ws";
 import { notifyError } from "../../lib/notify";
 import EmailAuth from "../../components/EmailAuth";
 import TeeProve from "../../components/TeeProve";
+import ConfirmDialog from "../../components/ConfirmDialog";
 import WalletIcon from "../../components/WalletIcon";
 import Loader from "../../components/Loader";
 
 export default function ProfilePage() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [handle, setHandle] = useState("");
-  const [handleErr, setHandleErr] = useState("");
   const [ready, setReady] = useState(false);
   const [loading, setLoading] = useState(true);
   const [checking, setChecking] = useState(false);
   const [savingHandle, setSavingHandle] = useState(false);
-  const [proveMode, setProveMode] = useState<
-    "establish" | "add" | "remove" | null
-  >(null);
+  const [proveMode, setProveMode] = useState<"establish" | "add" | null>(
+    null,
+  );
+  const [confirmOne, setConfirmOne] = useState<Wallet | null>(null);
+  const [confirmAll, setConfirmAll] = useState(false);
   const [showLink, setShowLink] = useState(false);
   const [banner, setBanner] = useState("");
 
@@ -91,8 +95,11 @@ export default function ProfilePage() {
 
   async function saveHandle() {
     const herr = handleError(handle);
-    setHandleErr(herr ?? "");
-    if (herr || savingHandle) return; // no backend call on invalid input
+    if (herr || savingHandle) {
+      // No backend call on invalid input — reason goes to the error toast.
+      if (herr) notifyError(herr);
+      return;
+    }
     setSavingHandle(true);
     try {
       await api("/profile/user", { method: "PATCH", body: { handle } });
@@ -100,7 +107,6 @@ export default function ProfilePage() {
       window.dispatchEvent(new Event("sixfigs-auth"));
     } catch (e) {
       console.error("handle save failed", e);
-      // Live typing validation stays inline; submission failures go to the box.
       notifyError(errMsg(e, "Couldn't save the handle — try again"));
     } finally {
       setSavingHandle(false);
@@ -113,7 +119,8 @@ export default function ProfilePage() {
       await emailResendVerification();
       setBanner("Verification email sent — check your inbox.");
     } catch (e) {
-      setBanner(e instanceof Error ? e.message : "Could not send the email");
+      console.error("resend verification failed", e);
+      notifyError(e instanceof Error ? e.message : "Could not send the email");
     }
   }
 
@@ -122,6 +129,40 @@ export default function ProfilePage() {
     disconnectSocket();
     setProfile(null);
     location.href = "/";
+  }
+
+  /** Single-wallet disconnect (tick-confirmed): only that wallet leaves —
+   *  the rest stay enrolled, the tier resets. Press CONNECT WALLET to
+   *  restore the badge. */
+  async function disconnectOne() {
+    if (!confirmOne) return;
+    try {
+      await api(`/wallet/${confirmOne.id}`, { method: "DELETE" });
+      setConfirmOne(null);
+      clearProvedWallets();
+      await load();
+      window.dispatchEvent(new Event("sixfigs-auth"));
+      setBanner("Wallet disconnected — press CONNECT WALLET to restore your tier.");
+    } catch (e) {
+      console.error("wallet disconnect failed", e);
+      notifyError(errMsg(e, "Couldn't disconnect that wallet — try again"));
+    }
+  }
+
+  /** Disconnect every wallet (tick-confirmed): wipes verification. Press
+   *  CONNECT WALLET to start over. */
+  async function disconnectAll() {
+    try {
+      await api("/wallet", { method: "DELETE" });
+      setConfirmAll(false);
+      clearProvedWallets();
+      await load();
+      window.dispatchEvent(new Event("sixfigs-auth"));
+      setBanner("All wallets disconnected — press CONNECT WALLET to start over.");
+    } catch (e) {
+      console.error("disconnect-all failed", e);
+      notifyError(errMsg(e, "Couldn't disconnect wallets — try again"));
+    }
   }
 
   // Mounted guard (see rooms page): localStorage token is client-only.
@@ -172,33 +213,56 @@ export default function ProfilePage() {
   }
 
   return (
-    <ProfileView
-      profile={profile}
-      checking={checking}
-      proveMode={proveMode}
-      showLink={showLink}
-      banner={banner}
-      onProve={(mode) => setProveMode(mode)}
-      onProveDone={(p) => {
-        setProveMode(null);
-        applyProfile(p);
-      }}
-      onProveCancel={() => setProveMode(null)}
-      onLink={() => setShowLink((v) => !v)}
-      onLinked={() => {
-        setShowLink(false);
-        void load();
-      }}
-      onRecheck={() => void recheck()}
-      onResendVerification={() => void resendVerification()}
-      onSaveVis={(v) => void saveVis(v)}
-      handle={handle}
-      setHandle={setHandle}
-      handleErr={handleErr}
-      savingHandle={savingHandle}
-      onSaveHandle={() => void saveHandle()}
-      onDisconnect={disconnect}
-    />
+    <>
+      <ProfileView
+        profile={profile}
+        checking={checking}
+        proveMode={proveMode}
+        showLink={showLink}
+        banner={banner}
+        onProve={(mode) => setProveMode(mode)}
+        onProveDone={(p) => {
+          setProveMode(null);
+          applyProfile(p);
+        }}
+        onDismissFlow={() => setProveMode(null)}
+        onLink={() => setShowLink((v) => !v)}
+        onLinked={() => {
+          setShowLink(false);
+          void load();
+        }}
+        onRecheck={() => void recheck()}
+        onResendVerification={() => void resendVerification()}
+        onSaveVis={(v) => void saveVis(v)}
+        handle={handle}
+        setHandle={setHandle}
+        savingHandle={savingHandle}
+        onSaveHandle={() => void saveHandle()}
+        onDisconnectOne={(w) => setConfirmOne(w)}
+        onDisconnectAll={() => setConfirmAll(true)}
+        onLogout={disconnect}
+      />
+      {confirmOne && (
+        <ConfirmDialog
+          title="DISCONNECT WALLET"
+          message={`Disconnect ${confirmOne.name ?? confirmOne.chain.toUpperCase()}? Your tier resets immediately — re-prove your remaining wallets any time to restore it.`}
+          ackLabel="Yes, disconnect this wallet and reset my tier — tick to confirm."
+          confirmLabel="DISCONNECT WALLET"
+          onConfirm={() => disconnectOne()}
+          onClose={() => setConfirmOne(null)}
+        />
+      )}
+      {confirmAll && (
+        <ConfirmDialog
+          title="DISCONNECT ALL WALLETS"
+          message="Disconnect every wallet? Your tier resets immediately — re-prove any time to restore it. Your email login stays untouched."
+          ackLabel="Yes, disconnect all my wallets and reset my tier — tick to confirm."
+          confirmLabel="DISCONNECT ALL"
+          onConfirm={() => disconnectAll()}
+          onClose={() => setConfirmAll(false)}
+        />
+      )}
+    </>
   );
 }
 
@@ -214,7 +278,7 @@ function ProfileView({
   banner,
   onProve,
   onProveDone,
-  onProveCancel,
+  onDismissFlow,
   onLink,
   onLinked,
   onRecheck,
@@ -222,19 +286,20 @@ function ProfileView({
   onSaveVis,
   handle,
   setHandle,
-  handleErr,
   savingHandle,
   onSaveHandle,
-  onDisconnect,
+  onDisconnectOne,
+  onDisconnectAll,
+  onLogout,
 }: {
   profile: Profile;
   checking: boolean;
-  proveMode: "establish" | "add" | "remove" | null;
+  proveMode: "establish" | "add" | null;
   showLink: boolean;
   banner: string;
-  onProve: (mode: "establish" | "add" | "remove") => void;
+  onProve: (mode: "establish" | "add") => void;
   onProveDone: (p: Profile) => void;
-  onProveCancel: () => void;
+  onDismissFlow: () => void;
   onLink: () => void;
   onLinked: () => void;
   onRecheck: () => void;
@@ -242,22 +307,19 @@ function ProfileView({
   onSaveVis: (v: string) => void;
   handle: string;
   setHandle: (v: string) => void;
-  handleErr: string;
   savingHandle: boolean;
   onSaveHandle: () => void;
-  onDisconnect: () => void;
+  onDisconnectOne: (w: Wallet) => void;
+  onDisconnectAll: () => void;
+  onLogout: () => void;
 }) {
   const tee = isTee(profile.eligibility) ? profile.eligibility : null;
   const username = profile.handle ?? `user_${profile.id.slice(-4)}`;
-  const enrolledLabels = tee
-    ? tee.wallets
-        .map((w) => w.label ?? w.family.toUpperCase())
-        .filter((l, i, a) => a.indexOf(l) === i)
-    : profile.wallets
-        .map((w) => w.name ?? w.chain.toUpperCase())
-        .filter((l, i, a) => a.indexOf(l) === i);
   const hasIdentity = tee !== null;
   const addOnly = hasIdentity && profile.wallets.length > 0;
+  // A disconnect zeroes the tier but keeps the enrolled rows: re-verify the
+  // same set (or add) to restore it.
+  const tierActive = profile.eligibility.tier != null;
 
   return (
     <section
@@ -382,7 +444,6 @@ function ProfileView({
                 {savingHandle ? "SAVING…" : "SAVE"}
               </button>
             </div>
-            {handleErr && <p className="err">{handleErr}</p>}
           </div>
           <div className="vis-block">
             <p
@@ -462,38 +523,53 @@ function ProfileView({
                       {w.chain.toUpperCase()} · ADDRESS HIDDEN BY DESIGN
                     </span>
                   </div>
+                  <button
+                    className="chip"
+                    style={{ marginLeft: "auto" }}
+                    title={`Disconnect ${wname}`}
+                    onClick={() => onDisconnectOne(w)}
+                  >
+                    ✕
+                  </button>
                 </div>
               );
             })}
           </div>
         )}
-        {proveMode ? (
-          <div style={{ marginTop: "0.8rem" }}>
-            <TeeProve
-              mode={proveMode}
-              enrolledLabels={enrolledLabels}
-              onDone={onProveDone}
-              onCancel={onProveCancel}
-            />
-          </div>
-        ) : (
-          <div className="wallet-actions">
+        {proveMode && (
+          <TeeProve
+            key={proveMode}
+            mode={proveMode}
+            onDone={onProveDone}
+            onDismiss={onDismissFlow}
+          />
+        )}
+        <div className="wallet-actions">
+          {proveMode ? (
             <button
               className="btn-solid"
               style={{ padding: "0.6rem 1rem" }}
-              onClick={() => onProve(addOnly ? "add" : "establish")}
+              disabled
             >
-              {addOnly ? "ADD WALLET ↗" : "PROVE TIER ↗"}
+              CONNECTING…
             </button>
-            {addOnly && (
-              <button
-                className="btn-ghost"
-                style={{ padding: "0.6rem 1rem" }}
-                onClick={() => onProve("remove")}
-              >
-                REMOVE WALLET ↗
-              </button>
-            )}
+          ) : !addOnly || !tierActive ? (
+            <button
+              className="btn-solid"
+              style={{ padding: "0.6rem 1rem" }}
+              onClick={() => onProve("establish")}
+            >
+              CONNECT WALLET ↗
+            </button>
+          ) : (
+            <button
+              className="btn-solid"
+              style={{ padding: "0.6rem 1rem" }}
+              onClick={() => onProve("add")}
+            >
+              ADD WALLET ↗
+            </button>
+          )}
             <button
               className="btn-ghost"
               style={{ padding: "0.6rem 1rem", margin: "0 auto" }}
@@ -505,12 +581,18 @@ function ProfileView({
             <button
               className="btn-ghost"
               style={{ padding: "0.6rem 1rem" }}
-              onClick={onDisconnect}
+              onClick={onDisconnectAll}
             >
               DISCONNECT ALL
             </button>
+            <button
+              className="btn-ghost"
+              style={{ padding: "0.6rem 1rem" }}
+              onClick={onLogout}
+            >
+              LOG OUT
+            </button>
           </div>
-        )}
       </div>
     </section>
   );
@@ -534,7 +616,8 @@ function ChangePasswordForm() {
       setNext("");
       setOpen(false);
     } catch (e) {
-      setMsg(e instanceof Error ? e.message : "Could not change the password");
+      console.error("password change failed", e);
+      notifyError(e instanceof Error ? e.message : "Could not change the password");
     } finally {
       setBusy(false);
     }

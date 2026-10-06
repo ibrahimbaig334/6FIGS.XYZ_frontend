@@ -107,7 +107,10 @@ export default function CreateRoomPage() {
   async function create(e: React.FormEvent) {
     e.preventDefault();
     if (busy) return;
-    if (roomsFull) return; // the cap note is already showing inline
+    if (roomsFull) {
+      notifyError(roomsFullMsg);
+      return;
+    }
     if (
       form.accessType === "tier" &&
       tierRank(form.minTier) > tierRank(myTier)
@@ -297,7 +300,7 @@ export default function CreateRoomPage() {
                   options={tierOptions}
                 />
               ) : (
-                <p className="err" style={{ margin: 0 }}>
+                <p className="fine" style={{ margin: 0 }}>
                   {myTier === null
                     ? "Tier options load with your profile."
                     : "Verify your holdings in Profile to create a tier room."}
@@ -326,16 +329,11 @@ export default function CreateRoomPage() {
               )}
             </>
           )}
-          {roomsFull && (
-            <p className="err" style={{ margin: 0 }}>
-              {roomsFullMsg}
-            </p>
-          )}
           <div>
             <button
               className="btn-solid"
               type="submit"
-              disabled={busy || roomsFull}
+              disabled={busy}
             >
               {busy ? "CREATING…" : "CREATE ROOM ↗"}
             </button>

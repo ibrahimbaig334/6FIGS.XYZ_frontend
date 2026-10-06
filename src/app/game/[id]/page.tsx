@@ -91,8 +91,10 @@ export default function GamePage() {
       // No global-online check here: the live poll below reports whether the
       // opponent is actually IN this game (seat dot + countdown source).
     } catch (e) {
-      // Specific, human reason (e.g. a game that no longer exists) — never blank.
-      setErr(errMsg(e, "Couldn't load this game — try again"));
+      // Specific, human reason (e.g. a game that no longer exists) — to the
+      // error toast; the gate below is just the way back out.
+      notifyError(errMsg(e, "Couldn't load this game — try again"));
+      setErr("load-failed");
     }
   }, [id, router]);
 
@@ -367,7 +369,6 @@ export default function GamePage() {
       >
         <div className="card gate-card">
           <p className="mono-label">{"CAN'T JOIN THIS GAME"}</p>
-          <p className="gate-reason">{err}</p>
           <a href="/play" className="btn-solid">
             ← BACK TO PLAY
           </a>

@@ -32,10 +32,9 @@ const QA: { q: string; a: React.ReactNode }[] = [
     q: "What happens if I lose a wallet?",
     a: (
       <>
-        Your remaining wallets evict it: every wallet you still hold signs
-        one shared message naming the lost address, and the lost wallet
-        signs nothing. Your account continues with the kept set. This is the
-        main reason identity is a set of wallets, not one wallet.
+        Press ✕ on its row and tick the confirmation — the lost wallet signs
+        nothing, because disconnecting takes no signature. Your tier resets
+        on the spot; re-prove the wallets you still hold to restore it.
       </>
     ),
   },

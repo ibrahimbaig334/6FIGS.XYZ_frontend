@@ -1,12 +1,14 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { usePathname } from "next/navigation";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { useWalletModal } from "@solana/wallet-adapter-react-ui";
 import { getToken, Profile } from "../lib/api";
 import { notifyError } from "../lib/notify";
 import {
   alreadySignedIn,
+  isAutoLoginSuppressed,
   lastLoggedInProfile,
   loginOnce,
 } from "../lib/solanaLogin";
@@ -27,28 +29,27 @@ function SolanaConnectInner({
   onDone: (p?: Profile) => void;
   label?: string;
 }) {
-  const { publicKey, signMessage, wallet, connected, connecting, connect } =
+  const { publicKey, signMessage, wallet, connected, connecting, connect, select } =
     useWallet();
   const { visible, setVisible: setModalVisible } = useWalletModal();
+  const pathname = usePathname();
   const [busy, setBusy] = useState(false);
   const [attempt, setAttempt] = useState(0);
   const [phase, setPhase] = useState<"idle" | "choose" | "connect">("idle");
   const doneFor = useRef<string | null>(null);
   const connRef = useRef(false);
-  // Selection snapshot at popup open + explicit-intent flags.
-  const openSelRef = useRef<string | null>(null);
+  // Explicit-intent flags. Selections are cleared on press (select(null)),
+  // so ANY selection present at popup close is a real pick — a dismissed
+  // popup can never auto-connect a stale stored wallet.
   const armedRef = useRef(false);
   const prevConnRef = useRef(false);
   const firstRunRef = useRef(true);
 
-  // Popup closed: a NEW pick connects; anything else backs out silently.
-  // (Comparing against the open-time snapshot is what stops a dismissed
-  // popup from auto-connecting the previously used wallet.)
+  // Popup closed: a present selection is always a real pick (press clears
+  // stale ones first); otherwise back out silently.
   useEffect(() => {
     if (visible || phase !== "choose") return;
-    const picked =
-      (wallet?.adapter.name ?? null) !== openSelRef.current;
-    if (!picked) setPhase("idle");
+    if (!wallet) setPhase("idle");
     else setPhase("connect");
   }, [visible, phase, wallet]);
 
@@ -86,6 +87,14 @@ function SolanaConnectInner({
       onDone(lastLoggedInProfile() ?? undefined);
       return;
     }
+    // Stand down where another flow owns signatures: the /recover workspace
+    // and any active recovery-link run (their nonces live in a separate
+    // slot, but a second signature popup would still be wrong). Explicit
+    // button presses (armed) always win.
+    const quiet =
+      (pathname !== null && pathname.startsWith("/recover")) ||
+      isAutoLoginSuppressed();
+    if (quiet && !armedRef.current) return;
     // No popup without intent: skip mount-connected and idle states; only
     // fresh connects and explicit button presses proceed to signatures.
     if (!fresh && !armedRef.current) return;
@@ -117,7 +126,7 @@ function SolanaConnectInner({
       cancelled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [connected, publicKey, attempt]);
+  }, [connected, publicKey, attempt, pathname]);
 
   // Session cleared server-side (401): allow this address to sign in again.
   // MUST ignore events where this wallet's session is intact — onDone →
@@ -157,7 +166,11 @@ function SolanaConnectInner({
             setAttempt((a) => a + 1);
             return;
           }
-          openSelRef.current = wallet?.adapter.name ?? null;
+          try {
+            select(null); // clear any stale stored selection first
+          } catch {
+            /* selection unsupported — popup still opens */
+          }
           setModalVisible(true);
           setPhase("choose");
         }}

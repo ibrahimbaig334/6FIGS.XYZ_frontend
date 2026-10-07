@@ -26,6 +26,7 @@ import {
   readWalletAddressMap,
   type WalletAddressMap,
 } from "../../lib/walletAddresses";
+import { setAutoLoginSuppressed } from "../../lib/solanaLogin";
 import { handleError } from "../../lib/validate";
 import { MAX_WALLETS } from "../../lib/constants";
 import { disconnectSocket } from "../../lib/ws";
@@ -840,7 +841,7 @@ function RecoveryWalletLink({
   setLinking: (b: boolean) => void;
   onLinked: () => void;
 }) {
-  const { publicKey, signMessage, wallet, connected, connecting, connect } =
+  const { publicKey, signMessage, wallet, connected, connecting, connect, select } =
     useWallet();
   const { visible, setVisible } = useWalletModal();
   const pendingRef = useRef(false);
@@ -849,8 +850,12 @@ function RecoveryWalletLink({
   async function doLink(address: string) {
     if (linking) return;
     setLinking(true);
+    // The header's background sign-in stands down while we run: same
+    // wallet, overlapping popups, clobbered UX (nonces are namespaced, but
+    // two signature requests would still be wrong).
+    setAutoLoginSuppressed(true);
     try {
-      const { nonce } = await walletNonce("SOL", address);
+      const { nonce } = await walletNonce("SOL", address, "recovery");
       if (!signMessage) {
         notifyError("Wallet cannot sign — try again");
         return;
@@ -869,6 +874,7 @@ function RecoveryWalletLink({
       console.error("recovery link failed", e);
       notifyError(errMsg(e, "Couldn't link that wallet — try again"));
     } finally {
+      setAutoLoginSuppressed(false);
       setLinking(false);
     }
   }
@@ -879,18 +885,26 @@ function RecoveryWalletLink({
       void doLink(publicKey.toString());
       return;
     }
+    // Clear any stale stored selection: a selection present at close is
+    // then always a real pick, never an auto-connect.
+    try {
+      select(null);
+    } catch {
+      /* selection unsupported — popup still opens */
+    }
     pendingRef.current = true;
     setVisible(true);
   }
 
-  // Modal closed: connect the selection (nothing picked = silent abort).
+  // Modal closed: connect a real pick, silently abort a dismissal.
   // Never links here — linking happens only in the effect below, once.
   useEffect(() => {
     if (visible || !pendingRef.current) return;
-    if (connected || !wallet) {
-      if (!wallet) pendingRef.current = false;
+    if (!wallet) {
+      pendingRef.current = false;
       return;
     }
+    if (connected) return; // picked the connected one — linked below
     if (connecting || connRef.current) return;
     connRef.current = true;
     connect()

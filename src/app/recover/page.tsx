@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { useWalletModal } from "@solana/wallet-adapter-react-ui";
 import {
+  ApiError,
   b58encode,
   errMsg,
   loginMessage,
@@ -122,8 +123,53 @@ function SigninForm() {
   );
 }
 
+/**
+ * Singleton recovery coordinator. The server keeps one nonce per wallet per
+ * purpose — two concurrent runs would overwrite each other's challenge and
+ * BOTH fail with "nonce expired" (StrictMode double-fires this effect in
+ * dev). Exactly one flow runs per address; everyone else joins it.
+ */
+let currentRecover: {
+  address: string;
+  promise: Promise<{ username: string | null; recoveryToken: string }>;
+} | null = null;
+
+function recoverOnce(
+  address: string,
+  sign: (m: Uint8Array) => Promise<Uint8Array | { signature: Uint8Array }>,
+): Promise<{ username: string | null; recoveryToken: string }> {
+  if (currentRecover && currentRecover.address === address) {
+    return currentRecover.promise;
+  }
+  const entry: {
+    address: string;
+    promise: Promise<{ username: string | null; recoveryToken: string }>;
+  } = {
+    address,
+    promise: (async () => {
+      const { nonce } = await walletNonce("SOL", address, "recovery");
+      const raw = (await sign(
+        new TextEncoder().encode(loginMessage("SOL", address, nonce)),
+      )) as unknown as Uint8Array | { signature: Uint8Array };
+      return usernameRecover(
+        "SOL",
+        address,
+        nonce,
+        b58encode(raw instanceof Uint8Array ? raw : raw.signature),
+      );
+    })(),
+  };
+  entry.promise = entry.promise.catch((e) => {
+    // Failed flows must be retryable — only successes are shared.
+    if (currentRecover === entry) currentRecover = null;
+    throw e;
+  });
+  currentRecover = entry;
+  return entry.promise;
+}
+
 function ForgotFlow() {
-  const { publicKey, signMessage, wallet, connected, connecting, connect, disconnect } =
+  const { publicKey, signMessage, wallet, connected, connecting, connect, disconnect, select } =
     useWallet();
   const { visible, setVisible } = useWalletModal();
   const [phase, setPhase] = useState<"idle" | "choose" | "connect">("idle");
@@ -138,10 +184,26 @@ function ForgotFlow() {
   const connRef = useRef(false);
   const doneFor = useRef<string | null>(null);
 
-  // Same modal discipline as the prove flow: modal only selects.
+  // Dropped mid-attempt: back to idle (a reconnect starts a fresh attempt).
+  // (The in-flight run's own cleanup cancels it, so it can't clear this.)
+  // Separate ref: connRef guards the connect() call below.
+  const wasConnRef = useRef(false);
   useEffect(() => {
-    if (!visible && phase === "choose") setPhase("connect");
-  }, [visible, phase]);
+    if (wasConnRef.current && !connected) {
+      doneFor.current = null;
+      setBusy(false);
+    }
+    wasConnRef.current = connected;
+  }, [connected]);
+
+  // Same modal discipline as the prove flow: modal only selects. Selections
+  // are cleared on press, so a present selection at close is always a real
+  // pick — a dismissed popup can never auto-connect a stale wallet.
+  useEffect(() => {
+    if (visible || phase !== "choose") return;
+    if (!wallet) setPhase("idle");
+    else setPhase("connect");
+  }, [visible, phase, wallet]);
 
   useEffect(() => {
     if (phase !== "connect") return;
@@ -171,6 +233,10 @@ function ForgotFlow() {
   // Never the wallet-login endpoint — recovery must not create a session.
   // doneFor is NEVER cleared on failure: combined with the disconnect
   // below, a failed address cannot refire by itself (no retry storm).
+  // NOTE: `busy`/`found` are deliberately NOT deps: this effect sets them,
+  // and listing them would run cleanup (cancelled=true) on its own update —
+  // self-cancelling the attempt so the toast + reset never run (stuck on
+  // CHECKING…). doneFor alone guards re-entry.
   useEffect(() => {
     if (!connected || !publicKey || !signMessage || busy || found) return;
     const address = publicKey.toString();
@@ -178,38 +244,29 @@ function ForgotFlow() {
     doneFor.current = address;
     let cancelled = false;
     setBusy(true);
+    const sign = (m: Uint8Array) =>
+      signMessage(m) as unknown as Promise<
+        Uint8Array | { signature: Uint8Array }
+      >;
+    const timeout = new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new ApiError("Timed out — try again", 408)), 45000),
+    );
     (async () => {
       try {
-        const { nonce } = await walletNonce("SOL", address);
-        const raw = (await signMessage(
-          new TextEncoder().encode(loginMessage("SOL", address, nonce)),
-        )) as unknown as Uint8Array | { signature: Uint8Array };
-        const res = await usernameRecover(
-          "SOL",
-          address,
-          nonce,
-          b58encode(raw instanceof Uint8Array ? raw : raw.signature),
-        );
+        const res = await Promise.race([recoverOnce(address, sign), timeout]);
         if (cancelled) return;
         setFound({ username: res.username, recoveryToken: res.recoveryToken });
         setNewUsername(res.username ?? "");
         // Recovery over — drop the adapter connection; the reset below is sessionless.
-        try {
-          await disconnect();
-        } catch {
-          /* already gone */
-        }
+        disconnect().catch(() => {});
       } catch (e) {
         if (!cancelled) {
           console.error("recovery failed", e);
           notifyError(errMsg(e, "Couldn't recover — try again"));
-          // Break the loop: stay done for this address AND disconnect, so
-          // only a fresh button press retries.
-          try {
-            await disconnect();
-          } catch {
-            /* already gone */
-          }
+          // Break any loop: stay done for this address AND drop the
+          // connection (fire-forget — never awaited), so only a fresh
+          // button press retries.
+          disconnect().catch(() => {});
         }
       } finally {
         if (!cancelled) setBusy(false);
@@ -219,7 +276,7 @@ function ForgotFlow() {
       cancelled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [connected, publicKey, busy, found]);
+  }, [connected, publicKey]);
 
   async function finish() {
     if (saving || !found) return;
@@ -285,7 +342,13 @@ function ForgotFlow() {
         disabled={busy || connecting}
         onClick={() => {
           // Fresh explicit attempt (also re-arms after a failed one).
+          // Clearing the selection first: any selection at close is a pick.
           doneFor.current = null;
+          try {
+            select(null);
+          } catch {
+            /* selection unsupported — popup still opens */
+          }
           setVisible(true);
           setPhase("choose");
         }}

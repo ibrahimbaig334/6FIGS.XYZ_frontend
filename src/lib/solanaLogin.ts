@@ -37,6 +37,20 @@ let current: {
 
 const LAST_ADDR_KEY = "sol_last_signed_addr";
 
+/**
+ * Global auto-login kill switch. Recovery contexts (profile recovery-link,
+ * /recover page) drive their own signature flows — the header's background
+ * sign-in must stand down while they run, or the two flows overwrite each
+ * other's nonce and both fail. Explicit button presses bypass this.
+ */
+let autoLoginSuppressed = false;
+export function setAutoLoginSuppressed(suppressed: boolean) {
+  autoLoginSuppressed = suppressed;
+}
+export function isAutoLoginSuppressed() {
+  return autoLoginSuppressed;
+}
+
 function storeSession(token: string, address: string) {
   setToken(token);
   try {
@@ -72,7 +86,7 @@ async function doLogin(
 ): Promise<LoginResult> {
   const { nonce } = await api<{ nonce: string }>("/wallet/nonce", {
     method: "POST",
-    body: { chain: "SOL", address },
+    body: { chain: "SOL", address, purpose: "login" },
     auth: false,
   });
   const raw = (await sign(

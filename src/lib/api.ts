@@ -243,10 +243,10 @@ export async function usernameRecoveryWallets() {
   });
 }
 
-export async function walletNonce(chain: string, address: string) {
+export async function walletNonce(chain: string, address: string, purpose?: string) {
   return api<{ nonce: string }>("/wallet/nonce", {
     method: "POST",
-    body: { chain, address },
+    body: { chain, address, ...(purpose ? { purpose } : {}) },
     auth: false,
   });
 }

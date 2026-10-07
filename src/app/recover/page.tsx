@@ -6,7 +6,6 @@ import { useWalletModal } from "@solana/wallet-adapter-react-ui";
 import {
   b58encode,
   errMsg,
-  getToken,
   loginMessage,
   usernameLogin,
   usernameRecover,
@@ -24,10 +23,9 @@ import { notifyError } from "../../lib/notify";
 export default function RecoverPage() {
   const [mode, setMode] = useState<"signin" | "forgot">("signin");
 
-  if (typeof window !== "undefined" && getToken()) {
-    location.href = "/profile";
-    return null;
-  }
+  // No session gate here on purpose: logged-in users may also recover a
+  // different account's credentials with a wallet (the reset signs them
+  // into the recovered account).
   return (
     <section
       className="page-enter"
@@ -171,6 +169,8 @@ function ForgotFlow() {
 
   // Connected (and not yet recovered with it): nonce → sign → recover.
   // Never the wallet-login endpoint — recovery must not create a session.
+  // doneFor is NEVER cleared on failure: combined with the disconnect
+  // below, a failed address cannot refire by itself (no retry storm).
   useEffect(() => {
     if (!connected || !publicKey || !signMessage || busy || found) return;
     const address = publicKey.toString();
@@ -203,8 +203,8 @@ function ForgotFlow() {
         if (!cancelled) {
           console.error("recovery failed", e);
           notifyError(errMsg(e, "Couldn't recover — try again"));
-          doneFor.current = null;
-          // Drop the connection so a fresh press retries cleanly.
+          // Break the loop: stay done for this address AND disconnect, so
+          // only a fresh button press retries.
           try {
             await disconnect();
           } catch {
@@ -284,6 +284,8 @@ function ForgotFlow() {
         className="btn-solid"
         disabled={busy || connecting}
         onClick={() => {
+          // Fresh explicit attempt (also re-arms after a failed one).
+          doneFor.current = null;
           setVisible(true);
           setPhase("choose");
         }}

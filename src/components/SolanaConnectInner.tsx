@@ -13,8 +13,11 @@ import {
 
 /**
  * Navbar-style (btn-solid) trigger that opens the DEFAULT wallet-adapter
- * select popup. Nothing connects until the user presses this button; once the
- * popup closes we connect the chosen (or previously used) wallet, then run
+ * select popup. Popups only ever follow explicit intent:
+ * - press while disconnected → popup; picking connects, closing backs out;
+ * - press while connected → signs in with the current wallet directly;
+ * - closing the popup without picking a DIFFERENT wallet does nothing.
+ * Login runs on fresh connects or explicit presses — never on mount — then
  * nonce → sign → verify (first wallet) / attach (extra wallets).
  */
 function SolanaConnectInner({
@@ -32,23 +35,27 @@ function SolanaConnectInner({
   const [phase, setPhase] = useState<"idle" | "choose" | "connect">("idle");
   const doneFor = useRef<string | null>(null);
   const connRef = useRef(false);
+  // Selection snapshot at popup open + explicit-intent flags.
+  const openSelRef = useRef<string | null>(null);
+  const armedRef = useRef(false);
+  const prevConnRef = useRef(false);
+  const firstRunRef = useRef(true);
 
-  // Popup closed → the press resolves: connect (or retry sign-in if we are
-  // already connected to this wallet).
+  // Popup closed: a NEW pick connects; anything else backs out silently.
+  // (Comparing against the open-time snapshot is what stops a dismissed
+  // popup from auto-connecting the previously used wallet.)
   useEffect(() => {
-    if (!visible && phase === "choose") setPhase("connect");
-  }, [visible, phase]);
+    if (visible || phase !== "choose") return;
+    const picked =
+      (wallet?.adapter.name ?? null) !== openSelRef.current;
+    if (!picked) setPhase("idle");
+    else setPhase("connect");
+  }, [visible, phase, wallet]);
 
   useEffect(() => {
     if (phase !== "connect") return;
-    if (connected) {
-      // Press while connected = retry the sign-in flow for the current wallet.
-      setAttempt((a) => a + 1);
+    if (connected || !wallet) {
       setPhase("idle");
-      return;
-    }
-    if (!wallet) {
-      if (!visible) setPhase("idle"); // closed without picking a wallet
       return;
     }
     if (connecting || connRef.current) return;
@@ -66,6 +73,11 @@ function SolanaConnectInner({
   }, [phase, wallet, connected, connecting, visible]);
 
   useEffect(() => {
+    const was = prevConnRef.current;
+    prevConnRef.current = connected;
+    const first = firstRunRef.current;
+    firstRunRef.current = false;
+    const fresh = !was && connected && !first;
     if (!connected || !publicKey || !signMessage) return;
     const address = publicKey.toString();
     if (doneFor.current === address) return;
@@ -74,6 +86,10 @@ function SolanaConnectInner({
       onDone(lastLoggedInProfile() ?? undefined);
       return;
     }
+    // No popup without intent: skip mount-connected and idle states; only
+    // fresh connects and explicit button presses proceed to signatures.
+    if (!fresh && !armedRef.current) return;
+    armedRef.current = false;
     let cancelled = false;
     setBusy(true);
     const sign = (m: Uint8Array) =>
@@ -134,6 +150,14 @@ function SolanaConnectInner({
         className="btn-solid"
         disabled={uiConnecting}
         onClick={() => {
+          // Explicit intent: connected press signs in directly, anything
+          // else goes through the popup (pick = connect, close = back out).
+          if (connected && publicKey) {
+            armedRef.current = true;
+            setAttempt((a) => a + 1);
+            return;
+          }
+          openSelRef.current = wallet?.adapter.name ?? null;
           setModalVisible(true);
           setPhase("choose");
         }}

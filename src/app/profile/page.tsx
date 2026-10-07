@@ -600,7 +600,6 @@ function CredentialsCard({
   profile: Profile;
   onChanged: () => void;
 }) {
-  const [open, setOpen] = useState(false);
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [current, setCurrent] = useState("");
@@ -638,7 +637,6 @@ function CredentialsCard({
       setMsg("Username sign-in enabled. Link a wallet below for recovery.");
       setUsername("");
       setPassword("");
-      setOpen(false);
       onChanged();
     } catch (e) {
       console.error("username setup failed", e);
@@ -657,7 +655,6 @@ function CredentialsCard({
       setMsg("Password updated. Other sessions were signed out.");
       setCurrent("");
       setNext("");
-      setOpen(false);
     } catch (e) {
       console.error("password change failed", e);
       notifyError(e instanceof Error ? e.message : "Could not change the password");
@@ -666,94 +663,165 @@ function CredentialsCard({
     }
   }
 
+  const isSet = profile.username != null && profile.username !== "";
   return (
-    <div style={{ marginTop: "0.8rem" }}>
-      <button className="chip" onClick={() => setOpen((v) => !v)}>
-        {open
-          ? "CANCEL"
-          : profile.username
-            ? `SIGN-IN: ${profile.username}`
-            : "USERNAME SIGN-IN ↗"}
-      </button>
-      {open && !profile.username && (
-        <div
+    <div
+      style={{
+        marginTop: "0.8rem",
+        border: "2px solid var(--ink)",
+        background: "var(--card)",
+        boxShadow: "4px 4px 0 var(--shadow)",
+        overflow: "hidden",
+        width: "100%",
+      }}
+    >
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: "0.6rem",
+          flexWrap: "wrap",
+          padding: "0.55rem 0.9rem",
+          borderBottom: "2px solid var(--ink)",
+          background: isSet ? "var(--gold)" : "var(--ink)",
+          color: isSet ? "var(--on-dark)" : "var(--paper)",
+        }}
+      >
+        <span
+          className="mono-label"
+          style={{ margin: 0, color: "inherit", fontSize: "0.7rem" }}
+        >
+          DEVICE-FREE SIGN-IN
+        </span>
+        <span
+          className="mono-label"
           style={{
-            display: "flex",
-            flexDirection: "column",
-            gap: "0.5rem",
-            marginTop: "0.6rem",
-            maxWidth: "340px",
+            margin: 0,
+            marginLeft: "auto",
+            color: "inherit",
+            fontSize: "0.68rem",
+            border: "2px solid currentColor",
+            padding: "0.15rem 0.5rem",
           }}
         >
-          <input
-            className="field"
-            placeholder="username (3–24 chars)"
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-          />
-          <input
-            className="field"
-            type="password"
-            autoComplete="new-password"
-            placeholder="password (10+ chars)"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-          />
-          <button className="btn-solid" disabled={busy} onClick={() => void setup()}>
-            {busy ? "SAVING…" : "ENABLE USERNAME SIGN-IN"}
-          </button>
-          <p className="fine" style={{ margin: 0 }}>
-            Sign in on other devices without connecting wallets. Link a
-            wallet below so you can recover these if forgotten.
-          </p>
-        </div>
-      )}
-      {open && profile.username && (
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            gap: "0.5rem",
-            marginTop: "0.6rem",
-            maxWidth: "340px",
-          }}
-        >
-          <input
-            className="field"
-            type="password"
-            autoComplete="current-password"
-            placeholder="current password"
-            value={current}
-            onChange={(e) => setCurrent(e.target.value)}
-          />
-          <input
-            className="field"
-            type="password"
-            autoComplete="new-password"
-            placeholder="new password (10+ chars)"
-            value={next}
-            onChange={(e) => setNext(e.target.value)}
-          />
-          <button className="btn-solid" disabled={busy} onClick={() => void change()}>
-            {busy ? "SAVING…" : "UPDATE PASSWORD"}
-          </button>
-        </div>
-      )}
-      {profile.username && (
-        <RecoveryWalletLink
-          linked={recCount}
-          linking={linking}
-          setLinking={setLinking}
-          onLinked={() => {
-            setRecCount((c) => (c ?? 0) + 1);
-            setMsg("Recovery wallet linked.");
-          }}
-        />
-      )}
-      {msg && <p className="fine">{msg}</p>}
-      <p className="fine" style={{ margin: "0.4rem 0 0" }}>
-        Forgot either? <a href="/recover">Recover with a wallet ↗</a>
-      </p>
+          {isSet ? `@${profile.username}` : "NOT SET"}
+        </span>
+      </div>
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          gap: "0.7rem",
+          padding: "0.9rem",
+        }}
+      >
+        {!isSet ? (
+          <>
+            <p className="fine" style={{ margin: 0 }}>
+              Sign in on other devices without connecting wallets. Link a
+              wallet afterwards so either can be recovered if forgotten.
+            </p>
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns:
+                  "repeat(auto-fit, minmax(min(200px, 100%), 1fr))",
+                gap: "0.5rem",
+              }}
+            >
+              <input
+                className="field"
+                style={{ width: "100%" }}
+                placeholder="username (3–24 chars)"
+                autoComplete="username"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+              />
+              <input
+                className="field"
+                style={{ width: "100%" }}
+                type="password"
+                autoComplete="new-password"
+                placeholder="password (10+ chars)"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+              />
+            </div>
+            <button
+              className="btn-solid"
+              style={{ width: "100%" }}
+              disabled={busy}
+              onClick={() => void setup()}
+            >
+              {busy ? "SAVING…" : "ENABLE USERNAME SIGN-IN ↗"}
+            </button>
+          </>
+        ) : (
+          <>
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns:
+                  "repeat(auto-fit, minmax(min(200px, 100%), 1fr))",
+                gap: "0.5rem",
+              }}
+            >
+              <input
+                className="field"
+                style={{ width: "100%" }}
+                type="password"
+                autoComplete="current-password"
+                placeholder="current password"
+                value={current}
+                onChange={(e) => setCurrent(e.target.value)}
+              />
+              <input
+                className="field"
+                style={{ width: "100%" }}
+                type="password"
+                autoComplete="new-password"
+                placeholder="new password (10+ chars)"
+                value={next}
+                onChange={(e) => setNext(e.target.value)}
+              />
+            </div>
+            <button
+              className="btn-solid"
+              style={{ width: "100%" }}
+              disabled={busy}
+              onClick={() => void change()}
+            >
+              {busy ? "SAVING…" : "UPDATE PASSWORD"}
+            </button>
+            <div
+              style={{
+                borderTop: "1px solid var(--line)",
+                paddingTop: "0.7rem",
+                display: "flex",
+                flexDirection: "column",
+                gap: "0.4rem",
+              }}
+            >
+              <p className="mono-label" style={{ margin: 0, fontSize: "0.66rem" }}>
+                WALLET RECOVERY
+              </p>
+              <RecoveryWalletLink
+                linked={recCount}
+                linking={linking}
+                setLinking={setLinking}
+                onLinked={() => {
+                  setRecCount((c) => (c ?? 0) + 1);
+                  setMsg("Recovery wallet linked.");
+                }}
+              />
+              <p className="fine" style={{ margin: 0 }}>
+                Forgot either? <a href="/recover">Recover with a wallet ↗</a>
+              </p>
+            </div>
+          </>
+        )}
+        {msg && <p className="fine" style={{ margin: 0 }}>{msg}</p>}
+      </div>
     </div>
   );
 }

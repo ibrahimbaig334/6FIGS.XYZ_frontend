@@ -14,8 +14,13 @@ import { TrustWalletAdapter } from "@solana/wallet-adapter-trust";
 import "@solana/wallet-adapter-react-ui/styles.css";
 import { isDevnet } from "../lib/api";
 
-const DEVNET_RPC = "https://api.devnet.solana.com";
-const MAINNET_RPC = "https://api.mainnet-beta.solana.com";
+/** Wallet RPC: explicit NEXT_PUBLIC_RPC_URL wins, otherwise devnet /
+ *  mainnet default follows the environment. Only used for signing. */
+const RPC_URL =
+  (process.env.NEXT_PUBLIC_RPC_URL ?? "").trim() ||
+  (isDevnet
+    ? "https://api.devnet.solana.com"
+    : "https://api.mainnet-beta.solana.com");
 
 /** Solana wallet stack (connection only used for signing — no transactions). */
 export default function SolanaProviders({
@@ -23,7 +28,7 @@ export default function SolanaProviders({
 }: {
   children: React.ReactNode;
 }) {
-  const endpoint = isDevnet ? DEVNET_RPC : MAINNET_RPC;
+  const endpoint = RPC_URL;
   const wallets = useMemo(
     () => [
       new PhantomWalletAdapter(),

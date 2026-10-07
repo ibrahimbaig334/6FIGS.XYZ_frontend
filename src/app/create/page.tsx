@@ -19,7 +19,7 @@ import {
 import { notifyError } from "../../lib/notify";
 import SelectMenu from "../../components/SelectMenu";
 import EmojiPicker from "../../components/EmojiPicker";
-import SolanaConnect from "../../components/SolanaConnect";
+import TeeConnect from "../../components/TeeConnect";
 import Loader from "../../components/Loader";
 
 export default function CreateRoomPage() {
@@ -182,7 +182,7 @@ export default function CreateRoomPage() {
               justifyContent: "center",
             }}
           >
-            <SolanaConnect
+            <TeeConnect
               onDone={() => {
                 setTokenState(getToken());
               }}

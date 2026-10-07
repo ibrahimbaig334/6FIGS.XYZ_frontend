@@ -17,7 +17,7 @@ import {
   OPP_RETURN_MS,
   POLL_GAME_LIVE_MS,
 } from "../../../lib/constants";
-import SolanaConnect from "../../../components/SolanaConnect";
+import TeeConnect from "../../../components/TeeConnect";
 import GamePanel from "../../../components/GamePanel";
 import RematchToast from "../../../components/RematchToast";
 import Loader from "../../../components/Loader";
@@ -350,7 +350,7 @@ export default function GamePage() {
               justifyContent: "center",
             }}
           >
-            <SolanaConnect onDone={load} />
+            <TeeConnect onDone={load} />
           </div>
           <p className="fine" style={{ margin: "0.8rem 0 0" }}>
             <a href="/recover">USE USERNAME INSTEAD ↗</a>

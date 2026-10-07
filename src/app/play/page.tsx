@@ -22,7 +22,7 @@ import {
 } from "../../lib/constants";
 import { connectSocket } from "../../lib/ws";
 import { notifyError } from "../../lib/notify";
-import SolanaConnect from "../../components/SolanaConnect";
+import TeeConnect from "../../components/TeeConnect";
 import SelectMenu from "../../components/SelectMenu";
 import Loader from "../../components/Loader";
 
@@ -391,7 +391,7 @@ export default function PlayPage() {
               justifyContent: "center",
             }}
           >
-            <SolanaConnect onDone={load} />
+            <TeeConnect onDone={load} />
           </div>
           <p className="fine" style={{ margin: "0.8rem 0 0" }}>
             <a href="/recover">USE USERNAME INSTEAD ↗</a>

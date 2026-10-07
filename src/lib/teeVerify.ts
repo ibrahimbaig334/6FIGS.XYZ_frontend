@@ -9,7 +9,7 @@ import {
   type WalletDescriptor,
 } from "@sixfigs/tee/client";
 import type { SignedRegistration } from "@sixfigs/tee/shared";
-import { teeNonce, teeRegister, type Profile } from "./api";
+import { teeNonce, teeRegister, teeLogin, api, type Profile } from "./api";
 
 export interface EnclaveConfig {
   enclaveUrl: string;
@@ -64,6 +64,22 @@ const GOOGLE_CS_JWKS_URL =
 
 let jwksPromise: Promise<{ keys: Array<Record<string, unknown>> }> | null = null;
 
+/**
+ * Module-level run-once: concurrent twins (StrictMode double-mount, rapid
+ * re-presses) proving/signing/submitting the SAME key join one promise
+ * instead of colliding on single-use nonces and double popups. Entries
+ * clear on settle, so retries always run fresh.
+ */
+const inflight = new Map<string, Promise<unknown>>();
+export function onceByKey<T>(key: string, fn: () => Promise<T>): Promise<T> {
+  const existing = inflight.get(key);
+  if (existing) return existing as Promise<T>;
+  const p = fn().finally(() => {
+    if (inflight.get(key) === p) inflight.delete(key);
+  });
+  inflight.set(key, p);
+  return p;
+}
 function loadGoogleJwks(): Promise<{ keys: Array<Record<string, unknown>> }> {
   if (!jwksPromise) {
     jwksPromise = (async () => {
@@ -164,6 +180,25 @@ export async function prepareSet(input: {
   return { client, prepared };
 }
 
+/**
+ * Sessionless establish-prepare for wallet login / identify: no server
+ * round trip at all — the SDK mints a fresh nonce and the backend claims it
+ * atomically at submit (first submitter wins; the attested creation time
+ * bounds replays). Nothing to lose between prepare and submit.
+ */
+export async function prepareSetPublic(input: {
+  wallets: TeeWalletInput[];
+}): Promise<{ client: RegistrationClient; prepared: PreparedRegistration }> {
+  const client = await newClient();
+  // No server nonce: the SDK mints a fresh one per prepare (input.nonce
+  // falls back to random inside `prepare` when omitted).
+  const prepared = client.prepare({
+    wallets: input.wallets.map(toDescriptor),
+    disclosure: "hidden",
+  });
+  return { client, prepared };
+}
+
 /** Establish: submit signatures, escrow the set, and register with the backend. */
 export async function submitSet(input: {
   client: RegistrationClient;
@@ -184,6 +219,44 @@ export async function submitSet(input: {
     })),
   );
   return { profile: await teeRegister(signed, escrowBlob), signed };
+}
+
+/**
+ * Sessionless establish-submit for wallet login: same escrow, but the
+ * backend resolves (or creates) the owner from attested nullifiers and
+ * returns a session token instead of requiring one.
+ */
+export async function submitSetSessionless(input: {
+  client: RegistrationClient;
+  prepared: PreparedRegistration;
+  wallets: TeeWalletInput[];
+  signatures: Record<string, string>;
+}): Promise<{ profile: Profile; signed: SignedRegistration }> {
+  const { client, prepared, wallets, signatures } = input;
+  const signed = await client.submit({ prepared, signatures });
+  const hello = await client.hello();
+  const escrowBlob = await encryptEscrowBlob(
+    hello.escrowPublicKey,
+    wallets.map((w) => ({
+      family: w.family,
+      chainId: w.chainId,
+      address: w.address,
+      ...(w.label ? { label: w.label } : {}),
+    })),
+  );
+  await teeLogin(signed, escrowBlob);
+  return { profile: await api<Profile>("/profile/user"), signed };
+}
+
+/** Sessionless submit for identify: no escrow stored, no session minted —
+ *  just the countersigned result for the backend to look up. */
+export async function submitSignedOnly(input: {
+  client: RegistrationClient;
+  prepared: PreparedRegistration;
+  signatures: Record<string, string>;
+}): Promise<SignedRegistration> {
+  const { client, prepared, signatures } = input;
+  return client.submit({ prepared, signatures });
 }
 
 /**

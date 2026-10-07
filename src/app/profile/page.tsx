@@ -1,20 +1,15 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   api,
-  b58encode,
   clearToken,
   errMsg,
   getToken,
-  loginMessage,
   removeTeeWallet,
   teeRecheck,
   usernameChange,
-  usernameLinkRecoveryWallet,
-  usernameRecoveryWallets,
   usernameSetup,
-  walletNonce,
   Profile,
   TeeEligibility,
   Wallet,
@@ -26,14 +21,11 @@ import {
   readWalletAddressMap,
   type WalletAddressMap,
 } from "../../lib/walletAddresses";
-import { setAutoLoginSuppressed } from "../../lib/solanaLogin";
 import { handleError } from "../../lib/validate";
 import { MAX_WALLETS } from "../../lib/constants";
 import { disconnectSocket } from "../../lib/ws";
 import { notifyError } from "../../lib/notify";
-import { useWallet } from "@solana/wallet-adapter-react";
-import { useWalletModal } from "@solana/wallet-adapter-react-ui";
-import SolanaConnect from "../../components/SolanaConnect";
+import TeeConnect from "../../components/TeeConnect";
 import TeeProve from "../../components/TeeProve";
 import ConfirmDialog from "../../components/ConfirmDialog";
 import WalletIcon from "../../components/WalletIcon";
@@ -220,7 +212,7 @@ export default function ProfilePage() {
           }}
         >
           <p className="mono-label">PROFILE — CONNECT WALLET</p>
-          <SolanaConnect onDone={() => void load()} />
+          <TeeConnect onDone={() => void load()} />
           <p className="fine" style={{ margin: 0 }}>
             <a href="/recover">USE USERNAME INSTEAD ↗</a>
           </p>
@@ -607,19 +599,6 @@ function CredentialsCard({
   const [next, setNext] = useState("");
   const [msg, setMsg] = useState("");
   const [busy, setBusy] = useState(false);
-  const [recCount, setRecCount] = useState<number | null>(null);
-  const [linking, setLinking] = useState(false);
-
-  useEffect(() => {
-    if (!profile.username) return;
-    let live = true;
-    usernameRecoveryWallets()
-      .then((r) => live && setRecCount(r.count))
-      .catch(() => {});
-    return () => {
-      live = false;
-    };
-  }, [profile.username]);
 
   async function setup() {
     const bad = usernameProblem(username);
@@ -635,7 +614,7 @@ function CredentialsCard({
     setBusy(true);
     try {
       await usernameSetup(username.trim(), password);
-      setMsg("Username sign-in enabled. Link a wallet below for recovery.");
+      setMsg("Username sign-in enabled.");
       setUsername("");
       setPassword("");
       onChanged();
@@ -719,8 +698,9 @@ function CredentialsCard({
         {!isSet ? (
           <>
             <p className="fine" style={{ margin: 0 }}>
-              Sign in on other devices without connecting wallets. Link a
-              wallet afterwards so either can be recovered if forgotten.
+              Sign in on other devices without connecting wallets. Any
+              enrolled wallet recovers these if forgotten — the server
+              never sees an address, only enclave-sealed proofs.
             </p>
             <div
               style={{
@@ -806,143 +786,16 @@ function CredentialsCard({
               <p className="mono-label" style={{ margin: 0, fontSize: "0.66rem" }}>
                 WALLET RECOVERY
               </p>
-              <RecoveryWalletLink
-                linked={recCount}
-                linking={linking}
-                setLinking={setLinking}
-                onLinked={() => {
-                  setRecCount((c) => (c ?? 0) + 1);
-                  setMsg("Recovery wallet linked.");
-                }}
-              />
               <p className="fine" style={{ margin: 0 }}>
-                Forgot either? <a href="/recover">Recover with a wallet ↗</a>
+                Every enrolled wallet doubles as recovery — no setup, no
+                linking. Forgot either?{" "}
+                <a href="/recover">Recover with a wallet ↗</a>
               </p>
             </div>
           </>
         )}
         {msg && <p className="fine" style={{ margin: 0 }}>{msg}</p>}
       </div>
-    </div>
-  );
-}
-
-/** Links the connected wallet for recovery (signed nonce; only the hash
- *  is stored, never the address). Modal close without picking aborts
- *  silently; a fresh press retries. */
-function RecoveryWalletLink({
-  linked,
-  linking,
-  setLinking,
-  onLinked,
-}: {
-  linked: number | null;
-  linking: boolean;
-  setLinking: (b: boolean) => void;
-  onLinked: () => void;
-}) {
-  const { publicKey, signMessage, wallet, connected, connecting, connect, select } =
-    useWallet();
-  const { visible, setVisible } = useWalletModal();
-  const pendingRef = useRef(false);
-  const connRef = useRef(false);
-
-  async function doLink(address: string) {
-    if (linking) return;
-    setLinking(true);
-    // The header's background sign-in stands down while we run: same
-    // wallet, overlapping popups, clobbered UX (nonces are namespaced, but
-    // two signature requests would still be wrong).
-    setAutoLoginSuppressed(true);
-    try {
-      const { nonce } = await walletNonce("SOL", address, "recovery");
-      if (!signMessage) {
-        notifyError("Wallet cannot sign — try again");
-        return;
-      }
-      const raw = (await signMessage(
-        new TextEncoder().encode(loginMessage("SOL", address, nonce)),
-      )) as unknown as Uint8Array | { signature: Uint8Array };
-      await usernameLinkRecoveryWallet(
-        "SOL",
-        address,
-        nonce,
-        b58encode(raw instanceof Uint8Array ? raw : raw.signature),
-      );
-      onLinked();
-    } catch (e) {
-      console.error("recovery link failed", e);
-      notifyError(errMsg(e, "Couldn't link that wallet — try again"));
-    } finally {
-      setAutoLoginSuppressed(false);
-      setLinking(false);
-    }
-  }
-
-  function start() {
-    if (linking) return;
-    if (connected && publicKey) {
-      void doLink(publicKey.toString());
-      return;
-    }
-    // Clear any stale stored selection: a selection present at close is
-    // then always a real pick, never an auto-connect.
-    try {
-      select(null);
-    } catch {
-      /* selection unsupported — popup still opens */
-    }
-    pendingRef.current = true;
-    setVisible(true);
-  }
-
-  // Modal closed: connect a real pick, silently abort a dismissal.
-  // Never links here — linking happens only in the effect below, once.
-  useEffect(() => {
-    if (visible || !pendingRef.current) return;
-    if (!wallet) {
-      pendingRef.current = false;
-      return;
-    }
-    if (connected) return; // picked the connected one — linked below
-    if (connecting || connRef.current) return;
-    connRef.current = true;
-    connect()
-      .catch((e) => {
-        console.error("wallet connect failed", e);
-        pendingRef.current = false;
-        notifyError("Connection failed — try again");
-      })
-      .finally(() => {
-        connRef.current = false;
-      });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [visible, connected, wallet, connecting]);
-
-  // Connected while pending → link it exactly once.
-  useEffect(() => {
-    if (pendingRef.current && connected && publicKey && !visible) {
-      pendingRef.current = false;
-      void doLink(publicKey.toString());
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [connected, publicKey, visible]);
-
-  if ((linked ?? 0) > 0) {
-    return (
-      <p className="fine" style={{ margin: "0.4rem 0 0" }}>
-        RECOVERY WALLET LINKED ✓ ({linked})
-      </p>
-    );
-  }
-  return (
-    <div style={{ marginTop: "0.6rem" }}>
-      <button className="chip" disabled={linking} onClick={() => start()}>
-        {linking ? "LINKING…" : "LINK RECOVERY WALLET ↗"}
-      </button>
-      <p className="fine" style={{ margin: "0.4rem 0 0" }}>
-        Needed only for recovery — proving and tiers never touch it.
-      </p>
     </div>
   );
 }

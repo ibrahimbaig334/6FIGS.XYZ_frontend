@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { api, errMsg, getToken, Room, RoomList, RoomMeta } from "../../lib/api";
 import { notifyError } from "../../lib/notify";
 import { ROOMS_PAGE_SIZE, MAX_ROOMS_PER_USER } from "../../lib/constants";
-import SolanaConnect from "../../components/SolanaConnect";
+import TeeConnect from "../../components/TeeConnect";
 import SelectMenu from "../../components/SelectMenu";
 import InviteDialog from "../../components/InviteDialog";
 import DeleteRoomDialog from "../../components/DeleteRoomDialog";
@@ -192,7 +192,7 @@ export default function RoomsPage() {
               justifyContent: "center",
             }}
           >
-            <SolanaConnect onDone={load} />
+            <TeeConnect onDone={load} />
           </div>
           <p className="fine" style={{ margin: "0.8rem 0 0" }}>
             <a href="/recover">USE USERNAME INSTEAD ↗</a>

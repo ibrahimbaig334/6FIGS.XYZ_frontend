@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useWallet } from "@solana/wallet-adapter-react";
 import { api, ApiError, clearToken, getToken, Profile } from "../lib/api";
 import { connectSocket, disconnectSocket } from "../lib/ws";
-import SolanaConnect from "./SolanaConnect";
+import TeeConnect from "./TeeConnect";
 
 const NAV = [
   { href: "/", label: "HOME" },
@@ -17,6 +18,7 @@ export default function Header() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [menu, setMenu] = useState(false);
   const [dark, setDark] = useState(false);
+  const { disconnect: disconnectWallet } = useWallet();
   const menuRef = useRef<HTMLDivElement>(null);
   const profileFreshRef = useRef(false);
 
@@ -104,6 +106,13 @@ export default function Header() {
   function disconnect() {
     clearToken();
     disconnectSocket();
+    // Drop the adapter connection too: a stale connected wallet would
+    // otherwise auto-resume flows meant for a fresh press.
+    try {
+      void disconnectWallet();
+    } catch {
+      /* already disconnected */
+    }
     setProfile(null);
     setMenu(false);
     authed();
@@ -164,7 +173,7 @@ export default function Header() {
             )}
           </div>
         ) : (
-          <SolanaConnect onDone={authed} label="CONNECT WALLET" />
+          <TeeConnect onDone={authed} label="CONNECT WALLET" />
         )}
       </div>
     </header>

@@ -5,15 +5,14 @@ import { useWallet } from "@solana/wallet-adapter-react";
 import { useWalletModal } from "@solana/wallet-adapter-react-ui";
 import {
   ApiError,
-  b58encode,
   errMsg,
-  loginMessage,
+  teeIdentify,
   usernameLogin,
-  usernameRecover,
   usernameReset,
-  walletNonce,
 } from "../../lib/api";
 import { notifyError } from "../../lib/notify";
+import { base58Encode } from "@sixfigs/tee/shared";
+import { prepareSetPublic } from "../../lib/teeVerify";
 
 /**
  * Device-free sign-in hub. Two modes: username + password sign-in, or
@@ -124,22 +123,21 @@ function SigninForm() {
 }
 
 /**
- * Singleton recovery coordinator. The server keeps one nonce per wallet per
- * purpose — two concurrent runs would overwrite each other's challenge and
- * BOTH fail with "nonce expired" (StrictMode double-fires this effect in
- * dev). Exactly one flow runs per address; everyone else joins it.
+ * Singleton identify coordinator. One prepare per address: concurrent runs
+ * would each fetch a public nonce, but only the shared attempt prompts —
+ * everyone else joins it (same rationale as the login coordinator).
  */
-let currentRecover: {
+let currentIdentify: {
   address: string;
   promise: Promise<{ username: string | null; recoveryToken: string }>;
 } | null = null;
 
-function recoverOnce(
+function identifyOnce(
   address: string,
   sign: (m: Uint8Array) => Promise<Uint8Array | { signature: Uint8Array }>,
 ): Promise<{ username: string | null; recoveryToken: string }> {
-  if (currentRecover && currentRecover.address === address) {
-    return currentRecover.promise;
+  if (currentIdentify && currentIdentify.address === address) {
+    return currentIdentify.promise;
   }
   const entry: {
     address: string;
@@ -147,24 +145,31 @@ function recoverOnce(
   } = {
     address,
     promise: (async () => {
-      const { nonce } = await walletNonce("SOL", address, "recovery");
+      // No addresses leave the browser: the enclave sees them inside sealed
+      // memory; the backend sees only the countersigned nullifiers.
+      const { client, prepared } = await prepareSetPublic({
+        wallets: [{ family: "solana", chainId: 0, address }],
+      });
       const raw = (await sign(
-        new TextEncoder().encode(loginMessage("SOL", address, nonce)),
+        new TextEncoder().encode(prepared.message),
       )) as unknown as Uint8Array | { signature: Uint8Array };
-      return usernameRecover(
-        "SOL",
-        address,
-        nonce,
-        b58encode(raw instanceof Uint8Array ? raw : raw.signature),
-      );
+      const signed = await client.submit({
+        prepared,
+        signatures: {
+          [`solana:${address.toLowerCase()}`]: base58Encode(
+            raw instanceof Uint8Array ? raw : raw.signature,
+          ),
+        },
+      });
+      return teeIdentify(signed);
     })(),
   };
   entry.promise = entry.promise.catch((e) => {
     // Failed flows must be retryable — only successes are shared.
-    if (currentRecover === entry) currentRecover = null;
+    if (currentIdentify === entry) currentIdentify = null;
     throw e;
   });
-  currentRecover = entry;
+  currentIdentify = entry;
   return entry.promise;
 }
 
@@ -229,8 +234,8 @@ function ForgotFlow() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phase, wallet, connected, connecting, visible]);
 
-  // Connected (and not yet recovered with it): nonce → sign → recover.
-  // Never the wallet-login endpoint — recovery must not create a session.
+  // Connected (and not yet identified with it): enclave prepare → sign →
+  // identify. Never any login endpoint — recovery must not create a session.
   // doneFor is NEVER cleared on failure: combined with the disconnect
   // below, a failed address cannot refire by itself (no retry storm).
   // NOTE: `busy`/`found` are deliberately NOT deps: this effect sets them,
@@ -253,7 +258,7 @@ function ForgotFlow() {
     );
     (async () => {
       try {
-        const res = await Promise.race([recoverOnce(address, sign), timeout]);
+        const res = await Promise.race([identifyOnce(address, sign), timeout]);
         if (cancelled) return;
         setFound({ username: res.username, recoveryToken: res.recoveryToken });
         setNewUsername(res.username ?? "");

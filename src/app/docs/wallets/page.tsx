@@ -30,11 +30,10 @@ export default function Wallets() {
       <h2 className="docs-h2">Sign in with a wallet, prove with wallets</h2>
       <p className="docs-body-text">
         Your session starts the moment you connect a wallet and sign one
-        short message — that&apos;s the whole login, on any device. Your
-        tier, rooms, and profile hang off the set of wallets you enrolled:
-        connect them on your profile, sign once each, and the enclave does
-        the rest. Lose your session and the same signature brings you back;
-        the wallets re-prove what you hold.
+        short message — that&apos;s the whole login, on any device, and the
+        same proof prices your tier. One connect, one signature, badge and
+        session together. Lose your session and the same flow brings you
+        back; the wallets re-prove what you hold.
       </p>
       <div className="docs-callout">
         <p className="mono-label">WHY THIS MATTERS</p>
@@ -93,10 +92,20 @@ export default function Wallets() {
       </p>
       <ul className="docs-list">
         <li>One wallet signature to attach them — never typed into a dapp.</li>
-        <li>Link a wallet for recovery: forget either and a wallet
-          signature re-issues them (no email involved, ever).</li>
+        <li>Forget either and ANY enrolled wallet recovers them: connect,
+          sign, get your username back plus a fresh password. No setup,
+          no linking, no email involved, ever.</li>
         <li>Changing the password signs out every other session instantly.</li>
       </ul>
+      <div className="docs-callout">
+        <p className="mono-label">NOT EVEN AT LOGIN</p>
+        <p>
+          Wallet login itself runs through the enclave: your browser proves
+          the wallet inside sealed memory and the server learns only
+          one-way nullifiers. No login, prove, or recovery flow ever sends
+          an address to 6figs — there is no column that could hold one.
+        </p>
+      </div>
 
       <h2 className="docs-h2">What signing actually means</h2>
       <p className="docs-body-text">

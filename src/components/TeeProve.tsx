@@ -1,18 +1,22 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { useWalletModal } from "@solana/wallet-adapter-react-ui";
 import { base58Encode } from "@sixfigs/tee/shared";
 import type { Profile } from "../lib/api";
+import { errMsg } from "../lib/api";
 import { notifyError } from "../lib/notify";
 import {
   prepareSet,
+  prepareSetPublic,
   prepareWalletAddition,
   submitSet,
+  submitSetSessionless,
   submitWalletAddition,
   isWalletProved,
   markWalletProved,
+  onceByKey,
   type TeeWalletInput,
 } from "../lib/teeVerify";
 import { rememberWalletAddresses } from "../lib/walletAddresses";
@@ -23,144 +27,126 @@ function descriptorKey(wallet: TeeWalletInput): string {
   return `${wallet.family}:${wallet.address.toLowerCase()}`;
 }
 
+type Prepared =
+  | { kind: "establish"; value: Awaited<ReturnType<typeof prepareSet>>["prepared"]; client: Awaited<ReturnType<typeof prepareSet>>["client"]; forAddress: string }
+  | { kind: "add"; value: Awaited<ReturnType<typeof prepareWalletAddition>>["prepared"]; client: Awaited<ReturnType<typeof prepareWalletAddition>>["client"]; forAddress: string };
+
 /**
  * Fully automatic tee flow with NO visible UI (returns null) — the parent
- * swaps its CONNECT/ADD button for a CONNECTING… indicator while a run is
- * active. One linear run per mount, no scattered state:
+ * swaps its CONNECT/ADD button for a CONNECTING… indicator while mounted.
  *
- *   open selection popup → connect → prepare → sign → submit → done.
+ * Deliberately simple: one staged wallet in state, and every step is a
+ * useEffect with correct deps, so each step always sees a consistent
+ * snapshot (no cross-await liveness checks, no address comparisons across
+ * renders — the entire class of bug that kept biting). Overlap safety
+ * (StrictMode double-mount, rapid re-presses) comes from module-level
+ * onceByKey dedup on prepare/sign/submit, keyed so twins join instead of
+ * colliding on single-use nonces.
  *
- * Every step is awaited in order with a generation token, so overlapping
- * events (double mounts, slow popups, reselection) cannot interleave into a
- * stuck state. Any failure or dismissal toasts (where needed) and closes
- * back to the button via onDismiss.
+ *   press → popup → pick → connect → prepare → sign → submit → done.
  *
  * One wallet per run (ADD WALLET afterwards for the next). "establish"
  * enrolls a full new set, "add" extends an existing account.
+ * `sessionless` runs the public establish variant: no session needed, the
+ * backend resolves (or creates) the owner and returns one — the wallet
+ * login. Only meaningful with mode="establish".
  */
 export default function TeeProve({
   mode,
+  sessionless,
   onDone,
   onDismiss,
 }: {
   mode: ProveMode;
+  sessionless?: boolean;
   onDone: (profile: Profile) => void;
   /** Nothing left to do (dismissed popup, failure) — show the button again. */
   onDismiss: () => void;
 }) {
-  const { publicKey, signMessage, wallet, connected, connect, disconnect } =
+  const { publicKey, signMessage, wallet, connected, connecting, connect, select } =
     useWallet();
   const { visible: modalVisible, setVisible: setModalVisible } = useWalletModal();
+  const [staged, setStaged] = useState<TeeWalletInput | null>(null);
+  const [prepared, setPrepared] = useState<Prepared | null>(null);
+  const [sig, setSig] = useState<string | null>(null);
+  const [phase, setPhase] = useState<"idle" | "choose" | "connect">("idle");
+  const connRef = useRef(false);
+  const signingForRef = useRef<string | null>(null);
+  const submittedRef = useRef(false);
+  const prepSeq = useRef(0);
 
-  // Live mirror — always fresh inside async continuations (no stale closures).
-  const liveRef = useRef({
-    connected: false,
-    address: null as string | null,
-    adapterName: null as string | null,
-    wallet: null as typeof wallet,
-    signMessage: null as typeof signMessage | null,
-    modalVisible: false,
-  });
-  liveRef.current = {
-    connected,
-    address: publicKey?.toString() ?? null,
-    adapterName: wallet?.adapter.name ?? null,
-    wallet,
-    signMessage,
-    modalVisible,
-  };
-
-  // Generation token: every restart/unmount invalidates older runs.
-  const runTokenRef = useRef(0);
-  // Guards the modal-close drive: one connection attempt at a time.
-  const drivingRef = useRef(false);
-  const waiterRef = useRef<null | {
-    resolve: (addr: string | null) => void;
-  }>(null);
-
-  function waitForConnect(): Promise<string | null> {
-    return new Promise((resolve) => {
-      waiterRef.current = { resolve };
-    });
-  }
-
-  // Adapter connected (fresh connect OR silent in-extension switch) while a
-  // waiter is pending → hand the address to the driver. Check-and-clear is
-  // synchronous, so overlapping watchers cannot double-resolve.
+  // Mount: open the selection popup (clearing any stale stored selection
+  // first, so a close without picking is provably a dismissal).
   useEffect(() => {
-    if (connected && publicKey && waiterRef.current) {
-      const w = waiterRef.current;
-      waiterRef.current = null;
-      w.resolve(publicKey.toString());
+    if (!connected) {
+      try {
+        select(null);
+      } catch {
+        /* selection unsupported — close logic below still guards */
+      }
     }
-  }, [connected, publicKey]);
+    setModalVisible(true);
+    setPhase("choose");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-  // Selection popup closed with a waiter pending: no selection = dismissed;
-  // a selection = (re)connect it, then the adapter watcher above resolves.
-  // Always cycling (disconnect first) is what makes switching wallets work —
-  // a silent keep-connection is exactly what used to strand the flow.
+  // Popup closed: a present selection is a real pick (stale ones were
+  // cleared on press); nothing selected backs out silently.
   useEffect(() => {
-    if (modalVisible || !waiterRef.current || drivingRef.current) return;
-    const w = waiterRef.current;
-    const sel = liveRef.current.wallet;
-    if (!sel) {
-      waiterRef.current = null;
-      w.resolve(null);
+    if (modalVisible || phase !== "choose") return;
+    if (!wallet) {
+      setPhase("idle");
+      onDismiss();
       return;
     }
-    drivingRef.current = true;
-    void (async () => {
-      try {
-        if (liveRef.current.connected) {
-          try {
-            await disconnect();
-          } catch {
-            /* already gone — connect below anyway */
-          }
-        }
-        await connect();
-        // Success resolves via the adapter watcher (single resolution point).
-      } catch (e) {
-        console.error("wallet connect failed", e);
-        if (waiterRef.current === w) {
-          waiterRef.current = null;
-          notifyError("Connection failed — try again");
-          w.resolve(null);
-        }
-      } finally {
-        drivingRef.current = false;
-      }
-    })();
+    setPhase("connect");
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [modalVisible]);
+  }, [modalVisible, phase, wallet]);
 
-  async function runFlow() {
-    const my = ++runTokenRef.current;
-    const alive = () => runTokenRef.current === my;
-    try {
-      // Always through the selection popup — even with a wallet connected.
-      setModalVisible(true);
-      const addr = await waitForConnect();
-      if (!alive()) return;
-      if (!addr) {
-        onDismiss();
-        return;
-      }
-      const key = `solana:${addr.toLowerCase()}`;
-      // Re-picking a wallet proved earlier this session: warn before any
-      // enclave round-trip or signature popup.
-      if (mode === "add" && isWalletProved(key)) {
-        notifyError("That wallet is already connected");
-        onDismiss();
-        return;
-      }
-      const entry: TeeWalletInput = {
-        family: "solana",
-        chainId: 0,
-        address: addr,
-        label: liveRef.current.adapterName ?? "Solana Wallet",
-      };
-      const prepped =
+  // Connect the pick.
+  useEffect(() => {
+    if (phase !== "connect") return;
+    if (connected || !wallet) {
+      setPhase("idle");
+      return;
+    }
+    if (connecting || connRef.current) return;
+    connRef.current = true;
+    connect()
+      .catch((e) => {
+        console.error("wallet connect failed", e);
+        notifyError("Connection failed — try again");
+      })
+      .finally(() => {
+        connRef.current = false;
+        setPhase("idle");
+      });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phase, wallet, connected, connecting, modalVisible]);
+
+  // Fresh connection: stage it and prepare. A later switch restarts here
+  // for the new address; the seq guard drops stale prepare results.
+  useEffect(() => {
+    if (!connected || !publicKey || !signMessage) return;
+    const addr = publicKey.toString();
+    if (staged?.address.toLowerCase() === addr.toLowerCase()) return;
+    const entry: TeeWalletInput = {
+      family: "solana",
+      chainId: 0,
+      address: addr,
+      label: wallet?.adapter.name ?? "Solana Wallet",
+    };
+    if (mode === "add" && isWalletProved(descriptorKey(entry))) {
+      notifyError("That wallet is already connected");
+      onDismiss();
+      return;
+    }
+    setStaged(entry);
+    setSig(null);
+    const mySeq = ++prepSeq.current;
+    const prepKey = `${mode}:${sessionless ? "pub" : "sess"}:${addr.toLowerCase()}`;
+    void onceByKey(prepKey, async () => {
+      const p =
         mode === "add"
           ? await prepareWalletAddition({ added: [entry] }).then(
               ({ client, prepared }) => ({
@@ -169,95 +155,138 @@ export default function TeeProve({
                 value: prepared,
               }),
             )
-          : await prepareSet({ wallets: [entry] }).then(
-              ({ client, prepared }) => ({
+          : await (async () => {
+              if (sessionless) {
+                const { client, prepared } = await prepareSetPublic({
+                  wallets: [entry],
+                });
+                return {
+                  client,
+                  kind: "establish" as const,
+                  value: prepared,
+                };
+              }
+              const { client, prepared } = await prepareSet({
+                wallets: [entry],
+              });
+              return {
                 client,
                 kind: "establish" as const,
                 value: prepared,
-              }),
-            );
-      if (!alive()) return;
-      // Switched wallets mid-prepare: restart instead of signing wrong.
-      if (liveRef.current.address?.toLowerCase() !== addr.toLowerCase()) {
-        notifyError("Wallet switched — press CONNECT WALLET to restart");
-        onDismiss();
-        return;
-      }
-      const sm = liveRef.current.signMessage;
-      if (!sm) {
-        notifyError("Wallet cannot sign — try again");
-        onDismiss();
-        return;
-      }
-      const message =
-        prepped.kind === "establish"
-          ? prepped.value.message
-          : (prepped.value.addMessages[key] ?? null);
-      if (!message) {
-        notifyError("No message for that wallet — try again");
-        onDismiss();
-        return;
-      }
-      let sig: string;
+              };
+            })();
+      if (mySeq !== prepSeq.current) return null;
+      setPrepared({ ...p, forAddress: addr });
+      return p;
+    }).catch((e) => {
+      if (mySeq !== prepSeq.current) return;
+      console.error("tee prepare failed", e);
+      notifyError(e instanceof Error ? e.message : "Could not prepare — try again");
+      onDismiss();
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [connected, publicKey, signMessage]);
+
+  // Prepared for the staged wallet and holding it: prompt its signature.
+  // Guarded per message (not a boolean): switching wallets mid-prompt
+  // starts a new message instead of stalling behind the old one.
+  useEffect(() => {
+    if (!prepared || !staged || sig) return;
+    if (!connected || !publicKey) return;
+    if (
+      prepared.forAddress.toLowerCase() !== staged.address.toLowerCase() ||
+      publicKey.toString().toLowerCase() !== staged.address.toLowerCase()
+    ) {
+      return;
+    }
+    const sm = signMessage;
+    if (!sm) {
+      notifyError("Wallet cannot sign — try again");
+      onDismiss();
+      return;
+    }
+    const message =
+      prepared.kind === "establish"
+        ? prepared.value.message
+        : (prepared.value.addMessages[descriptorKey(staged)] ?? null);
+    if (!message) {
+      notifyError("No message for that wallet — try again");
+      onDismiss();
+      return;
+    }
+    if (signingForRef.current === message) return;
+    signingForRef.current = message;
+    void onceByKey(`sign:${message}`, async () => {
       try {
         const raw = (await sm(
           new TextEncoder().encode(message),
         )) as unknown as Uint8Array | { signature: Uint8Array };
-        sig = base58Encode(raw instanceof Uint8Array ? raw : raw.signature);
-      } catch {
+        return base58Encode(raw instanceof Uint8Array ? raw : raw.signature);
+      } finally {
+        if (signingForRef.current === message) signingForRef.current = null;
+      }
+    })
+      .then((s) => setSig(s))
+      .catch(() => {
         notifyError("Signature declined — press CONNECT WALLET to try again");
         onDismiss();
-        return;
-      }
-      if (!alive()) return;
-      if (liveRef.current.address?.toLowerCase() !== addr.toLowerCase()) {
-        notifyError("Wallet switched — press CONNECT WALLET to restart");
-        onDismiss();
-        return;
-      }
-      const submitted =
-        prepped.kind === "add"
-          ? await submitWalletAddition({
-              client: prepped.client,
-              prepared: prepped.value,
-              signatures: { [key]: sig },
-            })
-          : await submitSet({
-              client: prepped.client,
-              prepared: prepped.value,
-              wallets: [entry],
-              signatures: { [key]: sig },
-            });
-      if (!alive()) return;
-      const binding =
-        prepped.kind === "add"
-          ? submitted.signed.body.addedWalletNullifiers?.[0]
-          : submitted.signed.body.walletNullifiers[0];
-      if (binding) {
-        // Local-only caption; the backend never learns the address.
-        rememberWalletAddresses([
-          { walletNullifier: binding.walletNullifier, address: addr },
-        ]);
-      }
-      markWalletProved(key);
-      onDone(submitted.profile);
-    } catch (e) {
-      console.error("prove flow failed", e);
-      if (!alive()) return;
-      notifyError(e instanceof Error ? e.message : "Couldn't verify — try again");
-      onDismiss();
-    }
-  }
-
-  // One run per mount. Unmount invalidates the run; a dangling waiter is
-  // simply never resolved (the modal-close watcher is gone with it).
-  useEffect(() => {
-    void runFlow();
-    return () => {
-      runTokenRef.current++;
-    };
+      });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [prepared, staged, sig, connected, publicKey]);
+
+  // Signed: submit (deduped by message — single-use nonces can't be spent twice).
+  useEffect(() => {
+    if (!sig || !prepared || !staged) return;
+    if (submittedRef.current) return;
+    submittedRef.current = true;
+    const message =
+      prepared.kind === "establish"
+        ? prepared.value.message
+        : (prepared.value.addMessages[descriptorKey(staged)] ?? "");
+    void onceByKey(`submit:${message}`, async () => {
+      if (prepared.kind === "add") {
+        return submitWalletAddition({
+          client: prepared.client,
+          prepared: prepared.value,
+          signatures: { [descriptorKey(staged)]: sig },
+        });
+      }
+      if (sessionless) {
+        return submitSetSessionless({
+          client: prepared.client,
+          prepared: prepared.value,
+          wallets: [staged],
+          signatures: { [descriptorKey(staged)]: sig },
+        });
+      }
+      return submitSet({
+        client: prepared.client,
+        prepared: prepared.value,
+        wallets: [staged],
+        signatures: { [descriptorKey(staged)]: sig },
+      });
+    })
+      .then((submitted) => {
+        const binding =
+          prepared.kind === "add"
+            ? submitted.signed.body.addedWalletNullifiers?.[0]
+            : submitted.signed.body.walletNullifiers[0];
+        if (binding) {
+          // Local-only caption; the backend never learns the address.
+          rememberWalletAddresses([
+            { walletNullifier: binding.walletNullifier, address: staged.address },
+          ]);
+        }
+        markWalletProved(descriptorKey(staged));
+        onDone(submitted.profile);
+      })
+      .catch((e) => {
+        console.error("tee submit failed", e);
+        notifyError(errMsg(e, "Submit failed — try again"));
+        onDismiss();
+      });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sig]);
 
   return null;
 }

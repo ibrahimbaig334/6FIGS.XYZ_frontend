@@ -224,50 +224,6 @@ export async function usernameChange(
   });
 }
 
-/** Opt a wallet into recovery (signed nonce; only the hash is stored). */
-export async function usernameLinkRecoveryWallet(  chain: string,
-  address: string,
-  nonce: string,
-  signature: string,
-) {
-  return api<{ ok: boolean }>("/auth/username/recovery-wallet", {
-    method: "POST",
-    body: { chain, address, nonce, signature },
-  });
-}
-
-/** How many recovery wallets are linked (no hashes leave the server). */
-export async function usernameRecoveryWallets() {
-  return api<{ count: number }>("/auth/username/recovery-wallets", {
-    method: "POST",
-  });
-}
-
-export async function walletNonce(chain: string, address: string, purpose?: string) {
-  return api<{ nonce: string }>("/wallet/nonce", {
-    method: "POST",
-    body: { chain, address, ...(purpose ? { purpose } : {}) },
-    auth: false,
-  });
-}
-
-/** Step 1: sign with a linked wallet → reveals the username + token. */
-export async function usernameRecover(
-  chain: string,
-  address: string,
-  nonce: string,
-  signature: string,
-) {
-  return api<{ username: string | null; recoveryToken: string }>(
-    "/auth/username/recover",
-    {
-      method: "POST",
-      body: { chain, address, nonce, signature },
-      auth: false,
-    },
-  );
-}
-
 /** Step 2: consume the token — rename/reset/sign in. */
 export async function usernameReset(
   token: string,
@@ -301,6 +257,29 @@ export interface TeeAddPrep {
  *  also receive the stored identity and opaque escrow blob for an addition. */
 export async function teeNonce(): Promise<{ nonce: string; add?: TeeAddPrep }> {
   return api("/eligibility/tee-nonce", { method: "POST" });
+}
+
+/** Sessionless wallet login through the enclave: resolves (or creates) the
+ *  owner from attested nullifiers and returns a session token. */
+export async function teeLogin(signed: unknown, escrowBlob?: unknown) {
+  const res = await api<{ token: string }>("/eligibility/tee-login", {
+    method: "POST",
+    body: escrowBlob ? { signed, escrowBlob } : { signed },
+    auth: false,
+  });
+  setToken(res.token);
+  if (typeof window !== "undefined")
+    window.dispatchEvent(new Event("sixfigs-auth"));
+  return res;
+}
+
+/** Sessionless identify for username recovery: which account holds these
+ *  wallets? Returns the username plus a single-use recovery token. */
+export async function teeIdentify(signed: unknown) {
+  return api<{ username: string | null; recoveryToken: string }>(
+    "/eligibility/tee-identify",
+    { method: "POST", body: { signed }, auth: false },
+  );
 }
 
 /** Submit an attested registration. Additions carry the merged escrow blob
@@ -467,37 +446,4 @@ export function timeAgo(iso: string | null): string {
   if (h < 24) return `${h}h ago`;
   const d = Math.floor(h / 24);
   return `${d}d ago`;
-}
-
-/** Must match backend loginMessage() byte-for-byte. */
-export function loginMessage(
-  chain: string,
-  address: string,
-  nonce: string,
-): string {
-  return `6FIGS.XYZ login\n${chain}:${address}\nnonce: ${nonce}`;
-}
-
-const B58 = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
-export function b58encode(bytes: Uint8Array): string {
-  let zeros = 0;
-  while (zeros < bytes.length && bytes[zeros] === 0) zeros++;
-  if (zeros === bytes.length) return "1".repeat(Math.max(zeros, 1));
-  const digits: number[] = [0];
-  for (let k = zeros; k < bytes.length; k++) {
-    let carry = bytes[k];
-    for (let i = 0; i < digits.length; i++) {
-      carry += digits[i] * 256;
-      digits[i] = carry % 58;
-      carry = Math.floor(carry / 58);
-    }
-    while (carry > 0) {
-      digits.push(carry % 58);
-      carry = Math.floor(carry / 58);
-    }
-  }
-  let out = "";
-  for (let i = 0; i < zeros; i++) out += "1";
-  for (let i = digits.length - 1; i >= 0; i--) out += B58[digits[i]];
-  return out;
 }

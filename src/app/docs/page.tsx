@@ -65,7 +65,7 @@ export default function DocsIndex() {
         <p className="mono-label">THE DEAL, IN THREE LINES</p>
         <ul className="docs-list">
           <li>
-            <strong>Prove you hold.</strong> Log in, connect your wallets,
+            <strong>Prove you hold.</strong> Connect your wallets,
             sign one message per wallet. No transaction, no gas.
           </li>
           <li>

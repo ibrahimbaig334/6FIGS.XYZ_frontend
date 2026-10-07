@@ -18,7 +18,7 @@ const STEPS: {
     title: "YOU SIGN — NOTHING MOVES",
     body: (
       <>
-        After logging in, you connect the wallets you want to enroll and sign
+        Connect the wallets you want to enroll and sign
         one plain message per wallet. It says &ldquo;I control this
         address&rdquo; and nothing else. It is a signature, not a
         transaction: no gas, no spending, no approvals — the signing request

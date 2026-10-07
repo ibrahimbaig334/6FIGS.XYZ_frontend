@@ -1,15 +1,20 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   api,
+  b58encode,
   clearToken,
-  emailChangePassword,
-  emailResendVerification,
   errMsg,
   getToken,
+  loginMessage,
   removeTeeWallet,
   teeRecheck,
+  usernameChange,
+  usernameLinkRecoveryWallet,
+  usernameRecoveryWallets,
+  usernameSetup,
+  walletNonce,
   Profile,
   TeeEligibility,
   Wallet,
@@ -25,7 +30,9 @@ import { handleError } from "../../lib/validate";
 import { MAX_WALLETS } from "../../lib/constants";
 import { disconnectSocket } from "../../lib/ws";
 import { notifyError } from "../../lib/notify";
-import EmailAuth from "../../components/EmailAuth";
+import { useWallet } from "@solana/wallet-adapter-react";
+import { useWalletModal } from "@solana/wallet-adapter-react-ui";
+import SolanaConnect from "../../components/SolanaConnect";
 import TeeProve from "../../components/TeeProve";
 import ConfirmDialog from "../../components/ConfirmDialog";
 import WalletIcon from "../../components/WalletIcon";
@@ -43,7 +50,6 @@ export default function ProfilePage() {
   );
   const [confirmOne, setConfirmOne] = useState<Wallet | null>(null);
   const [confirmAll, setConfirmAll] = useState(false);
-  const [showLink, setShowLink] = useState(false);
   const [banner, setBanner] = useState("");
   const [walletAddrs, setWalletAddrs] = useState<WalletAddressMap>({});
 
@@ -123,17 +129,6 @@ export default function ProfilePage() {
       notifyError(errMsg(e, "Couldn't save the handle — try again"));
     } finally {
       setSavingHandle(false);
-    }
-  }
-
-  async function resendVerification() {
-    setBanner("");
-    try {
-      await emailResendVerification();
-      setBanner("Verification email sent — check your inbox.");
-    } catch (e) {
-      console.error("resend verification failed", e);
-      notifyError(e instanceof Error ? e.message : "Could not send the email");
     }
   }
 
@@ -223,8 +218,11 @@ export default function ProfilePage() {
             gap: "1rem",
           }}
         >
-          <p className="mono-label">PROFILE — SIGN IN FIRST</p>
-          <EmailAuth onDone={() => void load()} />
+          <p className="mono-label">PROFILE — CONNECT WALLET</p>
+          <SolanaConnect onDone={() => void load()} />
+          <p className="fine" style={{ margin: 0 }}>
+            <a href="/recover">USE USERNAME INSTEAD ↗</a>
+          </p>
         </div>
       </section>
     );
@@ -245,7 +243,6 @@ export default function ProfilePage() {
         walletAddrs={walletAddrs}
         checking={checking}
         proveMode={proveMode}
-        showLink={showLink}
         banner={banner}
         onProve={(mode) => setProveMode(mode)}
         onProveDone={(p) => {
@@ -253,13 +250,8 @@ export default function ProfilePage() {
           applyProfile(p);
         }}
         onDismissFlow={() => setProveMode(null)}
-        onLink={() => setShowLink((v) => !v)}
-        onLinked={() => {
-          setShowLink(false);
-          void load();
-        }}
         onRecheck={() => void recheck()}
-        onResendVerification={() => void resendVerification()}
+        onCredsChanged={() => void load()}
         onSaveVis={(v) => void saveVis(v)}
         handle={handle}
         setHandle={setHandle}
@@ -282,7 +274,7 @@ export default function ProfilePage() {
       {confirmAll && (
         <ConfirmDialog
           title="DISCONNECT ALL WALLETS"
-          message="Disconnect every wallet? Your tier resets immediately — re-prove any time to restore it. Your email login stays untouched."
+          message="Disconnect every wallet? Your tier resets immediately — re-prove any time to restore it. Your username sign-in stays untouched."
           ackLabel="Yes, disconnect all my wallets and reset my tier — tick to confirm."
           confirmLabel="DISCONNECT ALL"
           onConfirm={() => disconnectAll()}
@@ -302,15 +294,12 @@ function ProfileView({
   walletAddrs,
   checking,
   proveMode,
-  showLink,
   banner,
   onProve,
   onProveDone,
   onDismissFlow,
-  onLink,
-  onLinked,
   onRecheck,
-  onResendVerification,
+  onCredsChanged,
   onSaveVis,
   handle,
   setHandle,
@@ -324,15 +313,12 @@ function ProfileView({
   walletAddrs: WalletAddressMap;
   checking: boolean;
   proveMode: "establish" | "add" | null;
-  showLink: boolean;
   banner: string;
   onProve: (mode: "establish" | "add") => void;
   onProveDone: (p: Profile) => void;
   onDismissFlow: () => void;
-  onLink: () => void;
-  onLinked: () => void;
   onRecheck: () => void;
-  onResendVerification: () => void;
+  onCredsChanged: () => void;
   onSaveVis: (v: string) => void;
   handle: string;
   setHandle: (v: string) => void;
@@ -425,26 +411,6 @@ function ProfileView({
           )}
         </p>
 
-        {profile.email && profile.emailVerified === false && (
-          <div
-            style={{
-              marginTop: "0.9rem",
-              border: "2px solid var(--ink)",
-              padding: "0.7rem 0.9rem",
-              display: "flex",
-              gap: "0.6rem",
-              alignItems: "center",
-              flexWrap: "wrap",
-            }}
-          >
-            <span className="fine" style={{ margin: 0 }}>
-              VERIFY YOUR EMAIL TO SECURE RECOVERY.
-            </span>
-            <button className="chip" onClick={onResendVerification}>
-              RESEND LINK
-            </button>
-          </div>
-        )}
         {banner && <p className="fine">{banner}</p>}
 
         <div className="profile-fields">
@@ -453,7 +419,7 @@ function ProfileView({
               className="mono-label"
               style={{ marginBottom: "0.4rem", justifySelf: "center" }}
             >
-              USERNAME
+              HANDLE
             </p>
             <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
               <input
@@ -499,21 +465,7 @@ function ProfileView({
           VISIBLE = your tier shows up for friends in the 1v1 tab. No amounts
           are ever stored or shown.
         </p>
-        {!profile.email && (
-          <div style={{ marginTop: "0.8rem" }}>
-            <button className="chip" onClick={onLink}>
-              {showLink ? "CANCEL" : "LINK EMAIL ↗"}
-            </button>
-            {showLink && (
-              <div style={{ marginTop: "0.6rem", maxWidth: "340px" }}>
-                <EmailAuth linkOnly onDone={onLinked} />
-              </div>
-            )}
-          </div>
-        )}
-        {profile.email && (
-          <ChangePasswordForm />
-        )}
+        <CredentialsCard profile={profile} onChanged={onCredsChanged} />
       </div>
 
       <div className="card">
@@ -630,19 +582,78 @@ function ProfileView({
   );
 }
 
-function ChangePasswordForm() {
+function usernameProblem(v: string): string | null {
+  if (!/^[a-zA-Z0-9_.]{3,24}$/.test(v.trim()))
+    return "Username: 3–24 chars, letters/numbers/._ only";
+  return null;
+}
+
+/**
+ * Optional device-free sign-in. Set a username + password once, then sign in
+ * on any device without connecting wallets. Linking a wallet enables
+ * recovery: forget either and a wallet signature re-issues them (/recover).
+ */
+function CredentialsCard({
+  profile,
+  onChanged,
+}: {
+  profile: Profile;
+  onChanged: () => void;
+}) {
   const [open, setOpen] = useState(false);
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
   const [current, setCurrent] = useState("");
   const [next, setNext] = useState("");
   const [msg, setMsg] = useState("");
   const [busy, setBusy] = useState(false);
+  const [recCount, setRecCount] = useState<number | null>(null);
+  const [linking, setLinking] = useState(false);
 
-  async function submit() {
+  useEffect(() => {
+    if (!profile.username) return;
+    let live = true;
+    usernameRecoveryWallets()
+      .then((r) => live && setRecCount(r.count))
+      .catch(() => {});
+    return () => {
+      live = false;
+    };
+  }, [profile.username]);
+
+  async function setup() {
+    const bad = usernameProblem(username);
+    if (bad) {
+      notifyError(bad);
+      return;
+    }
+    if (password.length < 10) {
+      notifyError("Password must be at least 10 characters");
+      return;
+    }
+    if (busy) return;
+    setBusy(true);
+    try {
+      await usernameSetup(username.trim(), password);
+      setMsg("Username sign-in enabled. Link a wallet below for recovery.");
+      setUsername("");
+      setPassword("");
+      setOpen(false);
+      onChanged();
+    } catch (e) {
+      console.error("username setup failed", e);
+      notifyError(errMsg(e, "Couldn't set username — try again"));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function change() {
     if (busy) return;
     setBusy(true);
     setMsg("");
     try {
-      await emailChangePassword(current, next);
+      await usernameChange(current, next);
       setMsg("Password updated. Other sessions were signed out.");
       setCurrent("");
       setNext("");
@@ -658,9 +669,46 @@ function ChangePasswordForm() {
   return (
     <div style={{ marginTop: "0.8rem" }}>
       <button className="chip" onClick={() => setOpen((v) => !v)}>
-        {open ? "CANCEL" : "CHANGE PASSWORD"}
+        {open
+          ? "CANCEL"
+          : profile.username
+            ? `SIGN-IN: ${profile.username}`
+            : "USERNAME SIGN-IN ↗"}
       </button>
-      {open && (
+      {open && !profile.username && (
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            gap: "0.5rem",
+            marginTop: "0.6rem",
+            maxWidth: "340px",
+          }}
+        >
+          <input
+            className="field"
+            placeholder="username (3–24 chars)"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+          />
+          <input
+            className="field"
+            type="password"
+            autoComplete="new-password"
+            placeholder="password (10+ chars)"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+          />
+          <button className="btn-solid" disabled={busy} onClick={() => void setup()}>
+            {busy ? "SAVING…" : "ENABLE USERNAME SIGN-IN"}
+          </button>
+          <p className="fine" style={{ margin: 0 }}>
+            Sign in on other devices without connecting wallets. Link a
+            wallet below so you can recover these if forgotten.
+          </p>
+        </div>
+      )}
+      {open && profile.username && (
         <div
           style={{
             display: "flex",
@@ -686,12 +734,133 @@ function ChangePasswordForm() {
             value={next}
             onChange={(e) => setNext(e.target.value)}
           />
-          <button className="btn-solid" disabled={busy} onClick={() => void submit()}>
+          <button className="btn-solid" disabled={busy} onClick={() => void change()}>
             {busy ? "SAVING…" : "UPDATE PASSWORD"}
           </button>
         </div>
       )}
+      {profile.username && (
+        <RecoveryWalletLink
+          linked={recCount}
+          linking={linking}
+          setLinking={setLinking}
+          onLinked={() => {
+            setRecCount((c) => (c ?? 0) + 1);
+            setMsg("Recovery wallet linked.");
+          }}
+        />
+      )}
       {msg && <p className="fine">{msg}</p>}
+      <p className="fine" style={{ margin: "0.4rem 0 0" }}>
+        Forgot either? <a href="/recover">Recover with a wallet ↗</a>
+      </p>
+    </div>
+  );
+}
+
+/** Links the connected wallet for recovery (signed nonce; only the hash
+ *  is stored, never the address). Modal close without picking aborts
+ *  silently; a fresh press retries. */
+function RecoveryWalletLink({
+  linked,
+  linking,
+  setLinking,
+  onLinked,
+}: {
+  linked: number | null;
+  linking: boolean;
+  setLinking: (b: boolean) => void;
+  onLinked: () => void;
+}) {
+  const { publicKey, signMessage, wallet, connected, connecting, connect } =
+    useWallet();
+  const { visible, setVisible } = useWalletModal();
+  const pendingRef = useRef(false);
+  const connRef = useRef(false);
+
+  async function doLink(address: string) {
+    if (linking) return;
+    setLinking(true);
+    try {
+      const { nonce } = await walletNonce("SOL", address);
+      if (!signMessage) {
+        notifyError("Wallet cannot sign — try again");
+        return;
+      }
+      const raw = (await signMessage(
+        new TextEncoder().encode(loginMessage("SOL", address, nonce)),
+      )) as unknown as Uint8Array | { signature: Uint8Array };
+      await usernameLinkRecoveryWallet(
+        "SOL",
+        address,
+        nonce,
+        b58encode(raw instanceof Uint8Array ? raw : raw.signature),
+      );
+      onLinked();
+    } catch (e) {
+      console.error("recovery link failed", e);
+      notifyError(errMsg(e, "Couldn't link that wallet — try again"));
+    } finally {
+      setLinking(false);
+    }
+  }
+
+  function start() {
+    if (linking) return;
+    if (connected && publicKey) {
+      void doLink(publicKey.toString());
+      return;
+    }
+    pendingRef.current = true;
+    setVisible(true);
+  }
+
+  // Modal closed: connect the selection (nothing picked = silent abort).
+  // Never links here — linking happens only in the effect below, once.
+  useEffect(() => {
+    if (visible || !pendingRef.current) return;
+    if (connected || !wallet) {
+      if (!wallet) pendingRef.current = false;
+      return;
+    }
+    if (connecting || connRef.current) return;
+    connRef.current = true;
+    connect()
+      .catch((e) => {
+        console.error("wallet connect failed", e);
+        pendingRef.current = false;
+        notifyError("Connection failed — try again");
+      })
+      .finally(() => {
+        connRef.current = false;
+      });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [visible, connected, wallet, connecting]);
+
+  // Connected while pending → link it exactly once.
+  useEffect(() => {
+    if (pendingRef.current && connected && publicKey && !visible) {
+      pendingRef.current = false;
+      void doLink(publicKey.toString());
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [connected, publicKey, visible]);
+
+  if ((linked ?? 0) > 0) {
+    return (
+      <p className="fine" style={{ margin: "0.4rem 0 0" }}>
+        RECOVERY WALLET LINKED ✓ ({linked})
+      </p>
+    );
+  }
+  return (
+    <div style={{ marginTop: "0.6rem" }}>
+      <button className="chip" disabled={linking} onClick={() => start()}>
+        {linking ? "LINKING…" : "LINK RECOVERY WALLET ↗"}
+      </button>
+      <p className="fine" style={{ margin: "0.4rem 0 0" }}>
+        Needed only for recovery — proving and tiers never touch it.
+      </p>
     </div>
   );
 }

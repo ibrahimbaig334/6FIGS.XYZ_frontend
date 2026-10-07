@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { api, ApiError, clearToken, getToken, Profile } from "../lib/api";
 import { connectSocket, disconnectSocket } from "../lib/ws";
-import LoginModal from "./LoginModal";
+import SolanaConnect from "./SolanaConnect";
 
 const NAV = [
   { href: "/", label: "HOME" },
@@ -16,7 +16,6 @@ const NAV = [
 export default function Header() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [menu, setMenu] = useState(false);
-  const [login, setLogin] = useState(false);
   const [dark, setDark] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const profileFreshRef = useRef(false);
@@ -165,12 +164,9 @@ export default function Header() {
             )}
           </div>
         ) : (
-          <button className="btn-solid" onClick={() => setLogin(true)}>
-            LOG IN
-          </button>
+          <SolanaConnect onDone={authed} label="CONNECT WALLET" />
         )}
       </div>
-      {login && <LoginModal onClose={() => setLogin(false)} onDone={authed} />}
     </header>
   );
 }

@@ -183,19 +183,29 @@ export async function getTiers(): Promise<{
 export interface Profile {
   id: string;
   handle: string | null;
-  email?: string | null;
-  emailVerified?: boolean;
+  username?: string | null;
   visMode: string;
   tags: string[];
   eligibility: Eligibility;
   wallets: Wallet[];
 }
 
-/** Web2 accounts. Wallets attach to them through the tee prove flow. */
-export async function emailSignup(email: string, password: string) {
-  const res = await api<{ token: string }>("/auth/email/signup", {
+/**
+ * Optional device-free login. Attach a username + password to the current
+ * (wallet) account in profile, then sign in anywhere without wallets.
+ * Forgetting either is recovered by signing with a linked wallet.
+ */
+export async function usernameSetup(username: string, password: string) {
+  return api<{ username: string }>("/auth/username/setup", {
     method: "POST",
-    body: { email, password },
+    body: { username, password },
+  });
+}
+
+export async function usernameLogin(username: string, password: string) {
+  const res = await api<{ token: string }>("/auth/username/login", {
+    method: "POST",
+    body: { username, password },
     auth: false,
   });
   setToken(res.token);
@@ -204,69 +214,82 @@ export async function emailSignup(email: string, password: string) {
   return res;
 }
 
-export async function emailLogin(email: string, password: string) {
-  const res = await api<{ token: string }>("/auth/email/login", {
-    method: "POST",
-    body: { email, password },
-    auth: false,
-  });
-  setToken(res.token);
-  if (typeof window !== "undefined")
-    window.dispatchEvent(new Event("sixfigs-auth"));
-  return res;
-}
-
-export async function emailLink(email: string, password: string) {
-  return api<{ token: string }>("/auth/email/link", {
-    method: "POST",
-    body: { email, password },
-  });
-}
-
-/** Consume an emailed verification link. */
-export async function emailVerify(token: string) {
-  return api<{ verified: boolean }>("/auth/email/verify", {
-    method: "POST",
-    body: { token },
-    auth: false,
-  });
-}
-
-/** Re-send the verification email for the current account. */
-export async function emailResendVerification() {
-  return api<{ sent?: boolean; verified?: boolean }>(
-    "/auth/email/resend-verification",
-    { method: "POST" },
-  );
-}
-
-/** Start a password reset; the response is generic either way. */
-export async function emailForgot(email: string) {
-  return api<{ ok: boolean }>("/auth/email/forgot", {
-    method: "POST",
-    body: { email },
-    auth: false,
-  });
-}
-
-/** Finish a password reset with the emailed token. */
-export async function emailReset(token: string, password: string) {
-  return api<{ ok: boolean }>("/auth/email/reset", {
-    method: "POST",
-    body: { token, password },
-    auth: false,
-  });
-}
-
-/** Rotate the password for the current session. */
-export async function emailChangePassword(
+export async function usernameChange(
   currentPassword: string,
   newPassword: string,
 ) {
-  return api<{ ok: boolean }>("/auth/email/change-password", {
+  return api<{ ok: boolean }>("/auth/username/change", {
     method: "POST",
     body: { currentPassword, newPassword },
   });
+}
+
+/** Opt a wallet into recovery (signed nonce; only the hash is stored). */
+export async function usernameLinkRecoveryWallet(  chain: string,
+  address: string,
+  nonce: string,
+  signature: string,
+) {
+  return api<{ ok: boolean }>("/auth/username/recovery-wallet", {
+    method: "POST",
+    body: { chain, address, nonce, signature },
+  });
+}
+
+/** How many recovery wallets are linked (no hashes leave the server). */
+export async function usernameRecoveryWallets() {
+  return api<{ count: number }>("/auth/username/recovery-wallets", {
+    method: "POST",
+  });
+}
+
+export async function walletNonce(chain: string, address: string) {
+  return api<{ nonce: string }>("/wallet/nonce", {
+    method: "POST",
+    body: { chain, address },
+    auth: false,
+  });
+}
+
+/** Step 1: sign with a linked wallet → reveals the username + token. */
+export async function usernameRecover(
+  chain: string,
+  address: string,
+  nonce: string,
+  signature: string,
+) {
+  return api<{ username: string | null; recoveryToken: string }>(
+    "/auth/username/recover",
+    {
+      method: "POST",
+      body: { chain, address, nonce, signature },
+      auth: false,
+    },
+  );
+}
+
+/** Step 2: consume the token — rename/reset/sign in. */
+export async function usernameReset(
+  token: string,
+  username?: string,
+  password?: string,
+) {
+  const res = await api<{ token: string; username: string | null }>(
+    "/auth/username/reset",
+    {
+      method: "POST",
+      body: {
+        token,
+        ...(username !== undefined ? { username } : {}),
+        ...(password !== undefined ? { password } : {}),
+      },
+      auth: false,
+    },
+  );
+  setToken(res.token);
+  if (typeof window !== "undefined")
+    window.dispatchEvent(new Event("sixfigs-auth"));
+  return res;
 }
 
 export interface TeeAddPrep {

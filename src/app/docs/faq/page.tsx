@@ -33,8 +33,8 @@ const QA: { q: string; a: React.ReactNode }[] = [
     a: (
       <>
         Press ✕ on its row and tick the confirmation — the lost wallet signs
-        nothing, because disconnecting takes no signature. Your tier resets
-        on the spot; re-prove the wallets you still hold to restore it.
+        nothing, because detaching takes no signature. Your tier is
+        recalculated from the wallets that remain.
       </>
     ),
   },
@@ -43,9 +43,9 @@ const QA: { q: string; a: React.ReactNode }[] = [
     a: (
       <>
         Then there is no way to re-prove the account; that&apos;s true of
-        every system anchored in wallets. A verified email helps you
-        authorize changes while you still hold your wallets, but it cannot
-        re-create a wallet set that no longer exists. Enroll the wallets you
+        every system anchored in wallets. A username + password (set up
+        beforehand in profile) still signs you in, but it cannot re-create
+        a wallet set that no longer exists. Enroll the wallets you
         actually control and keep at least one healthy.
       </>
     ),

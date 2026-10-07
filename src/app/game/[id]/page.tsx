@@ -17,7 +17,7 @@ import {
   OPP_RETURN_MS,
   POLL_GAME_LIVE_MS,
 } from "../../../lib/constants";
-import EmailAuth from "../../../components/EmailAuth";
+import SolanaConnect from "../../../components/SolanaConnect";
 import GamePanel from "../../../components/GamePanel";
 import RematchToast from "../../../components/RematchToast";
 import Loader from "../../../components/Loader";
@@ -342,7 +342,7 @@ export default function GamePage() {
         }}
       >
         <div className="card auth-card">
-          <p className="mono-label">GAME — LOG IN FIRST</p>
+          <p className="mono-label">GAME — CONNECT WALLET</p>
           <div
             style={{
               marginTop: "1.2rem",
@@ -350,8 +350,11 @@ export default function GamePage() {
               justifyContent: "center",
             }}
           >
-            <EmailAuth onDone={load} />
+            <SolanaConnect onDone={load} />
           </div>
+          <p className="fine" style={{ margin: "0.8rem 0 0" }}>
+            <a href="/recover">USE USERNAME INSTEAD ↗</a>
+          </p>
         </div>
       </section>
     );

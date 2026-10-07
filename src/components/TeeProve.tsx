@@ -19,7 +19,6 @@ import {
   onceByKey,
   type TeeWalletInput,
 } from "../lib/teeVerify";
-import { rememberWalletAddresses } from "../lib/walletAddresses";
 
 type ProveMode = "establish" | "add";
 
@@ -267,16 +266,6 @@ export default function TeeProve({
       });
     })
       .then((submitted) => {
-        const binding =
-          prepared.kind === "add"
-            ? submitted.signed.body.addedWalletNullifiers?.[0]
-            : submitted.signed.body.walletNullifiers[0];
-        if (binding) {
-          // Local-only caption; the backend never learns the address.
-          rememberWalletAddresses([
-            { walletNullifier: binding.walletNullifier, address: staged.address },
-          ]);
-        }
         markWalletProved(descriptorKey(staged));
         onDone(submitted.profile);
       })

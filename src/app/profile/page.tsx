@@ -15,12 +15,6 @@ import {
   Wallet,
 } from "../../lib/api";
 import { clearProvedWallets } from "../../lib/teeVerify";
-import {
-  forgetWalletAddress,
-  formatAddress,
-  readWalletAddressMap,
-  type WalletAddressMap,
-} from "../../lib/walletAddresses";
 import { handleError } from "../../lib/validate";
 import { MAX_WALLETS } from "../../lib/constants";
 import { disconnectSocket } from "../../lib/ws";
@@ -44,16 +38,10 @@ export default function ProfilePage() {
   const [confirmOne, setConfirmOne] = useState<Wallet | null>(null);
   const [confirmAll, setConfirmAll] = useState(false);
   const [banner, setBanner] = useState("");
-  const [walletAddrs, setWalletAddrs] = useState<WalletAddressMap>({});
 
   useEffect(() => {
     setReady(true);
   }, []);
-
-  // Address captions are browser-local; the backend never returns addresses.
-  useEffect(() => {
-    if (profile) setWalletAddrs(readWalletAddressMap());
-  }, [profile]);
 
   const applyProfile = (p: Profile) => {
     setProfile(p);
@@ -147,7 +135,6 @@ export default function ProfilePage() {
     try {
       if (teeAccount) {
         applyProfile(await removeTeeWallet(confirmOne.id));
-        forgetWalletAddress(confirmOne.id);
         setBanner("Wallet removed — your tier now reflects the remaining wallets.");
       } else {
         await api(`/wallet/${confirmOne.id}`, { method: "DELETE" });
@@ -233,7 +220,6 @@ export default function ProfilePage() {
     <>
       <ProfileView
         profile={profile}
-        walletAddrs={walletAddrs}
         checking={checking}
         proveMode={proveMode}
         banner={banner}
@@ -241,6 +227,9 @@ export default function ProfilePage() {
         onProveDone={(p) => {
           setProveMode(null);
           applyProfile(p);
+          // Header badge reads its own cached profile — tell it to reload
+          // (it skips only a login-fast-path window, never this).
+          window.dispatchEvent(new Event("sixfigs-auth"));
         }}
         onDismissFlow={() => setProveMode(null)}
         onRecheck={() => void recheck()}
@@ -284,7 +273,6 @@ function isTee(elig: Profile["eligibility"]): elig is TeeEligibility {
 
 function ProfileView({
   profile,
-  walletAddrs,
   checking,
   proveMode,
   banner,
@@ -303,7 +291,6 @@ function ProfileView({
   onLogout,
 }: {
   profile: Profile;
-  walletAddrs: WalletAddressMap;
   checking: boolean;
   proveMode: "establish" | "add" | null;
   banner: string;
@@ -485,7 +472,6 @@ function ProfileView({
           <div className="wallet-grid">
             {profile.wallets.map((w) => {
               const wname = w.name ?? w.chain.toUpperCase();
-              const shownAddress = formatAddress(walletAddrs[w.id]);
               return (
                 <div key={w.id} className="wallet-row">
                   <WalletIcon
@@ -495,9 +481,7 @@ function ProfileView({
                   <div className="wallet-info">
                     <strong style={{ fontSize: "1rem" }}>{wname}</strong>
                     <span className="fine" style={{ margin: 0 }}>
-                      {shownAddress
-                        ? `${w.chain.toUpperCase()} · ${shownAddress}`
-                        : `${w.chain.toUpperCase()} · ADDRESS HIDDEN BY DESIGN`}
+                      {`${w.chain.toUpperCase()} · ADDRESS HIDDEN BY DESIGN`}
                     </span>
                   </div>
                   <button

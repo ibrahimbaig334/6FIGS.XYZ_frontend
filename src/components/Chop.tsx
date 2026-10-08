@@ -52,7 +52,7 @@ export default function Chop({
 }) {
   const cells = Array.from({ length: 9 }, (_, i) => {
     const bits = hash(`${id}#${i}`) % 10;
-    return bits < 4 ? 0 : (bits % 7) + 1; // ~40% empty, the rest strokes
+    return bits < 6 ? 0 : (bits % 7) + 1; // ~60% empty: a chop, not a QR
   });
   return (
     <span

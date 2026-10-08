@@ -1263,12 +1263,8 @@ select.field option {
   font-weight: 600;
   font-size: 1.25rem;
   line-height: 1.2;
-  color: var(--tx-page-dim);
-  overflow-wrap: anywhere;
-}
-
-html:not(.dark) .table-name {
   color: var(--tx-page);
+  overflow-wrap: anywhere;
 }
 
 .table-seat {
@@ -2377,6 +2373,16 @@ html:not(.dark) .board-cell .mark circle {
 
 .reveal-card.on .reveal-caption {
   color: var(--tx-page);
+}
+
+/* the cards live on cream: captions take the card register there */
+.plate .reveal-caption,
+.ceremony .reveal-caption {
+  color: var(--tx-dim);
+}
+
+.plate .reveal-card.on .reveal-caption {
+  color: var(--tx);
 }
 
 .wallet-grid {

@@ -42,6 +42,7 @@ export default function ProfilePage() {
   const [confirmOne, setConfirmOne] = useState<Wallet | null>(null);
   const [confirmAll, setConfirmAll] = useState(false);
   const [banner, setBanner] = useState("");
+  const [visPending, setVisPending] = useState<string | null>(null);
 
   useEffect(() => {
     setReady(true);
@@ -88,12 +89,17 @@ export default function ProfilePage() {
   }
 
   async function saveVis(visMode: string) {
+    // The card flips on the click; the profile refresh lands behind it.
+    // On failure the pending value clears and the stored one shows again.
+    setVisPending(visMode);
     try {
       await api("/profile/user", { method: "PATCH", body: { visMode } });
       await load();
     } catch (e) {
       console.error("visibility save failed", e);
       notifyError(errMsg(e, "Couldn't save visibility. Try again."));
+    } finally {
+      setVisPending(null);
     }
   }
 
@@ -211,6 +217,7 @@ export default function ProfilePage() {
     <>
       <ProfileView
         profile={profile}
+        visMode={visPending ?? profile.visMode}
         checking={checking}
         proveMode={proveMode}
         banner={banner}
@@ -264,6 +271,7 @@ function isTee(elig: Profile["eligibility"]): elig is TeeEligibility {
 
 function ProfileView({
   profile,
+  visMode,
   checking,
   proveMode,
   banner,
@@ -282,6 +290,7 @@ function ProfileView({
   onLogout,
 }: {
   profile: Profile;
+  visMode: string;
   checking: boolean;
   proveMode: "establish" | "add" | null;
   banner: string;
@@ -391,9 +400,9 @@ function ProfileView({
             {(["HIDDEN", "VISIBLE"] as const).map((v) => (
               <button
                 key={v}
-                className={`reveal-card${profile.visMode === v ? " on" : ""}`}
+                className={`reveal-card${visMode === v ? " on" : ""}`}
                 onClick={() => onSaveVis(v)}
-                aria-pressed={profile.visMode === v}
+                aria-pressed={visMode === v}
                 aria-label={v === "HIDDEN" ? "Hidden: show nothing" : "Tier visible: show your tier"}
               >
                 <div className="card-inner">

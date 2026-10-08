@@ -98,7 +98,7 @@ export default function Home() {
               </a>
             </div>
           </div>
-          <div className="hero-table-wrap" aria-label="A set table">
+          <div className="hero-table-wrap" role="img" aria-label="A card table set for two, the board between two place cards">
             <div className="hero-table">
               <div className="table-wood">
                 <div className="table-felt">

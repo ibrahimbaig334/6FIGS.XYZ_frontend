@@ -1,11 +1,11 @@
 "use client";
 
 import { useState } from "react";
+import { LockSimple } from "@phosphor-icons/react";
 import { notifyError } from "../lib/notify";
 
-/** Proper invite-code dialog (replaces window.prompt). Empty-submit nudges
- *  and wrong-code failures land in the error toast; the dialog stays open
- *  for a retry. */
+/** Invite-code dialog. Empty submits nudge; wrong-code failures land in the
+ *  error toast and the dialog stays open for a retry. */
 export default function InviteDialog({
   roomName,
   onSubmit,
@@ -20,45 +20,41 @@ export default function InviteDialog({
   function submit(e: React.FormEvent) {
     e.preventDefault();
     if (!code.trim()) {
-      notifyError("Enter the invite code");
+      notifyError("Enter the invite code.");
       return;
     }
     onSubmit(code.trim());
   }
 
   return (
-    <div className="dialog-overlay" onClick={onClose}>
+    <div className="veil" onClick={onClose}>
       <div
-        className="dialog-box"
+        className="dialog"
         onClick={(e) => e.stopPropagation()}
         role="dialog"
         aria-label="Enter invite code"
       >
-        <p className="mono-label">🔒 INVITE-ONLY ROOM</p>
-        <h3 style={{ margin: 0 }}>{roomName}</h3>
-        <form onSubmit={submit} style={{ display: "flex", gap: "0.5rem" }}>
+        <p className="label" style={{ display: "inline-flex", alignItems: "center", gap: "0.4rem" }}>
+          <LockSimple size={13} aria-hidden="true" />
+          Invite only
+        </p>
+        <h3>{roomName}</h3>
+        <form onSubmit={submit} style={{ display: "flex", gap: "0.5rem", flexDirection: "row", alignItems: "center" }}>
           <input
             className="field"
             value={code}
             onChange={(e) => setCode(e.target.value.toUpperCase())}
-            placeholder="CODE"
+            placeholder="Code"
             autoFocus
             maxLength={32}
+            aria-label="Invite code"
           />
-          <button
-            className="btn-solid"
-            style={{ padding: "0.7rem 1rem" }}
-            type="submit"
-          >
-            JOIN ↗
+          <button className="btn btn-primary" type="submit">
+            Join
           </button>
         </form>
-        <button
-          className="btn-ghost"
-          style={{ padding: "0.5rem 0.8rem" }}
-          onClick={onClose}
-        >
-          CANCEL
+        <button className="btn-ghost btn-sm" onClick={onClose}>
+          Cancel
         </button>
       </div>
     </div>

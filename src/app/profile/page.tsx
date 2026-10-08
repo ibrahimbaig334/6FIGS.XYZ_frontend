@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { X } from "@phosphor-icons/react";
 import {
   api,
   clearToken,
@@ -25,6 +26,8 @@ import TeeProve from "../../components/TeeProve";
 import ConfirmDialog from "../../components/ConfirmDialog";
 import WalletIcon from "../../components/WalletIcon";
 import Loader from "../../components/Loader";
+import TierTag from "../../components/TierTag";
+import Chop from "../../components/Chop";
 
 export default function ProfilePage() {
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -78,7 +81,7 @@ export default function ProfilePage() {
       window.dispatchEvent(new Event("sixfigs-auth"));
     } catch (e) {
       console.error("eligibility recheck failed", e);
-      notifyError(errMsg(e, "Couldn't recheck your holdings — try again"));
+      notifyError(errMsg(e, "Couldn't recheck your holdings. Try again."));
     } finally {
       setChecking(false);
     }
@@ -90,14 +93,14 @@ export default function ProfilePage() {
       await load();
     } catch (e) {
       console.error("visibility save failed", e);
-      notifyError(errMsg(e, "Couldn't save visibility — try again"));
+      notifyError(errMsg(e, "Couldn't save visibility. Try again."));
     }
   }
 
   async function saveHandle() {
     const herr = handleError(handle);
     if (herr || savingHandle) {
-      // No backend call on invalid input — reason goes to the error toast.
+      // No backend call on invalid input; the reason goes to the error toast.
       if (herr) notifyError(herr);
       return;
     }
@@ -108,7 +111,7 @@ export default function ProfilePage() {
       window.dispatchEvent(new Event("sixfigs-auth"));
     } catch (e) {
       console.error("handle save failed", e);
-      notifyError(errMsg(e, "Couldn't save the handle — try again"));
+      notifyError(errMsg(e, "Couldn't save the handle. Try again."));
     } finally {
       setSavingHandle(false);
     }
@@ -121,30 +124,30 @@ export default function ProfilePage() {
     location.href = "/";
   }
 
-  /** Single-wallet removal (tick-confirmed). For a tee account the session
-   *  authorizes the enclave to detach the wallet and re-sign the remaining
-   *  set; no wallet signature or address is involved. */
+  /** Single-wallet removal (tick-confirmed). The session authorizes the
+   *  enclave to detach the wallet and re-sign the remaining set; no wallet
+   *  signature or address is involved. */
   async function disconnectOne() {
     if (!confirmOne) return;
     if ((profile?.wallets.length ?? 0) <= 1) {
       setConfirmOne(null);
-      notifyError("You cannot remove your only wallet");
+      notifyError("You cannot remove your only wallet. Use Disconnect all to start over.");
       return;
     }
     try {
       applyProfile(await removeTeeWallet(confirmOne.id));
-      setBanner("Wallet removed — your tier now reflects the remaining wallets.");
+      setBanner("Wallet removed. Your tier now reflects the remaining wallets.");
       setConfirmOne(null);
       clearProvedWallets();
       window.dispatchEvent(new Event("sixfigs-auth"));
     } catch (e) {
       console.error("wallet disconnect failed", e);
-      notifyError(errMsg(e, "Couldn't remove that wallet — try again"));
+      notifyError(errMsg(e, "Couldn't remove that wallet. Try again."));
     }
   }
 
-  /** Disconnect every wallet (tick-confirmed): wipes verification. Press
-   *  CONNECT WALLET to start over. */
+  /** Disconnect every wallet (tick-confirmed): wipes verification. The
+   *  username sign-in survives. */
   async function disconnectAll() {
     try {
       await resetTeeIdentity();
@@ -152,10 +155,10 @@ export default function ProfilePage() {
       clearProvedWallets();
       await load();
       window.dispatchEvent(new Event("sixfigs-auth"));
-      setBanner("All wallets disconnected — press CONNECT WALLET to start over.");
+      setBanner("All wallets disconnected. Connect a wallet to start over.");
     } catch (e) {
       console.error("disconnect-all failed", e);
-      notifyError(errMsg(e, "Couldn't disconnect wallets — try again"));
+      notifyError(errMsg(e, "Couldn't disconnect wallets. Try again."));
     }
   }
 
@@ -180,29 +183,16 @@ export default function ProfilePage() {
         }}
       >
         <div
-          className="card"
-          style={{
-            width: "100%",
-            maxWidth: "520px",
-            textAlign: "center",
-            padding: "2.5rem 2rem",
-            display: "flex",
-            flexDirection: "column",
-            gap: "1rem",
-          }}
+          className="plate auth-card"
+          style={{ display: "flex", flexDirection: "column", gap: "1rem" }}
         >
-          <p className="mono-label">PROFILE — SIGN IN</p>
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "center",
-            }}
-          >
-            <SignInButton onDone={() => void load()} />
+          <h1 className="label">The door</h1>
+          <div style={{ display: "flex", justifyContent: "center" }}>
+            <SignInButton onDone={() => void load()} label="Sign in" />
           </div>
           <p className="fine" style={{ margin: 0 }}>
-            NEW HERE? CONNECTING A WALLET CREATES YOUR ACCOUNT AND PROVES YOUR
-            TIER.
+            New here? Connecting a wallet creates your account and proves
+            your tier.
           </p>
         </div>
       </section>
@@ -212,7 +202,7 @@ export default function ProfilePage() {
   if (!profile) {
     return (
       <section className="page-enter loader-page">
-        <Loader label="LOADING PROFILE…" />
+        <Loader label="Setting your place" />
       </section>
     );
   }
@@ -228,7 +218,7 @@ export default function ProfilePage() {
         onProveDone={(p) => {
           setProveMode(null);
           applyProfile(p);
-          // Header badge reads its own cached profile — tell it to reload
+          // Header badge reads its own cached profile; tell it to reload
           // (it skips only a login-fast-path window, never this).
           window.dispatchEvent(new Event("sixfigs-auth"));
         }}
@@ -246,20 +236,20 @@ export default function ProfilePage() {
       />
       {confirmOne && (
         <ConfirmDialog
-          title="REMOVE WALLET"
-          message={`Remove ${confirmOne.name ?? confirmOne.chain.toUpperCase()}? Your tier is recalculated from the remaining wallets and you can add it back any time.`}
-          ackLabel="Yes, remove this wallet from my account — tick to confirm."
-          confirmLabel="REMOVE WALLET"
+          title="Remove wallet"
+          message={`Remove ${confirmOne.name ?? confirmOne.chain.toUpperCase()}? Your tier is recalculated from the remaining wallets, and you can add it back any time.`}
+          ackLabel="Yes, remove this wallet from my account. Tick to confirm."
+          confirmLabel="Remove wallet"
           onConfirm={() => disconnectOne()}
           onClose={() => setConfirmOne(null)}
         />
       )}
       {confirmAll && (
         <ConfirmDialog
-          title="DISCONNECT ALL WALLETS"
-          message="Disconnect every wallet? Your tier resets immediately — re-prove any time to restore it. Your username sign-in stays untouched."
-          ackLabel="Yes, disconnect all my wallets and reset my tier — tick to confirm."
-          confirmLabel="DISCONNECT ALL"
+          title="Disconnect all wallets"
+          message="Disconnect every wallet? Your tier resets immediately. Re-prove any time to restore it. Your username sign-in stays untouched."
+          ackLabel="Yes, disconnect all my wallets and reset my tier. Tick to confirm."
+          confirmLabel="Disconnect all"
           onConfirm={() => disconnectAll()}
           onClose={() => setConfirmAll(false)}
         />
@@ -318,78 +308,50 @@ function ProfileView({
   // same set (or add) to restore it.
   const tierActive = profile.eligibility.tier != null;
 
+  // The chop presses when the tier changes while on the page (first
+  // verification, a recheck that moves you, a wallet removal). A plain page
+  // load does not re-run it.
+  const prevTier = useRef<string | null | undefined>(undefined);
+  const [pressKey, setPressKey] = useState(0);
+  useEffect(() => {
+    const t = tee?.tier ?? null;
+    if (prevTier.current !== undefined && t !== prevTier.current)
+      setPressKey((k) => k + 1);
+    prevTier.current = t;
+  }, [tee?.tier]);
+
   return (
-    <section
-      className="page-enter"
-      style={{
-        padding: "2rem 5vw",
-        margin: "0 auto",
-        width: "100%",
-        display: "flex",
-        flexDirection: "column",
-        gap: "1rem",
-      }}
-    >
-      <div className="card" style={{ position: "relative", overflow: "hidden" }}>
-        <div
-          style={{
-            display: "flex",
-            gap: "0.8rem",
-            alignItems: "flex-start",
-            justifyContent: "space-between",
-            flexWrap: "wrap",
-          }}
-        >
-          <div>
-            <p className="mono-label" style={{ fontSize: 20 }}>
-              PROFILE PAGE
-            </p>
-            <h2
-              style={{
-                margin: "0.3rem 0 0",
-                fontSize: "clamp(1.6rem, 4vw, 2.2rem)",
-                letterSpacing: "-0.03em",
-                overflowWrap: "anywhere",
-              }}
-            >
-              {username}
-            </h2>
+    <section className="page-enter shell" style={{ flex: 1 }}>
+      <div className="plate">
+        <div className="profile-head">
+          <div style={{ display: "flex", gap: "1rem", alignItems: "center" }}>
+            <Chop id={profile.id} size="lg" />
+            <div>
+              <p className="label">Your place</p>
+              <h1 className="profile-name">{username}</h1>
+            </div>
           </div>
-          <span
-            className="tier-badge"
-            style={{ alignSelf: "center", padding: "7px 30px" }}
-          >
-            {tee?.tier ?? "UNVERIFIED"}
-          </span>
+          <TierTag tier={tee?.tier ?? null} />
         </div>
 
-        <p
-          style={{
-            margin: "0.8rem 0 0",
-            fontSize: "clamp(1.4rem, 4vw, 2rem)",
-            fontWeight: 700,
-            letterSpacing: "-0.03em",
-            lineHeight: 1.1,
-          }}
-        >
-          {!tee || tee.tier === null
-            ? "BELOW $100K — LINK MORE BAGS."
-            : tee.topAssets.length > 0
-              ? tee.topAssets.join(" · ")
-              : "VERIFIED HOLDER"}
-        </p>
-        <p className="fine" style={{ margin: "0.3rem 0 0" }}>
+        {tee && tee.tier !== null && tee.topAssets.length > 0 ? (
+          <p className="fine num" style={{ marginTop: "0.8rem", fontSize: "0.95rem" }}>
+            {tee.topAssets.join(", ")}
+          </p>
+        ) : null}
+
+        <p className="fine" style={{ marginTop: "0.5rem" }}>
           {tee ? (
             <>
-              BAND {tee.portfolioBand}
+              Band {tee.portfolioBand.toUpperCase()}
               {" · "}
               {tee.verified
-                ? `VERIFIED ${new Date(tee.verifiedAt).toLocaleString()}`
-                : "UNVERIFIED — PROVE BELOW."}
-              {tee.stale && tee.verified ? " · REFRESHING…" : ""}
+                ? `verified ${new Date(tee.verifiedAt).toLocaleString()}`
+                : "unverified, prove below."}
+              {tee.stale && tee.verified ? " · rechecking" : ""}
             </>
           ) : (
-            "NO VERIFIED IDENTITY YET — PROVE YOUR WALLETS BELOW."
+            "No verified identity yet. Prove your wallets below."
           )}
         </p>
 
@@ -397,11 +359,8 @@ function ProfileView({
 
         <div className="profile-fields">
           <div>
-            <p
-              className="mono-label"
-              style={{ marginBottom: "0.4rem", justifySelf: "center" }}
-            >
-              HANDLE
+            <p className="label" style={{ marginBottom: "0.45rem" }}>
+              Handle
             </p>
             <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
               <input
@@ -410,7 +369,7 @@ function ProfileView({
                 onChange={(e) => {
                   setHandle(e.target.value);
                 }}
-                placeholder="handle (3–24 chars)"
+                placeholder="handle, 3 to 24 characters"
                 style={{ maxWidth: "220px" }}
               />
               <button
@@ -418,77 +377,80 @@ function ProfileView({
                 disabled={savingHandle}
                 onClick={onSaveHandle}
               >
-                {savingHandle ? "SAVING…" : "SAVE"}
+                {savingHandle ? "Saving" : "Save"}
               </button>
             </div>
           </div>
-          <div className="vis-block">
-            <p
-              className="mono-label"
-              style={{ marginBottom: "0.4rem", justifySelf: "center" }}
-            >
-              VISIBILITY
-            </p>
-            <div className="vis-chips">
-              {(["HIDDEN", "VISIBLE"] as const).map((v) => (
-                <button
-                  key={v}
-                  className={profile.visMode === v ? "chip active" : "chip"}
-                  style={{ padding: "0.9rem 1rem" }}
-                  onClick={() => onSaveVis(v)}
-                >
-                  {v}
-                </button>
-              ))}
-            </div>
-          </div>
         </div>
-        <p className="fine" style={{ margin: "0.6rem 0 0" }}>
-          VISIBLE = your tier shows up for friends in the 1v1 tab. No amounts
-          are ever stored or shown.
-        </p>
+
+        <div style={{ marginTop: "1.2rem" }}>
+          <p className="label" style={{ marginBottom: "0.6rem" }}>
+            What friends see
+          </p>
+          <div className="reveal-cards">
+            {(["HIDDEN", "VISIBLE"] as const).map((v) => (
+              <button
+                key={v}
+                className={`reveal-card${profile.visMode === v ? " on" : ""}`}
+                onClick={() => onSaveVis(v)}
+                aria-pressed={profile.visMode === v}
+                aria-label={v === "HIDDEN" ? "Hidden: show nothing" : "Tier visible: show your tier"}
+              >
+                <div className="card-inner">
+                  <div className="card-face">
+                    {v === "VISIBLE" ? (
+                      <>
+                        <Chop id={profile.id} size="md" />
+                        <span className="who">{tee?.tier ?? "Tier"}</span>
+                        <span className="what">shown to connections</span>
+                      </>
+                    ) : (
+                      <>
+                        <span className="who">Hidden</span>
+                        <span className="what">shown to no one</span>
+                      </>
+                    )}
+                  </div>
+                  <div className="card-back" aria-hidden="true" />
+                </div>
+                <span className="reveal-caption">
+                  {v === "HIDDEN" ? "Hidden" : "Tier visible"}
+                </span>
+              </button>
+            ))}
+          </div>
+          <p className="fine" style={{ marginTop: "0.7rem" }}>
+            Turning your cards: visible shows your tier to connections. No
+            amounts are ever shown. Reversible any time.
+          </p>
+        </div>
+
         <CredentialsCard profile={profile} onChanged={onCredsChanged} />
       </div>
 
-      <div className="card">
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "0.6rem",
-            flexWrap: "wrap",
-          }}
-        >
-          <p className="mono-label" style={{ fontSize: 20 }}>
-            WALLETS
-          </p>
-          <span className="fine" style={{ marginLeft: "auto" }}>
+      <div className="plate">
+        <div className="topline">
+          <p className="label">Wallets</p>
+          <span className="fine num">
             {profile.wallets.length}/{MAX_WALLETS}
           </span>
         </div>
         {profile.wallets.length === 1 && !walletSetDismissed && (
           <div
-            style={{
-              marginTop: "0.6rem",
-              border: "2px solid var(--ink)",
-              padding: "0.7rem 0.9rem",
-              display: "flex",
-              gap: "0.6rem",
-              alignItems: "center",
-              flexWrap: "wrap",
-            }}
+            className="invite-box"
+            style={{ marginTop: "0.7rem", justifyContent: "space-between" }}
           >
-            <span className="fine" style={{ margin: 0 }}>
-              YOUR TIER REFLECTS THE ONE WALLET CONNECTED SO FAR. ADD YOUR OTHER
-              WALLETS — IT CAN ONLY GO UP.
+            <span>
+              Your tier reflects the one wallet connected so far. Add your
+              other wallets. It can only go up.
             </span>
             <button className="chip" onClick={() => setWalletSetDismissed(true)}>
-              GOT IT
+              Got it
             </button>
           </div>
         )}
         {profile.wallets.length === 0 ? (
-          <p className="fine">
+          <p className="fine" style={{ marginTop: "0.7rem" }}>
             No wallets enrolled. Prove your first wallet below.
           </p>
         ) : (
@@ -502,110 +464,109 @@ function ProfileView({
                     letter={wname.slice(0, 1).toUpperCase()}
                   />
                   <div className="wallet-info">
-                    <strong style={{ fontSize: "1rem" }}>{wname}</strong>
-                    <span className="fine" style={{ margin: 0 }}>
-                      {`${w.chain.toUpperCase()} · ADDRESS HIDDEN BY DESIGN`}
+                    <strong>{wname}</strong>
+                    <span className="fine">
+                      {`${w.chain.toUpperCase()} · address hidden by design`}
                     </span>
                   </div>
                   <button
                     className="chip"
                     style={{ marginLeft: "auto" }}
                     title={`Remove ${wname}`}
+                    aria-label={`Remove ${wname}`}
                     onClick={() => onDisconnectOne(w)}
                   >
-                    ✕
+                    <X size={12} aria-hidden="true" />
                   </button>
                 </div>
               );
             })}
           </div>
         )}
-        {proveMode && (
-          <div className="dialog-overlay">
-            <div
-              className="dialog-box"
-              style={{ alignItems: "center", textAlign: "center" }}
-              role="dialog"
-              aria-label={
-                proveMode === "add" ? "Add a wallet" : "Connect a wallet"
-              }
-            >
-              <p className="mono-label" style={{ margin: 0 }}>
-                {proveMode === "add" ? "ADD WALLET" : "CONNECT WALLET"}
-              </p>
-              <TeeProve
-                key={proveMode}
-                mode={proveMode}
-                busyLabel="OPENING YOUR WALLET…"
-                onDone={onProveDone}
-                onDismiss={onDismissFlow}
-              />
-              <button
-                className="btn-ghost"
-                style={{ padding: "0.5rem 1rem" }}
-                onClick={onDismissFlow}
-              >
-                CANCEL
-              </button>
-            </div>
-          </div>
-        )}
         <div className="wallet-actions">
-          {!proveMode &&
-            (!addOnly || !tierActive ? (
-              <button
-                className="btn-solid"
-                style={{ padding: "0.6rem 1rem" }}
-                onClick={() => onProve("establish")}
-              >
-                CONNECT WALLET ↗
-              </button>
-            ) : (
-              <button
-                className="btn-solid"
-                style={{ padding: "0.6rem 1rem" }}
-                onClick={() => onProve("add")}
-              >
-                ADD WALLET ↗
-              </button>
-            ))}
-            <button
-              className="btn-ghost"
-              style={{ padding: "0.6rem 1rem", margin: "0 auto" }}
-              disabled={checking}
-              onClick={onRecheck}
-            >
-              {checking ? "REFRESHING…" : "REFRESH TIER"}
+          {!addOnly || !tierActive ? (
+            <button className="btn btn-primary" onClick={() => onProve("establish")}>
+              Connect wallet
             </button>
-            <button
-              className="btn-ghost"
-              style={{ padding: "0.6rem 1rem" }}
-              onClick={onDisconnectAll}
-            >
-              DISCONNECT ALL
+          ) : (
+            <button className="btn btn-primary" onClick={() => onProve("add")}>
+              Add wallet
             </button>
+          )}
+          <button
+            className="btn-ghost"
+            disabled={checking}
+            onClick={onRecheck}
+          >
+            {checking ? "Refreshing" : "Refresh tier"}
+          </button>
+          <button className="btn-ghost" onClick={onDisconnectAll}>
+            Disconnect all
+          </button>
+          <button className="btn-ghost" onClick={onLogout}>
+            Log out
+          </button>
+        </div>
+      </div>
+      {proveMode && (
+        <div
+          className="veil"
+          role="dialog"
+          aria-label={proveMode === "add" ? "Add a wallet" : "Connect a wallet"}
+        >
+          <div
+            className="dialog"
+            style={{ alignItems: "center", textAlign: "center" }}
+          >
+            <p className="label" style={{ margin: 0 }}>
+              {proveMode === "add" ? "Add a wallet" : "Connect a wallet"}
+            </p>
+            <ol className="ceremony-steps">
+              <li>
+                <span className="step-dot" aria-hidden="true" />
+                Your wallet opens a signature request. One plain message.
+                Nothing moves: no transaction, no gas.
+              </li>
+              <li>
+                <span className="step-dot" aria-hidden="true" />
+                Your browser checks the enclave against the pinned
+                fingerprint, then sends the request encrypted.
+              </li>
+              <li>
+                <span className="step-dot" aria-hidden="true" />
+                The enclave reads balances and signs the tier. Your addresses
+                are forgotten.
+              </li>
+            </ol>
+            <TeeProve
+              key={proveMode}
+              mode={proveMode}
+              busyLabel="Opening your wallet…"
+              onDone={onProveDone}
+              onDismiss={onDismissFlow}
+            />
             <button
-              className="btn-ghost"
-              style={{ padding: "0.6rem 1rem" }}
-              onClick={onLogout}
+              className="btn-ghost btn-sm"
+              onClick={onDismissFlow}
             >
-              LOG OUT
+              Cancel
             </button>
           </div>
-      </div>
+        </div>
+      )}
     </section>
   );
 }
 
 function usernameProblem(v: string): string | null {
   if (!/^[a-zA-Z0-9_.]{3,24}$/.test(v.trim()))
-    return "Username: 3–24 chars, letters/numbers/._ only";
+    return "Username: 3 to 24 characters, letters, numbers, . and _ only";
   return null;
 }
 
 /**
  * Optional device-free sign-in. Set a username + password once, then sign in
- * on any device without connecting wallets. Linking a wallet enables
+ * on any device without connecting wallets. Any enrolled wallet enables
  * recovery: forget either and a wallet signature re-issues them (/recover).
  */
 function CredentialsCard({
@@ -629,7 +590,7 @@ function CredentialsCard({
       return;
     }
     if (password.length < 10) {
-      notifyError("Password must be at least 10 characters");
+      notifyError("Password must be at least 10 characters.");
       return;
     }
     if (busy) return;
@@ -642,7 +603,7 @@ function CredentialsCard({
       onChanged();
     } catch (e) {
       console.error("username setup failed", e);
-      notifyError(errMsg(e, "Couldn't set username — try again"));
+      notifyError(errMsg(e, "Couldn't set username. Try again."));
     } finally {
       setBusy(false);
     }
@@ -659,7 +620,9 @@ function CredentialsCard({
       setNext("");
     } catch (e) {
       console.error("password change failed", e);
-      notifyError(e instanceof Error ? e.message : "Could not change the password");
+      notifyError(
+        e instanceof Error ? e.message : "Could not change the password.",
+      );
     } finally {
       setBusy(false);
     }
@@ -667,157 +630,116 @@ function CredentialsCard({
 
   const isSet = profile.username != null && profile.username !== "";
   return (
-    <div
-      style={{
-        marginTop: "0.8rem",
-        border: "2px solid var(--ink)",
-        background: "var(--card)",
-        boxShadow: "4px 4px 0 var(--shadow)",
-        overflow: "hidden",
-        width: "100%",
-      }}
-    >
+    <div className="ceremony" style={{ borderColor: "var(--line-soft)" }}>
       <div
         style={{
           display: "flex",
           alignItems: "center",
           gap: "0.6rem",
           flexWrap: "wrap",
-          padding: "0.55rem 0.9rem",
-          borderBottom: "2px solid var(--ink)",
-          background: isSet ? "var(--gold)" : "var(--ink)",
-          color: isSet ? "var(--on-dark)" : "var(--paper)",
         }}
       >
+        <p className="label" style={{ margin: 0 }}>
+          Device-free sign-in
+        </p>
         <span
-          className="mono-label"
-          style={{ margin: 0, color: "inherit", fontSize: "0.7rem" }}
+          className="tier-tag"
+          style={{ marginLeft: "auto" }}
         >
-          DEVICE-FREE SIGN-IN
-        </span>
-        <span
-          className="mono-label"
-          style={{
-            margin: 0,
-            marginLeft: "auto",
-            color: "inherit",
-            fontSize: "0.68rem",
-            border: "2px solid currentColor",
-            padding: "0.15rem 0.5rem",
-          }}
-        >
-          {isSet ? `@${profile.username}` : "NOT SET"}
+          {isSet ? `@${profile.username}` : "not set"}
         </span>
       </div>
-      <div
-        style={{
-          display: "flex",
-          flexDirection: "column",
-          gap: "0.7rem",
-          padding: "0.9rem",
-        }}
-      >
-        {!isSet ? (
-          <>
-            <p className="fine" style={{ margin: 0 }}>
-              Sign in on other devices without connecting wallets. Any
-              enrolled wallet recovers these if forgotten — the server
-              never sees an address, only enclave-sealed proofs.
-            </p>
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns:
-                  "repeat(auto-fit, minmax(min(200px, 100%), 1fr))",
-                gap: "0.5rem",
-              }}
-            >
-              <input
-                className="field"
-                style={{ width: "100%" }}
-                placeholder="username (3–24 chars)"
-                autoComplete="username"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-              />
-              <input
-                className="field"
-                style={{ width: "100%" }}
-                type="password"
-                autoComplete="new-password"
-                placeholder="password (10+ chars)"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-              />
-            </div>
-            <button
-              className="btn-solid"
+      {!isSet ? (
+        <>
+          <p className="fine" style={{ margin: 0 }}>
+            Sign in on other devices without connecting wallets. Any enrolled
+            wallet recovers these if forgotten. The server never sees an
+            address, only enclave-sealed proofs.
+          </p>
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns:
+                "repeat(auto-fit, minmax(min(200px, 100%), 1fr))",
+              gap: "0.5rem",
+            }}
+          >
+            <input
+              className="field"
               style={{ width: "100%" }}
+              placeholder="username, 3 to 24 characters"
+              autoComplete="username"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+            />
+            <input
+              className="field"
+              style={{ width: "100%" }}
+              type="password"
+              autoComplete="new-password"
+              placeholder="password, 10+ characters"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+            />
+          </div>
+          <div className="ceremony-actions">
+            <button
+              className="btn btn-primary"
               disabled={busy}
               onClick={() => void setup()}
             >
-              {busy ? "SAVING…" : "ENABLE USERNAME SIGN-IN ↗"}
+              {busy ? "Saving" : "Enable username sign-in"}
             </button>
-          </>
-        ) : (
-          <>
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns:
-                  "repeat(auto-fit, minmax(min(200px, 100%), 1fr))",
-                gap: "0.5rem",
-              }}
-            >
-              <input
-                className="field"
-                style={{ width: "100%" }}
-                type="password"
-                autoComplete="current-password"
-                placeholder="current password"
-                value={current}
-                onChange={(e) => setCurrent(e.target.value)}
-              />
-              <input
-                className="field"
-                style={{ width: "100%" }}
-                type="password"
-                autoComplete="new-password"
-                placeholder="new password (10+ chars)"
-                value={next}
-                onChange={(e) => setNext(e.target.value)}
-              />
-            </div>
-            <button
-              className="btn-solid"
+          </div>
+        </>
+      ) : (
+        <>
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns:
+                "repeat(auto-fit, minmax(min(200px, 100%), 1fr))",
+              gap: "0.5rem",
+            }}
+          >
+            <input
+              className="field"
               style={{ width: "100%" }}
+              type="password"
+              autoComplete="current-password"
+              placeholder="current password"
+              value={current}
+              onChange={(e) => setCurrent(e.target.value)}
+            />
+            <input
+              className="field"
+              style={{ width: "100%" }}
+              type="password"
+              autoComplete="new-password"
+              placeholder="new password, 10+ characters"
+              value={next}
+              onChange={(e) => setNext(e.target.value)}
+            />
+          </div>
+          <div className="ceremony-actions">
+            <button
+              className="btn"
               disabled={busy}
               onClick={() => void change()}
             >
-              {busy ? "SAVING…" : "UPDATE PASSWORD"}
+              {busy ? "Saving" : "Update password"}
             </button>
-            <div
-              style={{
-                borderTop: "1px solid var(--line)",
-                paddingTop: "0.7rem",
-                display: "flex",
-                flexDirection: "column",
-                gap: "0.4rem",
-              }}
-            >
-              <p className="mono-label" style={{ margin: 0, fontSize: "0.66rem" }}>
-                WALLET RECOVERY
-              </p>
-              <p className="fine" style={{ margin: 0 }}>
-                Every enrolled wallet doubles as recovery — no setup, no
-                linking. Forgot either?{" "}
-                <a href="/recover">Recover with a wallet ↗</a>
-              </p>
-            </div>
-          </>
-        )}
-        {msg && <p className="fine" style={{ margin: 0 }}>{msg}</p>}
-      </div>
+          </div>
+          <p className="fine" style={{ margin: 0 }}>
+            Every enrolled wallet doubles as recovery. Forgot either?{" "}
+            <a href="/recover" style={{ color: "inherit" }}>
+              Recover with a wallet
+            </a>
+            .
+          </p>
+        </>
+      )}
+      {msg && <p className="fine" style={{ margin: 0 }}>{msg}</p>}
     </div>
   );
 }

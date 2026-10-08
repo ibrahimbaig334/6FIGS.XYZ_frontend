@@ -21,6 +21,7 @@ import SignInButton from "../../../components/SignInButton";
 import GamePanel from "../../../components/GamePanel";
 import RematchToast from "../../../components/RematchToast";
 import Loader from "../../../components/Loader";
+import TierTag from "../../../components/TierTag";
 
 export default function GamePage() {
   const { id } = useParams<{ id: string }>();
@@ -30,28 +31,28 @@ export default function GamePage() {
   const [msgs, setMsgs] = useState<ChatMessage[]>([]);
   const [err, setErr] = useState("");
   // Opponent presence = IN THIS GAME (page open), not merely online elsewhere.
-  // Leaving for the homepage leaves the game room → the countdown below fires.
+  // Leaving for the homepage leaves the game room, and the countdown fires.
   const [oppInGame, setOppInGame] = useState(false);
   // Opponent-return countdown (seconds left, null = not waiting). Ticks in
-  // the toast + overlay; at zero the game is closed and both sides leave.
+  // the veil; at zero the game is closed and both sides leave.
   const [returnLeft, setReturnLeft] = useState<number | null>(null);
   const returnTimer = useRef<ReturnType<typeof setInterval> | null>(null);
   // Countdown label: seen-then-left vs never arrived since match.
   const [wasSeen, setWasSeen] = useState(false);
   const seenOpp = useRef(false);
   const pageStart = useRef(Date.now());
-  // Close initiated (timer expired): polls/countdowns must never restart —
+  // Close initiated (timer expired): polls/countdowns must never restart;
   // the local game is still "open" until navigation unmounts us.
   const closingRef = useRef(false);
   // Tracks our own game-room membership so unmount always leaves it.
   const joinedRef = useRef<string | null>(null);
-  // Rematch offer flow: incoming offer toast + our outgoing offer state.
+  // Rematch offer flow: incoming offer toast plus our outgoing offer state.
   const [offer, setOffer] = useState<{
     gameId: string;
     fromHandle: string;
   } | null>(null);
   const [rematchPending, setRematchPending] = useState(false);
-  // Close initiated: fullscreen exit — the game never flashes back.
+  // Close initiated: fullscreen exit, the game never flashes back.
   const [leaving, setLeaving] = useState(false);
   const [ready, setReady] = useState(false);
   const sock = useRef<ReturnType<typeof connectSocket> | null>(null);
@@ -77,7 +78,7 @@ export default function GamePage() {
       const g = await api<GameState>(`/games/${id}`);
       if (g.status === "closed") {
         // Kicked out: the game was closed while we were gone.
-        notifyError("This game was closed");
+        notifyError("This table was cleared.");
         router.push("/play");
         return;
       }
@@ -91,9 +92,9 @@ export default function GamePage() {
       // No global-online check here: the live poll below reports whether the
       // opponent is actually IN this game (seat dot + countdown source).
     } catch (e) {
-      // Specific, human reason (e.g. a game that no longer exists) — to the
+      // Specific, human reason (e.g. a game that no longer exists), to the
       // error toast; the gate below is just the way back out.
-      notifyError(errMsg(e, "Couldn't load this game — try again"));
+      notifyError(errMsg(e, "Couldn't load this table. Try again."));
       setErr("load-failed");
     }
   }, [id, router]);
@@ -103,7 +104,7 @@ export default function GamePage() {
   }, [load]);
 
   // Opponent presence = IN THIS GAME ROOM (page open). Leaving for the
-  // homepage leaves the game room even while globally online — that starts
+  // homepage leaves the game room even while globally online, which starts
   // the 30s return countdown. Never-arrived opponents get a join grace first.
   // Reloads rejoin too fast (3s polls) to trip it.
   function stopReturn() {
@@ -118,13 +119,13 @@ export default function GamePage() {
     // Flip local state first: the poll effect tears itself down on the
     // status change, so no new countdown can start before navigation.
     setGame((g) => (g ? { ...g, status: "closed" } : g));
-    setLeaving(true); // instant fullscreen exit — no game flash
+    setLeaving(true); // instant fullscreen exit, no game flash
     // Fire-and-forget: navigation must not wait on the round trip. If it
     // ever fails, the returnee's own countdown closes the idle game.
     api(`/games/${id}/close`, { method: "POST" }).catch((e) =>
       console.error("close failed", e),
     );
-    notifyError("Opponent didn't return — game closed");
+    notifyError("Your stranger didn't return. The table was cleared.");
     router.push("/play");
   }
 
@@ -157,7 +158,7 @@ export default function GamePage() {
         if (live.oppInGame) {
           seenOpp.current = true;
           setWasSeen(true);
-          if (returnTimer.current !== null) stopReturn(); // back — cancelled
+          if (returnTimer.current !== null) stopReturn(); // back, cancelled
         } else if (
           returnTimer.current === null &&
           (seenOpp.current ||
@@ -166,7 +167,7 @@ export default function GamePage() {
           startReturn();
         }
       } catch {
-        /* blip — keep polling */
+        /* blip, keep polling */
       }
     }, POLL_GAME_LIVE_MS);
     return () => {
@@ -179,7 +180,7 @@ export default function GamePage() {
   // Client-side navigation reuses this component for a new game id: drop ALL
   // per-game state so the previous game can never bleed into the next one
   // (restarted countdowns, stale offers, ghost boards auto-kicking the user).
-  // Socket cleanup (leaveGame) runs before this setup — joinedRef is intact.
+  // Socket cleanup (leaveGame) runs before this setup; joinedRef is intact.
   useEffect(() => {
     stopReturn();
     closingRef.current = false;
@@ -200,7 +201,7 @@ export default function GamePage() {
     const s = connectSocket();
     sock.current = s;
     const joinAll = () => {
-      // Membership intent is synchronous — a slow ack must never strand us
+      // Membership intent is synchronous; a slow ack must never strand us
       // in the game room after unmount (leaveGame would never fire).
       joinedRef.current = id;
       s.emit(
@@ -215,7 +216,7 @@ export default function GamePage() {
     joinAll();
     const onState = (st: GameState) => {
       if (st.status === "open") {
-        setRematchPending(false); // fresh board — offers resolved
+        setRematchPending(false); // fresh board, offers resolved
         setOffer(null);
       }
       setGame((g) => mergeState(g, st));
@@ -232,8 +233,8 @@ export default function GamePage() {
       setRematchPending(false);
       notifyError(
         p.reason === "noresponse"
-          ? "Opponent didn't respond to the rematch"
-          : "Opponent declined the rematch",
+          ? "No answer to the rematch offer."
+          : "The rematch was declined.",
       );
     };
     s.on("gameState", onState);
@@ -241,13 +242,13 @@ export default function GamePage() {
     s.on("rematchOffer", onOffer);
     s.on("rematchDeclined", onDeclined);
     s.io.on("reconnect", joinAll); // new socket id = old rooms gone; rejoin
-    // load dm history with the real match id
+    // Load dm history with the real match id
     api<{ items: ChatMessage[] }>(`/chat/dm/${game.matchId}?limit=50`)
       .then((h) => setMsgs(h.items))
       .catch(() => {});
     return () => {
       // Leaving the page = leaving the game (broadcasts stop, presence
-      // drops) — even though the socket itself stays connected elsewhere.
+      // drops), even though the socket itself stays connected elsewhere.
       if (joinedRef.current) {
         s.emit("leaveGame", { gameId: joinedRef.current });
         joinedRef.current = null;
@@ -274,8 +275,8 @@ export default function GamePage() {
   }
 
   function rematch() {
-    // Offer flow: the opponent gets an accept/decline toast — the board
-    // resets ONLY on accept (server enforces it too).
+    // Offer flow: the opponent gets an accept/decline toast. The board
+    // resets only on accept (the server enforces it too).
     if (!game || rematchPending) return;
     sock.current?.emit(
       "rematchOffer",
@@ -316,18 +317,18 @@ export default function GamePage() {
     );
   }
 
-  // Closing: instant fullscreen exit — the game never flashes back while
+  // Closing: instant fullscreen exit; the game never flashes back while
   // the close lands and navigation unmounts us.
   if (leaving)
     return (
       <section className="page-enter loader-page">
-        <Loader label="CLOSING GAME…" />
+        <Loader label="Clearing the table" />
       </section>
     );
   if (!ready)
     return (
       <section className="page-enter loader-page">
-        <Loader label="LOADING..." />
+        <Loader />
       </section>
     );
   if (!getToken()) {
@@ -341,8 +342,8 @@ export default function GamePage() {
           placeItems: "center",
         }}
       >
-        <div className="card auth-card">
-          <p className="mono-label">GAME — SIGN IN</p>
+        <div className="plate auth-card">
+          <h1 className="label">The door</h1>
           <div
             style={{
               marginTop: "1.2rem",
@@ -350,11 +351,11 @@ export default function GamePage() {
               justifyContent: "center",
             }}
           >
-            <SignInButton onDone={load} />
+            <SignInButton onDone={load} label="Sign in" />
           </div>
-          <p className="fine" style={{ margin: "0.8rem 0 0" }}>
-            NEW HERE? CONNECTING A WALLET CREATES YOUR ACCOUNT AND PROVES YOUR
-            TIER.
+          <p className="fine" style={{ margin: 0 }}>
+            New here? Connecting a wallet creates your account and proves
+            your tier.
           </p>
         </div>
       </section>
@@ -371,10 +372,10 @@ export default function GamePage() {
           placeItems: "center",
         }}
       >
-        <div className="card gate-card">
-          <p className="mono-label">{"CAN'T JOIN THIS GAME"}</p>
-          <a href="/play" className="btn-solid">
-            ← BACK TO PLAY
+        <div className="plate gate-card">
+          <h1 className="label">Can&apos;t join this table</h1>
+          <a href="/play" className="btn btn-primary">
+            Back to the floor
           </a>
         </div>
       </section>
@@ -383,26 +384,24 @@ export default function GamePage() {
   if (!game) {
     return (
       <section className="page-enter loader-page">
-        <Loader label="FINDING GAME..." />
+        <Loader label="Setting the table" />
       </section>
     );
   }
 
   return (
-    <section className="page-enter game-page" style={{ padding: "1.6rem 5vw" }}>
+    <section
+      className="page-enter game-page"
+      style={{ padding: "1.6rem 5vw", maxWidth: "1160px", margin: "0 auto" }}
+    >
+      <h1 className="vh">The table</h1>
       <div className="game-topbar">
-        <span className="tier-badge">
-          {game.status === "open"
-            ? `LIVE · TURN ${game.turn}`
-            : game.status === "draw"
-              ? "DRAW"
-              : `${game.winner} WINS`}
-        </span>
+        <TierTag tier={me?.eligibility.tier ?? null} />
         <button
           className="btn-ghost btn-sm"
           onClick={() => router.push("/play")}
         >
-          EXIT ✕
+          Leave
         </button>
       </div>
       <GamePanel
@@ -415,8 +414,8 @@ export default function GamePage() {
         onSend={send}
         rematchPending={rematchPending}
         header={
-          <p className="mono-label">
-            RANDOM MATCH · {game.matchId.slice(-6).toUpperCase()}
+          <p className="label num">
+            Random table · {game.matchId.slice(-6).toUpperCase()}
           </p>
         }
       />
@@ -428,19 +427,18 @@ export default function GamePage() {
         />
       )}
       {returnLeft !== null && (
-        <div className="search-overlay" role="alert">
-          <p className="mono-label">
-            {wasSeen ? "OPPONENT LEFT — WAITING" : "WAITING FOR OPPONENT"}
+        <div className="search-veil" role="alert">
+          <div className="search-scene">
+            <div className="table-wood" aria-hidden="true">
+              <div className="table-felt" style={{ minHeight: "190px" }} />
+            </div>
+          </div>
+          <p className="label num">
+            {wasSeen ? "Your stranger left the table" : "Waiting for your stranger"}
           </p>
-          <p className="fine">
-            Closing the game in {returnLeft}s if they don&apos;t return…
+          <p className="fine num">
+            Clearing the table in {returnLeft}s if they don&apos;t return.
           </p>
-        </div>
-      )}
-      {returnLeft !== null && (
-        <div className="return-toast" role="alert">
-          {wasSeen ? "OPPONENT LEFT" : "WAITING FOR OPPONENT"} — CLOSING IN{" "}
-          {returnLeft}s
         </div>
       )}
     </section>

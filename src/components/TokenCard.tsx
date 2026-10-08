@@ -30,7 +30,8 @@ function price(n: number | null | undefined): string {
   );
 }
 
-/** Live ticker card (CoinGecko, server-cached 5 min). Slim pending line until data lands. */
+/** Live ticker card (CoinGecko, server-cached 5 min). A slim pending line
+ *  until data lands. Failed lookups render nothing: the chat line stays. */
 export default function TokenCard({ symbol }: { symbol: string }) {
   const [card, setCard] = useState<Card | null>(null);
   const [imgOk, setImgOk] = useState(true);
@@ -46,67 +47,48 @@ export default function TokenCard({ symbol }: { symbol: string }) {
   }, [symbol]);
 
   if (!card)
-    return <div className="token-card mono-label">LOADING ${symbol}…</div>;
+    return <div className="token-loading">Looking up ${symbol}</div>;
 
-  // Unpriceable / failed lookups render nothing — the chat line stays, and
-  // per-message fetch failures never touch the error toast.
+  // Unpriceable / failed lookups render nothing, and per-message fetch
+  // failures never touch the error toast.
   if (card.status !== "live" && card.status !== "stale") return null;
 
   const chg = card.change24h;
   return (
     <div className="token-card">
-      <div
-        style={{
-          display: "flex",
-          gap: "0.5rem",
-          alignItems: "center",
-          fontSize: "0.8rem",
-        }}
-      >
+      <div className="token-head">
         {card.image && imgOk && (
           <Image
             src={card.image}
             alt=""
-            width={24}
-            height={24}
+            width={22}
+            height={22}
             style={{ borderRadius: "50%" }}
             onError={() => setImgOk(false)}
           />
         )}
         <strong>${symbol}</strong>
-        <span style={{ color: "var(--muted)", fontSize: "0.7rem" }}>
-          {card.name ?? symbol}
-        </span>
+        <span className="fine">{card.name ?? symbol}</span>
         <span
-          className="tier-badge"
-          style={{
-            marginLeft: "auto",
-            background:
-              chg === null || chg === undefined
-                ? undefined
-                : chg >= 0
-                  ? "#1a7f37"
-                  : "var(--crimson)",
-            color: "#fff",
-          }}
+          className={`token-chg${chg != null && chg >= 0 ? " up" : ""}`}
         >
           {chg === null || chg === undefined
             ? "—"
-            : `${chg >= 0 ? "+" : ""}${chg.toFixed(2)}% 24H`}
-          {card.status === "stale" ? " · STALE" : ""}
+            : `${chg >= 0 ? "+" : ""}${chg.toFixed(2)}% 24h`}
+          {card.status === "stale" ? " stale" : ""}
         </span>
       </div>
-      <div className="token-grid cols-3">
+      <div className="token-grid">
         <div>
-          <span>PRICE</span>
+          <span>Price</span>
           <strong>{price(card.price)}</strong>
         </div>
         <div>
-          <span>MKT CAP</span>
+          <span>Mkt cap</span>
           <strong>{card.mcap ? "$" + compact(card.mcap) : "—"}</strong>
         </div>
         <div>
-          <span>VOL 24H</span>
+          <span>Vol 24h</span>
           <strong>{card.vol24h ? "$" + compact(card.vol24h) : "—"}</strong>
         </div>
       </div>

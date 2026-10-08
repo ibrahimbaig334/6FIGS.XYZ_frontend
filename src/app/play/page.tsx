@@ -3,6 +3,12 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
+  CaretDoubleLeft,
+  CaretDoubleRight,
+  CaretLeft,
+  CaretRight,
+} from "@phosphor-icons/react";
+import {
   api,
   errMsg,
   Friend,
@@ -25,8 +31,10 @@ import { notifyError } from "../../lib/notify";
 import SignInButton from "../../components/SignInButton";
 import SelectMenu from "../../components/SelectMenu";
 import Loader from "../../components/Loader";
+import Chop from "../../components/Chop";
+import TierTag from "../../components/TierTag";
 
-/** Sliding page list with ellipsis: 1 … 4 5 6 … 12. */
+/** Sliding page list with ellipsis: 1 ... 4 5 6 ... 12. */
 function pageWindow(cur: number, totalPages: number): (number | "…")[] {
   if (totalPages <= 7)
     return Array.from({ length: totalPages }, (_, i) => i + 1);
@@ -56,13 +64,13 @@ export default function PlayPage() {
   const [searching, setSearching] = useState(false);
   const [elapsed, setElapsed] = useState(0);
   const [outgoing, setOutgoing] = useState<RoomRequestInfo[]>([]);
-// Offer outcomes (declined / no response) land in the error toast only.
+  // Offer outcomes (declined / no response) land in the error toast only.
   const [joining, setJoining] = useState<string | null>(null); // overlay text while connecting to a room
   const [initialLoading, setInitialLoading] = useState(true);
   const [goto, setGoto] = useState("");
   const searchingRef = useRef(false);
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
-  // 15s response window per outgoing request — fires the no-response expiry.
+  // 15s response window per outgoing request: fires the no-response expiry.
   const reqTimers = useRef(new Map<string, ReturnType<typeof setTimeout>>());
   const outgoingRef = useRef<RoomRequestInfo[]>([]);
 
@@ -83,41 +91,41 @@ export default function PlayPage() {
   }, [outgoing]);
 
   const refreshFriends = useCallback(async () => {
-    if (!getToken()) return; // CONNECT FIRST gate is showing — no session, no calls
+    if (!getToken()) return; // gate is showing: no session, no calls
     try {
       const params = new URLSearchParams({
         page: String(friendPage),
         limit: String(FRIENDS_PAGE_SIZE),
         sort: friendSort,
       });
-      // Name sort runs A→Z (user_… below SmithWagmi); the rest keep newest-first.
+      // Name sort runs A to Z; the rest keep newest-first.
       if (friendSort === "name") params.set("order", "asc");
       if (q) params.set("q", q);
       const res = await api<FriendList>(`/play/friends?${params.toString()}`);
       setFriends(res.items);
       setFriendTotal(res.total);
     } catch (e) {
-      // Keep the last known list through blips — the WHY lands in the error box.
+      // Keep the last known list through blips; the reason lands in the error box.
       console.error("friends load failed", e);
-      notifyError(errMsg(e, "Couldn't load your friends — try again"));
+      notifyError(errMsg(e, "Couldn't load your connections. Try again."));
     }
   }, [q, friendPage, friendSort]);
 
   const load = useCallback(async () => {
-    if (!getToken()) return; // CONNECT FIRST gate is showing — no session, no calls
+    if (!getToken()) return; // gate is showing: no session, no calls
     refreshFriends();
     try {
       const out = await api<RoomRequestInfo[]>("/play/requests/outgoing");
       out.forEach(armRequestTimer);
       setOutgoing((prev) => {
-        // requester side: an accepted outgoing means "join the game now"
+        // Requester side: an accepted outgoing means "join the game now".
         const acc = out.find((o) => o.status === "accepted" && o.gameId);
         if (
           acc &&
           !prev.some((p) => p.id === acc.id && p.status === "accepted")
         ) {
           joinRoomWithOverlay(
-            `ACCEPTED — JOINING ${acc.toHandle.toUpperCase()}'S GAME…`,
+            `Accepted. Joining ${acc.toHandle}'s table.`,
             acc.gameId as string,
           );
         }
@@ -125,7 +133,7 @@ export default function PlayPage() {
       });
     } catch (e) {
       console.error("play load failed", e);
-      notifyError(errMsg(e, "Couldn't load your requests — try again"));
+      notifyError(errMsg(e, "Couldn't load your requests. Try again."));
     }
     if (getToken()) {
       try {
@@ -153,15 +161,15 @@ export default function PlayPage() {
   }, [load]);
 
   // Realtime matchmaking events (polling below is the fallback).
-  // Incoming offers live in the global ChallengeToast — this tab only tracks
-  // the requests WE sent (accept/decline outcomes land on the friend row).
+  // Incoming offers live in the global ChallengeToast; this tab only tracks
+  // the requests WE sent (accept/decline outcomes land on the connection row).
   useEffect(() => {
     if (!ready || !getToken()) return;
     const s = connectSocket();
     const onAccepted = (p: { requestId: string; gameId: string }) => {
       const hit = outgoingRef.current.find((o) => o.id === p.requestId);
       clearRequestTimer(p.requestId);
-      if (hit) joinRoomWithOverlay("ACCEPTED — JOINING GAME…", p.gameId);
+      if (hit) joinRoomWithOverlay("Accepted. Joining the table.", p.gameId);
       setOutgoing((prev) =>
         prev.map((o) =>
           o.id === p.requestId
@@ -174,7 +182,7 @@ export default function PlayPage() {
       clearRequestTimer(p.requestId);
       const hit = outgoingRef.current.find((o) => o.id === p.requestId);
       if (hit) {
-        notifyError(`${hit.toHandle} — REQUEST DECLINED`);
+        notifyError(`${hit.toHandle} declined the request.`);
       }
       setOutgoing((prev) => prev.filter((o) => o.id !== p.requestId));
     };
@@ -197,7 +205,7 @@ export default function PlayPage() {
           const acc = out.find((o) => o.status === "accepted" && o.gameId);
           if (acc)
             joinRoomWithOverlay(
-              `ACCEPTED — JOINING ${acc.toHandle.toUpperCase()}'S GAME…`,
+              `Accepted. Joining ${acc.toHandle}'s table.`,
               acc.gameId as string,
             );
           else setOutgoing(out);
@@ -208,14 +216,14 @@ export default function PlayPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ready]);
 
-  // Friend presence refreshes every 5s — dots go live without a reload.
+  // Presence refreshes every 5s; dots go live without a reload.
   useEffect(() => {
     if (!ready || !getToken()) return;
     const t = setInterval(refreshFriends, POLL_FRIENDS_MS);
     return () => clearInterval(t);
   }, [ready, refreshFriends]);
 
-  // Searching ticker + status poll.
+  // Elapsed ticker + status poll while searching.
   useEffect(() => {
     if (!searching) return;
     const t0 = Date.now();
@@ -260,10 +268,10 @@ export default function PlayPage() {
         return;
       }
       searchingRef.current = true;
-      setSearching(true); // animation locks the UI until matched/cancelled
+      setSearching(true); // the veil locks the tab until matched/cancelled
     } catch (e) {
       console.error("queue failed", e);
-      notifyError(errMsg(e, "Couldn't join the queue — try again"));
+      notifyError(errMsg(e, "Couldn't join the queue. Try again."));
     }
   }
 
@@ -284,7 +292,7 @@ export default function PlayPage() {
   }
 
   /** Start (or resume) the 15s window on an outgoing request; at the mark the
-   *  offer is withdrawn server-side and the friend row shows DIDN'T RESPOND. */
+   *  offer is withdrawn server-side and the row shows "No response". */
   function armRequestTimer(r: RoomRequestInfo) {
     if (r.status !== "pending" || reqTimers.current.has(r.id)) return;
     const created = Date.parse(r.createdAt);
@@ -305,10 +313,10 @@ export default function PlayPage() {
     setOutgoing((prev) => prev.filter((o) => o.id !== id));
     api(`/play/requests/${id}/cancel`, { method: "POST" })
       .then(() => {
-        notifyError(`${handle} — DIDN'T RESPOND`);
+        notifyError(`${handle} didn't respond.`);
       })
       .catch((e) => {
-        // Accepted in the same breath — the join flow takes over, no note.
+        // Accepted in the same breath; the join flow takes over, no note.
         console.error("request expire failed", e);
       });
   }
@@ -323,7 +331,7 @@ export default function PlayPage() {
       armRequestTimer(r);
     } catch (e) {
       console.error("request failed", e);
-      notifyError(errMsg(e, "Couldn't send the request — try again"));
+      notifyError(errMsg(e, "Couldn't send the request. Try again."));
     }
   }
 
@@ -334,7 +342,7 @@ export default function PlayPage() {
       setOutgoing((prev) => prev.filter((o) => o.id !== id));
     } catch (e) {
       console.error("cancel request failed", e);
-      notifyError(errMsg(e, "Couldn't cancel — try again"));
+      notifyError(errMsg(e, "Couldn't cancel. Try again."));
     }
   }
 
@@ -358,7 +366,7 @@ export default function PlayPage() {
   if (!ready) {
     return (
       <section className="page-enter loader-page">
-        <Loader label="LOADING PLAY…" />
+        <Loader label="Walking the floor" />
       </section>
     );
   }
@@ -374,16 +382,8 @@ export default function PlayPage() {
           placeItems: "center",
         }}
       >
-        <div
-          className="card"
-          style={{
-            width: "100%",
-            maxWidth: "520px",
-            textAlign: "center",
-            padding: "2.5rem 2rem",
-          }}
-        >
-          <p className="mono-label">PLAY — SIGN IN</p>
+        <div className="plate auth-card">
+          <h1 className="label">The door</h1>
           <div
             style={{
               marginTop: "1.2rem",
@@ -391,11 +391,11 @@ export default function PlayPage() {
               justifyContent: "center",
             }}
           >
-            <SignInButton onDone={load} />
+            <SignInButton onDone={load} label="Sign in" />
           </div>
-          <p className="fine" style={{ margin: "0.8rem 0 0" }}>
-            NEW HERE? CONNECTING A WALLET CREATES YOUR ACCOUNT AND PROVES YOUR
-            TIER.
+          <p className="fine" style={{ margin: 0 }}>
+            New here? Connecting a wallet creates your account and proves
+            your tier.
           </p>
         </div>
       </section>
@@ -405,54 +405,35 @@ export default function PlayPage() {
   const tier = profile?.eligibility.tier;
 
   return (
-    <section
-      className="page-enter"
-      style={{
-        padding: "2rem 5vw",
-        flex: 1,
-        display: "flex",
-        flexDirection: "column",
-        gap: "1rem",
-      }}
-    >
-      <div className="topline" style={{ marginBottom: 0 }}>
-        <div className="tabs">
+    <section className="page-enter shell" style={{ flex: 1 }}>
+      <h1 className="vh">Play</h1>
+      <div className="topline">
+        <div className="tabbar">
           <a href="/rooms">Private rooms</a>
           <a href="/play" className="active">
-            1v1 chat
+            1-on-1
           </a>
         </div>
-        <span className="tier-badge" style={{ padding: "0.6rem 1.3rem" }}>
-          {tier ? `YOU · ${tier}` : "UNVERIFIED"}
-        </span>
+        <TierTag tier={tier ?? null} />
       </div>
 
-      <div className="card">
-        <div
-          style={{
-            display: "flex",
-            gap: "0.8rem",
-            alignItems: "center",
-            justifyContent: "center",
-            flexWrap: "wrap",
-          }}
-        >
-          <button
-            className="btn-solid"
-            onClick={quickplay}
-            disabled={!tier || searching}
-            style={{ marginBottom: "0.8rem" }}
-          >
-            RANDOM
-          </button>
-        </div>
-        <p className="fine" style={{ textAlign: "center" }}>
-          Random pairs you with another searching holder. Chat both ways to
-          become friends, then invite friends to private rooms.
+      <div className="plate" style={{ textAlign: "center" }}>
+        <p className="fine" style={{ marginBottom: "0.9rem" }}>
+          Random seats you at a table with another searching member. One
+          message each way makes you connections.
         </p>
+        <button className="btn btn-primary" onClick={quickplay} disabled={!tier || searching}>
+          Take a seat
+        </button>
+        {!tier && (
+          <p className="fine" style={{ marginTop: "0.8rem" }}>
+            The tables are gated by tier. Verify your holdings in Profile
+            first.
+          </p>
+        )}
       </div>
 
-      <div className="rooms-filter">
+      <div className="filters">
         <input
           className="field rooms-q"
           value={q}
@@ -460,78 +441,72 @@ export default function PlayPage() {
             setQ(e.target.value);
             setFriendPage(1);
           }}
-          placeholder="search friends…"
+          placeholder="Search connections"
         />
         <div className="sortmenu-wrap">
           <SelectMenu
-            label="Sort friends"
+            label="Sort connections"
             value={friendSort}
             onChange={pickSort}
             options={[
-              { value: "created", label: "NEWEST" },
-              { value: "name", label: "NAME A–Z" },
-              { value: "online", label: "ONLINE FIRST" },
+              { value: "created", label: "Newest" },
+              { value: "name", label: "Name A to Z" },
+              { value: "online", label: "Online first" },
             ]}
           />
         </div>
-        <span className="fine rooms-count">{friendTotal} FRIENDS</span>
+        <span className="fine num rooms-count">{friendTotal} connections</span>
       </div>
+
       {initialLoading ? (
-        <div className="loader-block">
-          <Loader label="LOADING FRIENDS…" />
+        <div className="floor" aria-busy="true">
+          {[0, 1, 2, 3].map((i) => (
+            <div key={i} className="skeleton skeleton-table" />
+          ))}
         </div>
       ) : (
-        <div className="room-rows">
+        <div className="floor">
           {friends.map((p) => {
             const pend = pendingTo(p.id);
-            const letter = (p.handle?.trim()?.[0] ?? "?").toUpperCase();
             return (
-              <div key={p.id} className="room-row friend-row">
+              <div key={p.id} className="friend-row">
                 <span
-                  className={`friend-avatar${p.online ? " on" : ""}`}
+                  className={`friend-av${p.online ? " live" : ""}`}
                   aria-hidden="true"
                 >
-                  {letter}
+                  <Chop id={p.id} size="md" />
                 </span>
-                <div className="room-main">
-                  <div className="room-topline">
-                    <strong className="room-name" title={p.handle}>
+                <div className="dir-main">
+                  <div className="dir-topline">
+                    <strong className="dir-name" title={p.handle}>
                       {p.handle}
                     </strong>
                   </div>
-                  <p className="fine room-meta">
+                  <p className="fine dir-meta">
                     <span
                       className={p.online ? "dot on" : "dot"}
                       title={p.online ? "Online" : "Offline"}
                     />{" "}
-                    {p.online ? "ONLINE" : `OFFLINE · ${timeAgo(p.lastSeenAt)}`}
+                    {p.online ? "at the tables" : `away, ${timeAgo(p.lastSeenAt)}`}
                   </p>
                 </div>
-                <div className="room-side">
-                  <span
-                    className={
-                      p.tier === "TIER III" || p.tier === "TIER IV"
-                        ? "tier-badge t3"
-                        : "tier-badge"
-                    }
-                    style={{ width: "100%", textAlign: "center" }}
-                  >
-                    {p.tier ?? "UNVERIFIED"}
-                  </span>
+                <div className="friend-side">
+                  <TierTag tier={p.tier} />
                   {pend ? (
                     <button
                       className="btn-ghost btn-sm"
                       onClick={() => cancelRequest(pend.id)}
                     >
-                      CANCEL
+                      Cancel
                     </button>
                   ) : (
                     <button
-                      className="btn-solid btn-sm"
+                      className="btn btn-primary btn-sm"
                       disabled={!tier || !p.online}
+                      title={!tier ? "Verify your tier first" : "Invite to a table"}
                       onClick={() => sendRequest(p)}
                     >
-                      {p.online ? "ROOM REQUEST ↗" : "OFFLINE"}
+                      {p.online ? "Invite" : "Away"}
                     </button>
                   )}
                 </div>
@@ -540,15 +515,19 @@ export default function PlayPage() {
           })}
         </div>
       )}
+
       {friends.length === 0 && !initialLoading && (
-        <p className="fine">
-          No friends yet — hit RANDOM to meet someone. One message each way
-          makes you friends.
-        </p>
+        <div className="plate empty">
+          <p className="label">No connections yet</p>
+          <p className="fine">
+            Take a seat at a random table and meet someone.
+          </p>
+        </div>
       )}
+
       <div className="pager">
-        <span className="fine pager-stat">
-          PAGE {friendPage} / {friendPages} · {friendTotal} FRIENDS
+        <span className="fine num pager-stat">
+          Page {friendPage} of {friendPages}
         </span>
         <div className="pager-nav">
           <button
@@ -558,7 +537,7 @@ export default function PlayPage() {
             title="First page"
             aria-label="First page"
           >
-            «
+            <CaretDoubleLeft size={12} aria-hidden="true" />
           </button>
           <button
             className="chip"
@@ -567,7 +546,7 @@ export default function PlayPage() {
             title="Previous page"
             aria-label="Previous page"
           >
-            ‹
+            <CaretLeft size={12} aria-hidden="true" />
           </button>
           <span className="pager-nums">
             {pageWindow(friendPage, friendPages).map((n, i) =>
@@ -578,7 +557,7 @@ export default function PlayPage() {
               ) : (
                 <button
                   key={n}
-                  className={n === friendPage ? "chip active" : "chip"}
+                  className={n === friendPage ? "chip on" : "chip"}
                   onClick={() => setFriendPage(n)}
                   aria-label={`Page ${n}`}
                   aria-current={n === friendPage ? "page" : undefined}
@@ -595,7 +574,7 @@ export default function PlayPage() {
             title="Next page"
             aria-label="Next page"
           >
-            ›
+            <CaretRight size={12} aria-hidden="true" />
           </button>
           <button
             className="chip"
@@ -604,7 +583,7 @@ export default function PlayPage() {
             title="Last page"
             aria-label="Last page"
           >
-            »
+            <CaretDoubleRight size={12} aria-hidden="true" />
           </button>
         </div>
         <label className="pager-goto">
@@ -612,7 +591,7 @@ export default function PlayPage() {
             className="field"
             inputMode="numeric"
             pattern="[0-9]*"
-            placeholder="GO TO PAGE"
+            placeholder="Page"
             value={goto}
             onChange={(e) => setGoto(e.target.value.replace(/[^0-9]/g, ""))}
             onKeyDown={(e) => {
@@ -621,32 +600,31 @@ export default function PlayPage() {
             aria-label="Go to page"
           />
           <button className="chip" onClick={goToPage}>
-            GO
+            Go
           </button>
         </label>
       </div>
 
       {(searching || joining) && (
-        <div
-          className="search-overlay"
-          role="alertdialog"
-          aria-label="Matchmaking"
-        >
-          <div className="search-rings" aria-hidden="true">
-            <span />
-            <span />
-            <span />
+        <div className="search-veil" role="alertdialog" aria-label="Matchmaking">
+          <div className="search-scene">
+            <div className="table-wood" aria-hidden="true">
+              <div className="table-felt" style={{ minHeight: "190px" }} />
+            </div>
+            <div className="search-card">
+              <div className="seat-card">
+                <Chop id={profile?.id ?? "you"} size="md" />
+                <span className="who">{profile?.handle ?? "you"}</span>
+                <span className="what">waiting</span>
+              </div>
+            </div>
           </div>
-          <p className="mono-label">
-            {joining ?? `FINDING OPPONENT… ${elapsed}s`}
+          <p className="label num">
+            {joining ?? `Finding your table, ${elapsed}s`}
           </p>
           {!joining && (
-            <button
-              className="btn-ghost"
-              style={{ padding: "0.7rem 1.2rem" }}
-              onClick={cancelSearch}
-            >
-              CANCEL
+            <button className="btn-ghost" onClick={cancelSearch}>
+              Leave the floor
             </button>
           )}
         </div>

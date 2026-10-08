@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useParams, useSearchParams } from "next/navigation";
+import { Copy, LockSimple } from "@phosphor-icons/react";
 import {
   api,
   ApiError,
@@ -22,7 +23,9 @@ import SignInButton from "../../../components/SignInButton";
 import InviteDialog from "../../../components/InviteDialog";
 import DeleteRoomDialog from "../../../components/DeleteRoomDialog";
 import Loader from "../../../components/Loader";
+import Chop from "../../../components/Chop";
 import { POLL_ROOM_MS, ROOM_GONE_REDIRECT_MS } from "../../../lib/constants";
+import TierTag from "../../../components/TierTag";
 
 export default function RoomPage() {
   const { id } = useParams<{ id: string }>();
@@ -38,8 +41,7 @@ export default function RoomPage() {
   const [game, setGame] = useState<GameState | null>(null);
   const [ready, setReady] = useState(false);
   const [booted, setBooted] = useState(false);
-  const [popup, setPopup] = useState(false);
-  // Rematch offer flow: incoming offer toast + our outgoing offer state.
+  // Rematch offer flow: incoming offer toast plus our outgoing offer state.
   const [offer, setOffer] = useState<{
     gameId: string;
     fromHandle: string;
@@ -49,12 +51,12 @@ export default function RoomPage() {
   const gameRef = useRef<GameState | null>(null);
   // Seat fingerprint + retired game ids: when the seated pair rotates
   // (leave + new join) the old pair's game is dropped and the new pair's
-  // loads — and late broadcasts for retired games are ignored.
+  // loads, and late broadcasts for retired games are ignored.
   const seatsRef = useRef<string | null>(null);
   const retiredRef = useRef<Set<string>>(new Set());
   // Our own game-room membership (leave on exit/turnover, like the game page).
   const joinedRef = useRef<string | null>(null);
-  // Join-gate reasons live in the error toast (toast once per new reason —
+  // Join-gate reasons live in the error toast (toast once per new reason;
   // the meta poll re-sets the same object every few seconds).
   const joinReasonRef = useRef<string | null>(null);
 
@@ -86,7 +88,7 @@ export default function RoomPage() {
 
   const load = useCallback(async () => {
     if (!getToken()) return;
-    seatsRef.current = null; // fresh room (or retry) — re-learn the seated pair
+    seatsRef.current = null; // fresh room (or retry), re-learn the seated pair
     try {
       // Invite-link flow: ?code=CODE auto-joins, then drops the code from the URL.
       const code = search.get("code");
@@ -103,7 +105,7 @@ export default function RoomPage() {
           m = await api<RoomMeta>(`/rooms/${id}/meta`);
         } catch (e) {
           console.error("invite-link auto-join failed", e);
-          notifyError(errMsg(e, "Wrong invite code — try again"));
+          notifyError(errMsg(e, "Wrong invite code. Try again."));
         }
         const url = new URL(window.location.href);
         url.searchParams.delete("code");
@@ -111,7 +113,7 @@ export default function RoomPage() {
       }
       setMeta(m);
       if (!m.isMember) {
-        if (m.accessType === "invite" && code) setNeedCode(true); // wrong ?code — let them retry in the dialog
+        if (m.accessType === "invite" && code) setNeedCode(true); // wrong ?code, let them retry in the dialog
         return;
       }
       // Member whose tier dropped below the room's requirement: show the
@@ -125,7 +127,7 @@ export default function RoomPage() {
       ]);
       setMembers(mem);
       setMsgs(h.items);
-      // (re)join the socket room — covers first load and post-join refresh
+      // (re)join the socket room, covers first load and post-join refresh
       sock.current?.emit("joinScope", { scope: "room", scopeId: id });
       try {
         const g = await api<{ gameId: string }>(`/rooms/${id}/game`);
@@ -135,7 +137,7 @@ export default function RoomPage() {
         // 400 = normal "waiting for peer" (the slot already says it); real
         // failures land in the top-right error box.
         if (!(e instanceof ApiError && e.status === 400))
-          notifyError(errMsg(e, "Couldn't load the room game — try again"));
+          notifyError(errMsg(e, "Couldn't load the room game. Try again."));
       }
       try {
         setMe(await api<Profile>("/profile/user"));
@@ -146,7 +148,7 @@ export default function RoomPage() {
       console.error("room load failed", e);
       // 404 already became the roomGone notice; anything else lands in the box.
       if (!(e instanceof ApiError && e.status === 404))
-        notifyError(errMsg(e, "Couldn't load this room — try again"));
+        notifyError(errMsg(e, "Couldn't load this room. Try again."));
     }
   }, [id, search]);
 
@@ -155,7 +157,7 @@ export default function RoomPage() {
   }, [load]);
 
   // Client-side navigation reuses this component for a new room id: drop ALL
-  // per-room state (loader shows until the new room loads — never the old
+  // per-room state (loader shows until the new room loads, never the old
   // room, and never its game/offers). Socket cleanup runs before this setup,
   // so joinedRef is still intact for leaving the old game.
   useEffect(() => {
@@ -172,9 +174,9 @@ export default function RoomPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
-  // Poll while in the room: meta (membership + live occupancy), member presence,
-  // and the 1v1 game as soon as the peer joins. Notices deletion/removal so the
-  // peer gets kicked to a notice instead of a ghost room.
+  // Poll while in the room: meta (membership + live occupancy), member
+  // presence, and the 1v1 game as soon as the peer joins. Notices
+  // deletion/removal so the peer gets kicked to a notice, not a ghost room.
   useEffect(() => {
     if (!ready || !getToken() || !meta?.isMember || !meta.canEnter || roomGone)
       return;
@@ -184,7 +186,7 @@ export default function RoomPage() {
         m = await api<RoomMeta>(`/rooms/${id}/meta`);
       } catch (e) {
         if (e instanceof ApiError && e.status === 404) setRoomGone("deleted");
-        return; // blip — keep polling
+        return; // blip, keep polling
       }
       setMeta(m);
       if (!m.isMember) {
@@ -201,7 +203,7 @@ export default function RoomPage() {
           seatsRef.current = seats;
         } else if (seatsRef.current !== seats) {
           // Seats rotated: the room belongs to whoever is seated now (online
-          // or not) — retire the old pair's game so the new pair's loads.
+          // or not). Retire the old pair's game so the new pair's loads.
           seatsRef.current = seats;
           if (gameRef.current) {
             retiredRef.current.add(gameRef.current.id);
@@ -213,7 +215,7 @@ export default function RoomPage() {
         }
         setMembers(mem);
       } catch {
-        /* meta is fresh — transient */
+        /* meta is fresh, transient */
       }
       if (!gameRef.current) {
         try {
@@ -224,8 +226,8 @@ export default function RoomPage() {
           if (e instanceof ApiError && (e.status === 403 || e.status === 404)) {
             setRoomGone("deleted");
           } else if (!(e instanceof ApiError && e.status === 400)) {
-            // 400 = still waiting for the peer — not an error.
-            notifyError(errMsg(e, "Couldn't load the room game — try again"));
+            // 400 = still waiting for the peer, not an error.
+            notifyError(errMsg(e, "Couldn't load the room game. Try again."));
           }
         }
       }
@@ -238,7 +240,7 @@ export default function RoomPage() {
     sock.current = s;
     const joinAll = () => {
       s.emit("joinScope", { scope: "room", scopeId: id });
-      // Membership intent is synchronous — turnover/unmount must always be
+      // Membership intent is synchronous, so turnover/unmount must always be
       // able to leave, even if the join ack is still in flight.
       if (gameRef.current) {
         joinedRef.current = gameRef.current.id;
@@ -250,7 +252,7 @@ export default function RoomPage() {
       setMsgs((m) =>
         m.some((x) => x.id === p.message.id) ? m : [...m, p.message],
       );
-    // Viewer-relative fields survive broadcasts computed for the mover (X-flip bug).
+    // Viewer-relative fields survive broadcasts computed for the mover.
     const keepView = (g: GameState | null, st: GameState): GameState => ({
       ...st,
       youAre: g?.youAre ?? st.youAre,
@@ -258,9 +260,9 @@ export default function RoomPage() {
       opponent: g?.opponent ?? st.opponent,
     });
     const onState = (st: GameState) => {
-      if (retiredRef.current.has(st.id)) return; // old pair's game — ignore
+      if (retiredRef.current.has(st.id)) return; // old pair's game, ignore
       if (st.status === "open") {
-        setRematchPending(false); // fresh board — offers resolved
+        setRematchPending(false); // fresh board, offers resolved
         setOffer(null);
       }
       setGame((g) => (g ? keepView(g, st) : st));
@@ -273,8 +275,8 @@ export default function RoomPage() {
       setRematchPending(false);
       notifyError(
         p.reason === "noresponse"
-          ? "Opponent didn't respond to the rematch"
-          : "Opponent declined the rematch",
+          ? "No answer to the rematch offer."
+          : "The rematch was declined.",
       );
     };
     s.on("chatMessage", onChat);
@@ -320,8 +322,8 @@ export default function RoomPage() {
   }
 
   function rematch() {
-    // Offer flow: the opponent gets an accept/decline toast — the board
-    // resets ONLY on accept (server enforces it too).
+    // Offer flow: the opponent gets an accept/decline toast. The board
+    // resets only on accept (the server enforces it too).
     if (!game || rematchPending) return;
     sock.current?.emit(
       "rematchOffer",
@@ -368,7 +370,7 @@ export default function RoomPage() {
           console.error("room message rejected", ack.error);
           notifyError(ack.error);
         } else if (ack?.message) {
-          // append from ack — the WS echo may be missed if joinScope is still in flight
+          // Append from ack: the WS echo may be missed if joinScope is still in flight.
           const msg = ack.message;
           setMsgs((m) => (m.some((x) => x.id === msg.id) ? m : [...m, msg]));
         }
@@ -383,7 +385,7 @@ export default function RoomPage() {
       await load();
     } catch (e) {
       console.error("join with code failed", e);
-      notifyError(errMsg(e, "Wrong invite code — try again"));
+      notifyError(errMsg(e, "Wrong invite code. Try again."));
     }
   }
 
@@ -398,7 +400,7 @@ export default function RoomPage() {
       try {
         setMeta(await api<RoomMeta>(`/rooms/${id}/meta`));
       } catch {
-        notifyError(errMsg(e, "Couldn't join — try again"));
+        notifyError(errMsg(e, "Couldn't join. Try again."));
       }
     }
   }
@@ -409,7 +411,7 @@ export default function RoomPage() {
       location.href = "/rooms";
     } catch (e) {
       console.error("leave failed", e);
-      notifyError(errMsg(e, "Couldn't leave — try again"));
+      notifyError(errMsg(e, "Couldn't leave. Try again."));
     }
   }
 
@@ -420,14 +422,14 @@ export default function RoomPage() {
     } catch (e) {
       console.error("delete failed", e);
       setConfirmDelete(false);
-      notifyError(errMsg(e, "Couldn't delete this room — try again"));
+      notifyError(errMsg(e, "Couldn't delete this room. Try again."));
     }
   }
 
   if (!ready) {
     return (
       <section className="page-enter loader-page">
-        <Loader label="LOADING ROOM…" />
+        <Loader label="Setting the table" />
       </section>
     );
   }
@@ -443,16 +445,8 @@ export default function RoomPage() {
           placeItems: "center",
         }}
       >
-        <div
-          className="card"
-          style={{
-            width: "100%",
-            maxWidth: "520px",
-            textAlign: "center",
-            padding: "2.5rem 2rem",
-          }}
-        >
-          <p className="mono-label">ROOM — SIGN IN</p>
+        <div className="plate auth-card">
+          <h1 className="label">The door</h1>
           <div
             style={{
               marginTop: "1.2rem",
@@ -460,11 +454,11 @@ export default function RoomPage() {
               justifyContent: "center",
             }}
           >
-            <SignInButton onDone={load} />
+            <SignInButton onDone={load} label="Sign in" />
           </div>
-          <p className="fine" style={{ margin: "0.8rem 0 0" }}>
-            NEW HERE? CONNECTING A WALLET CREATES YOUR ACCOUNT AND PROVES YOUR
-            TIER.
+          <p className="fine" style={{ margin: 0 }}>
+            New here? Connecting a wallet creates your account and proves
+            your tier.
           </p>
         </div>
       </section>
@@ -474,13 +468,13 @@ export default function RoomPage() {
   if (!meta && !booted && !roomGone) {
     return (
       <section className="page-enter loader-page">
-        <Loader label="OPENING ROOM…" />
+        <Loader label="Setting the table" />
       </section>
     );
   }
 
-  // Join gate: non-members (and members who dropped below the room's tier —
-  // item 2) get the proper reason / code prompt, centered — never a dead end.
+  // Join gate: non-members (and members who dropped below the room's tier)
+  // get the proper reason or code prompt, centered. Never a dead end.
   if (meta && (!meta.isMember || !meta.canEnter)) {
     const invite = meta.accessType === "invite";
     return (
@@ -493,50 +487,32 @@ export default function RoomPage() {
           placeItems: "center",
         }}
       >
-        <div
-          className="card"
-          style={{ width: "100%", maxWidth: "460px", textAlign: "center" }}
-        >
-          <p className="mono-label">
-            {invite ? "🔒 INVITE-ONLY ROOM" : `✓ ${meta.minTier} ROOM`}
+        <div className="plate gate-card">
+          <p className="label" style={{ display: "inline-flex", alignItems: "center", gap: "0.4rem" }}>
+            {invite && <LockSimple size={13} aria-hidden="true" />}
+            {invite ? "Invite only" : `${meta.minTier} table`}
           </p>
-          <h3 style={{ margin: "0.4rem 0" }}>{meta.name}</h3>
-          <p className="fine" style={{ margin: 0 }}>
-            {meta.onlineCount}/2 ONLINE · {meta.memberCount}/2 SEATED · 1V1 ONLY
+          <h1>{meta.name}</h1>
+          <p className="fine num">
+            {meta.onlineCount}/2 in the room · {meta.memberCount}/2 seated
           </p>
           {invite ? (
             meta.isMember ? (
-              <a
-                href="/rooms"
-                className="btn-solid"
-                style={{ marginTop: "0.7rem" }}
-              >
-                BACK TO ROOMS ↗
+              <a href="/rooms" className="btn btn-primary">
+                Back to the floor
               </a>
             ) : (
-              <button
-                className="btn-solid"
-                style={{ marginTop: "0.7rem" }}
-                onClick={() => setNeedCode(true)}
-              >
-                ENTER INVITE CODE ↗
+              <button className="btn btn-primary" onClick={() => setNeedCode(true)}>
+                Enter invite code
               </button>
             )
           ) : meta.canEnter ? (
-            <button
-              className="btn-solid"
-              style={{ marginTop: "0.7rem" }}
-              onClick={joinTier}
-            >
-              JOIN {meta.minTier} ROOM ↗
+            <button className="btn btn-primary" onClick={joinTier}>
+              Take the seat
             </button>
           ) : (
-            <a
-              href="/profile"
-              className="btn-solid"
-              style={{ marginTop: "0.7rem" }}
-            >
-              GO TO PROFILE ↗
+            <a href="/profile" className="btn btn-primary">
+              Go to profile
             </a>
           )}
         </div>
@@ -553,22 +529,18 @@ export default function RoomPage() {
 
   if (roomGone) {
     return (
-      <section style={{ padding: "2rem 5vw" }}>
-        <div className="card" style={{ maxWidth: "480px" }}>
-          <p className="mono-label">
-            {roomGone === "deleted" ? "ROOM DELETED" : "REMOVED FROM ROOM"}
+      <section className="loader-page">
+        <div className="plate gate-card">
+          <p className="label">
+            {roomGone === "deleted" ? "Table cleared" : "Removed from the table"}
           </p>
           <p className="fine">
             {roomGone === "deleted"
-              ? "The owner deleted this room. Taking you back to the lobby…"
-              : "You are no longer in this room. Taking you back to the lobby…"}
+              ? "The owner cleared this table. Taking you back to the floor."
+              : "You are no longer seated here. Taking you back to the floor."}
           </p>
-          <a
-            href="/rooms"
-            className="btn-solid"
-            style={{ padding: "0.7rem 1rem" }}
-          >
-            BACK TO ROOMS ↗
+          <a href="/rooms" className="btn btn-primary">
+            Back to the floor
           </a>
         </div>
       </section>
@@ -576,7 +548,7 @@ export default function RoomPage() {
   }
 
   // Load failed outright (no room data, not deleted): the reason already
-  // landed in the error box — here just a way back out, not a ghost room.
+  // landed in the error box. Here just a way back out, not a ghost room.
   if (booted && !meta) {
     return (
       <section
@@ -588,8 +560,8 @@ export default function RoomPage() {
           placeItems: "center",
         }}
       >
-        <div className="card gate-card">
-          <p className="mono-label">{"COULDN'T OPEN THIS ROOM"}</p>
+        <div className="plate gate-card">
+          <h1 className="label">Couldn&apos;t open this table</h1>
           <div
             style={{
               display: "flex",
@@ -599,16 +571,16 @@ export default function RoomPage() {
             }}
           >
             <button
-              className="btn-solid"
+              className="btn btn-primary"
               onClick={() => {
                 setBooted(false);
                 load().finally(() => setBooted(true));
               }}
             >
-              RETRY ↺
+              Retry
             </button>
             <a href="/rooms" className="btn-ghost">
-              BACK TO ROOMS
+              Back to the floor
             </a>
           </div>
         </div>
@@ -617,65 +589,45 @@ export default function RoomPage() {
   }
 
   return (
-    <section
-      className="page-enter"
-      style={{
-        padding: "2rem 5vw",
-        display: "flex",
-        flexDirection: "column",
-        gap: "1rem",
-      }}
-    >
-      <div className="card">
+    <section className="page-enter shell" style={{ flex: 1, gap: "1rem" }}>
+      <div className="plate">
         <div className="room-head">
           <div className="room-head-info">
             <div className="room-head-row">
-              <p className="mono-label">
-                1V1 ROOM · {meta?.onlineCount ?? 0}/2 ONLINE
-              </p>
-              <span
-                className={
-                  meta?.accessType === "invite" ? "tier-badge t3" : "tier-badge"
-                }
-              >
-                {meta?.accessType === "invite"
-                  ? "🔒 INVITE-ONLY"
-                  : `✓ ${meta?.minTier}`}
-              </span>
+              <p className="label num">{meta?.onlineCount ?? 0}/2 in the room</p>
+              {meta?.accessType === "invite" ? (
+                <span className="tier-tag">
+                  <LockSimple size={11} aria-hidden="true" />
+                  Invite only
+                </span>
+              ) : (
+                <TierTag tier={meta?.minTier ?? null} />
+              )}
             </div>
-            <h2
-              style={{
-                margin: "0.4rem 0 0.2rem",
-                fontSize: "clamp(1.5rem, 3.5vw, 2.2rem)",
-                letterSpacing: "-0.03em",
-              }}
-            >
-              {meta?.name}
-            </h2>
-            <p className="fine" style={{ margin: "0 0 0.2rem" }}>
-              BY {meta?.creatorHandle.toUpperCase()}
-            </p>
+            <h2>{meta?.name}</h2>
+            <p className="fine dir-meta">by {meta?.creatorHandle}</p>
             {meta?.description && (
-              <p className="fine" style={{ margin: "0 0 0.6rem" }}>
+              <p className="fine" style={{ marginTop: "0.4rem" }}>
                 {meta.description}
               </p>
             )}
             {inviteCode && (
-              <div className="invite-box" style={{ margin: "0.8rem 0 0" }}>
-                INVITE LINK:{" "}
-                <a
-                  href={`${location.origin}/rooms/${id}?code=${inviteCode}`}
-                >{`${location.origin}/rooms/${id}?code=${inviteCode}`}</a>
+              <div className="invite-box" style={{ marginTop: "0.8rem" }}>
+                <span>Invite link</span>
+                <a href={`${location.origin}/rooms/${id}?code=${inviteCode}`}>
+                  {`${location.origin}/rooms/${id}?code=${inviteCode}`}
+                </a>
                 <button
                   className="chip"
-                  style={{ marginLeft: "0.4rem" }}
+                  style={{ marginLeft: "auto" }}
                   onClick={() =>
                     copyText(
                       `${location.origin}/rooms/${id}?code=${inviteCode}`,
                     )
                   }
                 >
-                  COPY
+                  <Copy size={12} aria-hidden="true" />
+                  Copy
                 </button>
               </div>
             )}
@@ -683,29 +635,22 @@ export default function RoomPage() {
           <div className="room-head-side">
             <div className="room-head-row">
               {members.map((m) => (
-                <span
-                  key={m.id}
-                  className="tier-badge"
-                  title={m.online ? "On this room page" : "Not here right now"}
-                >
-                  <span className={m.online ? "dot on" : "dot"} /> {m.handle}
+                <span key={m.id} className="tier-tag" title={m.online ? "At this table" : "Not here right now"}>
+                  <Chop id={m.id} size="sm" />
+                  {m.handle}
                 </span>
               ))}
             </div>
             <div className="room-head-row">
               <button className="chip" onClick={leaveRoom}>
-                LEAVE ROOM
+                Leave the table
               </button>
               {meta?.isOwner && (
                 <button
-                  className="chip"
-                  style={{
-                    color: "var(--crimson)",
-                    borderColor: "var(--crimson)",
-                  }}
+                  className="chip danger"
                   onClick={() => setConfirmDelete(true)}
                 >
-                  DELETE ROOM
+                  Clear the table
                 </button>
               )}
             </div>
@@ -728,12 +673,12 @@ export default function RoomPage() {
         onRematch={rematch}
         onSend={send}
         rematchPending={rematchPending}
-        header={
-          <p className="mono-label">
-            1V1 ROOM GAME{game ? ` · YOU ARE ${game.youAre}` : ""}
+        header={<p className="label">The table</p>}
+        waiting={
+          <p className="fine">
+            Your card is on the table. The other seat is empty.
           </p>
         }
-        waiting={<p className="fine">Waiting for your 1v1 peer to join…</p>}
       />
       {offer && game && offer.gameId === game.id && (
         <RematchToast

@@ -28,26 +28,26 @@ export default function RecoverPage() {
       }}
     >
       <div
-        className="card"
+        className="plate"
         style={{
           width: "100%",
           maxWidth: "520px",
           textAlign: "center",
-          padding: "2.5rem 2rem",
+          padding: "2.4rem 2rem",
           display: "flex",
           flexDirection: "column",
           gap: "1rem",
         }}
       >
-        <p className="mono-label">SIGN IN WITHOUT WALLET</p>
+        <h1 className="label">Sign in without a wallet</h1>
         <div style={{ display: "flex", gap: "0.5rem", justifyContent: "center" }}>
           {(["signin", "forgot"] as const).map((m) => (
             <button
               key={m}
-              className={mode === m ? "chip active" : "chip"}
+              className={mode === m ? "chip on" : "chip"}
               onClick={() => setMode(m)}
             >
-              {m === "signin" ? "USERNAME + PASSWORD" : "FORGOT EITHER"}
+              {m === "signin" ? "Username and password" : "Forgot either"}
             </button>
           ))}
         </div>
@@ -65,7 +65,7 @@ function SigninForm() {
   async function submit() {
     if (busy) return;
     if (!username.trim() || !password) {
-      notifyError("Enter your username and password");
+      notifyError("Enter your username and password.");
       return;
     }
     setBusy(true);
@@ -74,7 +74,7 @@ function SigninForm() {
       location.href = "/profile";
     } catch (e) {
       console.error("username login failed", e);
-      notifyError(errMsg(e, "Couldn't sign in — try again"));
+      notifyError(errMsg(e, "Couldn't sign in. Try again."));
     } finally {
       setBusy(false);
     }
@@ -103,8 +103,8 @@ function SigninForm() {
           if (e.key === "Enter") void submit();
         }}
       />
-      <button className="btn-solid" disabled={busy} onClick={() => void submit()}>
-        {busy ? "WORKING…" : "SIGN IN ↗"}
+      <button className="btn btn-primary" disabled={busy} onClick={() => void submit()}>
+        {busy ? "Working" : "Sign in"}
       </button>
       <p className="fine" style={{ margin: 0 }}>
         Set up in profile first (optional). No wallets needed here.
@@ -123,7 +123,7 @@ function ForgotFlow() {
   async function finish() {
     if (saving || !found) return;
     if (!newPassword) {
-      notifyError("Enter a new password to finish recovery");
+      notifyError("Enter a new password to finish recovery.");
       return;
     }
     setSaving(true);
@@ -136,7 +136,7 @@ function ForgotFlow() {
       location.href = "/profile";
     } catch (e) {
       console.error("recovery reset failed", e);
-      notifyError(errMsg(e, "Couldn't save — try again"));
+      notifyError(errMsg(e, "Couldn't save. Try again."));
     } finally {
       setSaving(false);
     }
@@ -148,11 +148,11 @@ function ForgotFlow() {
         <p className="fine" style={{ margin: 0 }}>
           {found.username
             ? `Account found: ${found.username}. Set a new password to sign in.`
-            : "Account found (no username yet). Create one plus a password to sign in."}
+            : "Account found, no username yet. Create one plus a password to sign in."}
         </p>
         <input
           className="field"
-          placeholder="username (3–24 chars)"
+          placeholder="username, 3 to 24 characters"
           autoComplete="username"
           value={newUsername}
           onChange={(e) => setNewUsername(e.target.value)}
@@ -160,13 +160,13 @@ function ForgotFlow() {
         <input
           className="field"
           type="password"
-          placeholder="new password (10+ chars)"
+          placeholder="new password, 10+ characters"
           autoComplete="new-password"
           value={newPassword}
           onChange={(e) => setNewPassword(e.target.value)}
         />
-        <button className="btn-solid" disabled={saving} onClick={() => void finish()}>
-          {saving ? "SAVING…" : "SAVE & SIGN IN ↗"}
+        <button className="btn btn-primary" disabled={saving} onClick={() => void finish()}>
+          {saving ? "Saving" : "Save and sign in"}
         </button>
       </div>
     );
@@ -175,23 +175,23 @@ function ForgotFlow() {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "0.6rem" }}>
       <p className="fine" style={{ margin: 0 }}>
-        Connect one of your enrolled wallets and sign — that proves ownership;
-        no session is created.
+        Connect one of your enrolled wallets and sign. That proves ownership,
+        and no session is created.
       </p>
       {active ? (
-        <div className="dialog-overlay">
+        <div className="veil">
           <div
-            className="dialog-box"
+            className="dialog"
             style={{ alignItems: "center", textAlign: "center" }}
             role="dialog"
             aria-label="Recover with a wallet"
           >
-            <p className="mono-label" style={{ margin: 0 }}>
-              RECOVER WITH A WALLET
+            <p className="label" style={{ margin: 0 }}>
+              Recover with a wallet
             </p>
             <TeeProve
               mode="identify"
-              busyLabel="CHECKING…"
+              busyLabel="Checking…"
               onIdentified={(account) => {
                 setActive(false);
                 setFound(account);
@@ -199,29 +199,25 @@ function ForgotFlow() {
               }}
               onDismiss={() => setActive(false)}
             />
-            <button
-              className="btn-ghost"
-              style={{ padding: "0.5rem 1rem" }}
-              onClick={() => setActive(false)}
-            >
-              CANCEL
+            <button className="btn-ghost btn-sm" onClick={() => setActive(false)}>
+              Cancel
             </button>
           </div>
         </div>
       ) : (
         <button
-          className="btn-solid"
+          className="btn btn-primary"
           onClick={() => {
             if (!isAppKitReady()) {
               notifyError(
-                "Wallet connect is not configured — set NEXT_PUBLIC_REOWN_PROJECT_ID",
+                "Wallet connect is not configured. Set NEXT_PUBLIC_REOWN_PROJECT_ID.",
               );
               return;
             }
             setActive(true);
           }}
         >
-          CONNECT WALLET ↗
+          Connect wallet
         </button>
       )}
     </div>

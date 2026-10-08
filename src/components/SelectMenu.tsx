@@ -1,11 +1,10 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { CaretDown, CaretUp, Check } from "@phosphor-icons/react";
 
-/**
- * Custom dropdown (native <select> option hover can't be styled —
- * this uses the same gold-hover language as the profile dropdown).
- */
+/** Custom dropdown: native option hover can't be styled, so this uses the
+ *  house menu (hairline panel, card hover) for every select. */
 export default function SelectMenu({
   value,
   options,
@@ -57,23 +56,12 @@ export default function SelectMenu({
         onClick={() => setOpen(!open)}
       >
         <span>{current?.label ?? value}</span>
-        <span aria-hidden="true">{open ? "▴" : "▾"}</span>
+        <span aria-hidden="true">
+          {open ? <CaretUp size={12} /> : <CaretDown size={12} />}
+        </span>
       </button>
       {open && (
-        <div
-          className="dropdown"
-          role="listbox"
-          style={{
-            position: "absolute",
-            left: 0,
-            right: 0,
-            top: "105%",
-            background: "var(--paper)",
-            border: "2px solid var(--ink)",
-            boxShadow: "4px 4px 0 var(--shadow)",
-            zIndex: 40,
-          }}
-        >
+        <div className="menu" role="listbox" style={{ top: "106%" }}>
           {options.map((o) => (
             <button
               key={o.value}
@@ -84,8 +72,15 @@ export default function SelectMenu({
                 onChange(o.value);
                 setOpen(false);
               }}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "0.4rem",
+              }}
             >
-              {o.value === value ? "✓ " : ""}
+              <span style={{ width: "1rem", flex: "none", display: "inline-grid" }}>
+                {o.value === value && <Check size={12} aria-hidden="true" />}
+              </span>
               {o.label}
             </button>
           ))}

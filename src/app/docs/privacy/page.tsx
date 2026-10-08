@@ -3,7 +3,7 @@ import { Pager } from "../components/pager";
 import { DocHeader } from "../components/doc-header";
 
 export const metadata: Metadata = {
-  title: "6FIGS.XYZ — Docs: Privacy & trust",
+  title: "6figs. Docs: Privacy and trust",
 };
 
 const TRADEOFFS = [
@@ -25,7 +25,7 @@ const TRADEOFFS = [
       <>
         Valuations come from public price APIs. There is no token
         allowlist: everything you hold gets priced, and anything
-        unpriceable is skipped — never guessed. Every value is
+        unpriceable is skipped, never guessed. Every value is
         overflow-checked, dollar-pegged assets are capped at $1.00, and the
         final total is bucketed into a band so small price errors rarely
         move your tier.
@@ -50,7 +50,7 @@ const TRADEOFFS = [
       <>
         Attestation makes the enclave&apos;s behavior <em>checkable</em>,
         not physically impossible to subvert. Google sits in the trust
-        base — the difference is that its claims are verified, not
+        base. The difference is that its claims are verified, not
         assumed. We publish this so you can decide what it&apos;s worth to
         you.
       </>
@@ -62,8 +62,6 @@ export default function Privacy() {
   return (
     <>
       <DocHeader
-        index="05"
-        chapter="PRIVACY & TRUST"
         title={
           <>
             &ldquo;Not even we <span className="accent">can see</span> your
@@ -72,7 +70,7 @@ export default function Privacy() {
         }
         lede={
           <>
-            The machinery behind that sentence — and the places where we say
+            The machinery behind that sentence, and the places where we say
             plainly what remains.
           </>
         }
@@ -81,9 +79,9 @@ export default function Privacy() {
       <h2 className="docs-h2">Why you don&apos;t have to take our word for it</h2>
       <p className="docs-body-text">
         The balance-reading code doesn&apos;t run on our servers. It runs in a
-        sealed enclave — a virtual machine whose memory is encrypted by the
+        sealed enclave, a virtual machine whose memory is encrypted by the
         physical chip (AMD SEV / Intel TDX), on Google Cloud&apos;s
-        Confidential Space. Not even the machine&apos;s operator — us — can
+        Confidential Space. Not even the machine&apos;s operator, us, can
         read its memory or change its code while it runs.
       </p>
       <p className="docs-body-text">
@@ -91,12 +89,12 @@ export default function Privacy() {
         enclave holds a certificate, signed by Google, that names the exact
         code image it runs. Your browser checks that certificate against the
         fingerprint we publish publicly before sending anything. If the image
-        ever changed — added logging, exported balances — the old fingerprint
+        ever changed (added logging, exported balances), the old fingerprint
         would stop matching and every client would refuse to talk to it.
       </p>
       <p className="docs-body-text">
         The image is built from public source. If you want, you can read
-        exactly what the enclave does with your data — because the answer is
+        exactly what the enclave does with your data, because the answer is
         &ldquo;compute the tier, sign it, forget the addresses.&rdquo;
       </p>
 
@@ -118,13 +116,13 @@ export default function Privacy() {
         </div>
         <div className="docs-table-row">
           <span>The enclave (during a check)</span>
-          <span>Your addresses and balances — transiently, in encrypted
+          <span>Your addresses and balances, transiently, in encrypted
             memory, then forgotten. It cannot be observed doing so.</span>
         </div>
         <div className="docs-table-row">
           <span>Google</span>
           <span>That a Confidential Space VM runs a pinned image. This is
-            the vendor trust we can&apos;t remove — but can audit.</span>
+            the vendor trust we can&apos;t remove, but can audit.</span>
         </div>
         <div className="docs-table-row">
           <span>Chain data providers (RPC)</span>
@@ -136,18 +134,18 @@ export default function Privacy() {
       <h2 className="docs-h2">The honest tradeoffs</h2>
       {TRADEOFFS.map((t, i) => (
         <div className="docs-callout" key={t.title}>
-          <p className="mono-label">
-            {String(i + 1).padStart(2, "0")} — {t.title}
+          <p className="label">
+            {t.title}
           </p>
           <p>{t.body}</p>
         </div>
       ))}
 
       <div className="docs-callout ink">
-        <p className="mono-label">FAILS CLOSED, NOT OPEN</p>
+        <p className="label">FAILS CLOSED, NOT OPEN</p>
         <p>
-          Every check in the chain — attestation, signature, nonce, expiry,
-          policy version, image fingerprint — must pass or the whole
+          Every check in the chain (attestation, signature, nonce, expiry,
+          policy version, image fingerprint) must pass or the whole
           verification is rejected. There are no &ldquo;accepted with
           warnings&rdquo; paths. If the enclave can&apos;t prove itself, your
           browser stops. If the result can&apos;t prove itself, the server

@@ -1,28 +1,34 @@
 import type { Metadata } from "next";
-import { DM_Mono, Space_Grotesk } from "next/font/google";
+import Script from "next/script";
+import { Bricolage_Grotesque, Space_Mono } from "next/font/google";
 import "./globals.css";
 import Header from "../components/Header";
 import ChallengeToast from "../components/ChallengeToast";
 import ErrorToast from "../components/ErrorToast";
 import Web3Providers from "../components/Web3Providers";
 
-const grotesk = Space_Grotesk({
+const bricolage = Bricolage_Grotesque({
   subsets: ["latin"],
-  weight: ["500", "600", "700"],
-  variable: "--font-grotesk",
-  display: "swap",
-});
-const dmMono = DM_Mono({
-  subsets: ["latin"],
-  weight: ["400", "500"],
-  variable: "--font-dm-mono",
+  weight: ["300", "400", "500", "600", "700"],
+  variable: "--font-bricolage",
   display: "swap",
 });
 
+const space = Space_Mono({
+  subsets: ["latin"],
+  weight: ["400", "700"],
+  variable: "--font-space",
+  display: "swap",
+});
+
+/* Midnight is the house default. A stored "light" choice is the only way
+   back to daylight. Runs before first paint, so there is no flash. */
+const THEME_SCRIPT = `try{var t=localStorage.getItem("sixfigs-theme");if(t!=="light")document.documentElement.classList.add("dark")}catch(e){document.documentElement.classList.add("dark")}`;
+
 export const metadata: Metadata = {
-  title: "6FIGS.XYZ — Proof of Bags. Room for Holders.",
+  title: "6figs. The room behind the unmarked door.",
   description:
-    "A private members' room for verified six-figure-plus crypto holders. Proof of bags, then match, play, chat.",
+    "A private room for verified holders. Prove your tier, take a seat, play the table.",
 };
 
 export default function RootLayout({
@@ -31,39 +37,27 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
-      <body className={`${grotesk.variable} ${dmMono.variable}`}>
+    <html lang="en" suppressHydrationWarning>
+      <body className={`${bricolage.variable} ${space.variable}`}>
+        <Script id="sixfigs-theme" strategy="beforeInteractive">
+          {THEME_SCRIPT}
+        </Script>
         <Web3Providers>
-          <div className="ticker" aria-hidden="true">
-            <div className="ticker-inner">
-              PROOF OF BAGS ✕ SIX FIGURES OR NOTHING ✕ NO BALANCES SHOWN ✕ FAIR
-              TIC-TAC-TOE ✕ 1V1 CHAT + 1V1 ROOMS ✕&nbsp;PROOF OF BAGS ✕ SIX
-              FIGURES OR NOTHING ✕ NO BALANCES SHOWN ✕ FAIR TIC-TAC-TOE ✕ 1V1
-              CHAT + 1V1 ROOMS ✕&nbsp;
-            </div>
-          </div>
+          <a href="#main" className="skip-link">
+            Skip to the table
+          </a>
           <Header />
           <ChallengeToast />
           <ErrorToast />
-          <main>{children}</main>
-          <footer
-            className="site-footer"
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              gap: "1rem",
-              flexWrap: "wrap",
-              background: "var(--ink)",
-              color: "var(--paper)",
-              padding: "1.5rem 3vw",
-              fontFamily: "var(--font-dm-mono)",
-              fontSize: "0.8rem",
-            }}
-          >
-            <p style={{ margin: 0 }}>
-              6FIGS.XYZ — VERIFIED BAGS. FAIR GAMES. NO NUMBERS SHOWN.
-            </p>
-            <p style={{ margin: 0 }}>© 2026</p>
+          <main id="main">{children}</main>
+          <footer className="site-footer">
+            <p>6figs.xyz. Set for two. Fair game.</p>
+            <nav aria-label="Footer">
+              <a href="/docs">Handbook</a>
+              <a href="/docs/privacy">Privacy</a>
+              <a href="/docs/tiers">Tiers</a>
+            </nav>
+            <p>&copy; 2026</p>
           </footer>
         </Web3Providers>
       </body>

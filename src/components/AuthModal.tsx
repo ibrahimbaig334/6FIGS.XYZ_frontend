@@ -11,13 +11,13 @@ import { isAppKitReady } from "./Web3Providers";
  * what creates the account and the tier; username + password exists for people
  * who already set one up and just want to get back in on another device.
  *
- * Both phases stay inside this dialog — including the account confirmation —
+ * Both phases stay inside this dialog, including the account confirmation,
  * so nothing ever renders in place of the header button.
  *
- * The wallet phase uses the standard dialog backdrop (z-50). That is safe
- * under AppKit's picker: AppKit appends its modal to <body> at z-index 9999,
- * so the picker always paints above, and the global PickerScrim blurs
- * everything behind it while open.
+ * The wallet phase uses the standard dialog backdrop. That is safe under
+ * AppKit's picker: AppKit appends its modal to <body> at z-index 9999, so the
+ * picker always paints above, and the global PickerScrim blurs everything
+ * behind it while open.
  */
 export default function AuthModal({
   onClose,
@@ -38,29 +38,28 @@ export default function AuthModal({
 
   if (wallet) {
     return (
-      <div className="dialog-overlay">
+      <div className="veil">
         <div
-          className="dialog-box"
+          className="dialog"
           style={{ alignItems: "center", textAlign: "center" }}
           role="dialog"
           aria-label="Connect a wallet"
         >
+          <p className="label" style={{ margin: 0 }}>
+            Proof of bags
+          </p>
           <TeeProve
             mode="establish"
             sessionless
-            busyLabel="OPENING YOUR WALLET…"
+            busyLabel="Opening your wallet…"
             onDone={(p) => {
               onDone(p);
               onClose();
             }}
             onDismiss={() => setWallet(false)}
           />
-          <button
-            className="btn-ghost"
-            style={{ padding: "0.5rem 1rem" }}
-            onClick={onClose}
-          >
-            CANCEL
+          <button className="btn-ghost btn-sm" onClick={onClose}>
+            Cancel
           </button>
         </div>
       </div>
@@ -68,51 +67,50 @@ export default function AuthModal({
   }
 
   return (
-    <div className="dialog-overlay" onClick={onClose}>
+    <div className="veil" onClick={onClose}>
       <div
-        className="dialog-box"
-        style={{ textAlign: "left" }}
+        className="dialog"
         onClick={(e) => e.stopPropagation()}
         role="dialog"
         aria-label="Sign in"
       >
-        <p className="mono-label" style={{ margin: 0, textAlign: "center" }}>
-          SIGN IN
-        </p>
+        <h1 className="label" style={{ margin: 0, textAlign: "center" }}>
+          Sign in
+        </h1>
 
         <button
-          className="auth-option"
+          className="door-option"
           onClick={() => {
             if (!isAppKitReady()) {
               notifyError(
-                "Wallet connect is not configured — set NEXT_PUBLIC_REOWN_PROJECT_ID",
+                "Wallet connect is not configured. Set NEXT_PUBLIC_REOWN_PROJECT_ID.",
               );
               return;
             }
             setWallet(true);
           }}
         >
-          <span className="auth-option-title">CONNECT A WALLET ↗</span>
-          <span className="auth-option-sub">
-            New here? This creates your account and proves your tier. Returning?
-            Any enrolled wallet signs you straight in.
+          <span className="door-option-title">Connect a wallet</span>
+          <span className="door-option-sub">
+            New here? This creates your account and proves your tier.
+            Returning? Any enrolled wallet signs you in.
           </span>
         </button>
 
-        <a className="auth-option" href="/recover">
-          <span className="auth-option-title">USERNAME + PASSWORD ↗</span>
-          <span className="auth-option-sub">
-            Set one up in your profile to skip wallets on other devices. Forgot
-            it? Recover with any enrolled wallet.
+        <a className="door-option" href="/recover">
+          <span className="door-option-title">Username and password</span>
+          <span className="door-option-sub">
+            Set one up in your profile to skip wallets on other devices.
+            Forgot it? Recover with any enrolled wallet.
           </span>
         </a>
 
         <button
-          className="btn-ghost"
-          style={{ alignSelf: "center", padding: "0.5rem 1rem" }}
+          className="btn-ghost btn-sm"
+          style={{ alignSelf: "center" }}
           onClick={onClose}
         >
-          CANCEL
+          Cancel
         </button>
       </div>
     </div>

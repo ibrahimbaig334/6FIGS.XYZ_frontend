@@ -12,7 +12,7 @@ function Node({
 }: {
   title: string;
   lines?: string[];
-  variant?: "gold" | "crimson";
+  variant?: "brass" | "seal";
 }) {
   return (
     <div className={`doc-node${variant ? ` ${variant}` : ""}`}>
@@ -26,7 +26,7 @@ function Node({
 
 function Arrow({
   label,
-  glyph = "→",
+  glyph = "\u2192",
   labelBelow,
 }: {
   label?: string;
@@ -36,7 +36,9 @@ function Arrow({
   return (
     <div className="doc-arrow">
       {label && <span className="lbl">{label}</span>}
-      <span className="glyph">{glyph}</span>
+      <span className="glyph" aria-hidden="true">
+        {glyph}
+      </span>
       {labelBelow && <span className="lbl">{labelBelow}</span>}
     </div>
   );
@@ -51,30 +53,30 @@ export function FlowDiagram() {
         aria-label="Three parties: your browser, a sealed enclave, and the 6figs backend. Wallet signatures go to the enclave; only a tier comes back and is stored."
       >
         <Node
-          title="YOUR BROWSER"
+          title="Your browser"
           lines={["wallet signs one message", "verifies the enclave itself"]}
         />
         <Arrow label="encrypted proof request" glyph="⇄" labelBelow="signed tier back" />
         <Node
-          title="🔒 SEALED ENCLAVE"
-          variant="gold"
+          title="Sealed enclave"
+          variant="brass"
           lines={[
             "Google Confidential Space",
-            "reads balances + prices",
+            "reads balances and prices",
             "computes your tier",
-            "sees addresses — then forgets",
+            "sees addresses, then forgets",
             "signs the result",
           ]}
         />
         <Arrow label="tier only" />
         <Node
-          title="6FIGS SERVER"
-          lines={["stores tier + pseudonyms", "no address. no balance."]}
+          title="6figs server"
+          lines={["stores tier and pseudonyms", "no address, no balance"]}
         />
       </div>
       <figcaption className="fine">
-        The only thing that ever crosses from the enclave to 6figs is your tier
-        and a pseudonym.
+        The only thing that ever crosses from the enclave to 6figs is your
+        tier and a pseudonym.
       </figcaption>
     </figure>
   );
@@ -89,23 +91,23 @@ export function AttestationDiagram() {
         aria-label="Google issues a tamper-evident certificate describing exactly what code runs in the enclave; your browser checks it against a pinned fingerprint before trusting it."
       >
         <Node
-          title="GOOGLE ATTESTS"
-          lines={['signs: “this exact image,', 'on real sealed hardware”']}
+          title="Google attests"
+          lines={['signs: "this exact image,', 'on real sealed hardware"']}
         />
         <Arrow />
         <Node
-          title="CERTIFICATE (JWT)"
+          title="Certificate (JWT)"
           lines={[
-            "image fingerprint · GCP project",
-            "not debuggable · fresh nonce",
+            "image fingerprint, GCP project",
+            "not debuggable, fresh nonce",
           ]}
         />
         <Arrow />
         <Node
-          title="YOUR BROWSER CHECKS"
+          title="Your browser checks"
           lines={[
-            "signature · fingerprint we pinned",
-            "anything wrong → refuse to send",
+            "signature, the fingerprint we pinned",
+            "anything wrong, refuse to send",
           ]}
         />
         <p className="doc-note">
@@ -114,8 +116,8 @@ export function AttestationDiagram() {
         </p>
       </div>
       <figcaption className="fine">
-        You don&apos;t take our word for it — the enclave proves what it is
-        before you prove anything.
+        You don&apos;t take our word for it. The enclave proves what it is before
+        you prove anything.
       </figcaption>
     </figure>
   );
@@ -130,28 +132,28 @@ export function BandDiagram() {
         aria-label="A number line from zero to over one million dollars divided into bands: under 100k, 100k to 300k, 300k to 500k, 500k to 1M, and 1M plus."
       >
         <div className="doc-band">
-          <b>UNDER $100K</b>
+          <b>Under $100K</b>
           <span>not admitted</span>
         </div>
-        <div className="doc-band gold">
-          <b>TIER I</b>
-          <span>$100K–$300K</span>
+        <div className="doc-band brass">
+          <b>Tier I</b>
+          <span>$100K-$300K</span>
         </div>
         <div className="doc-band">
-          <b>TIER II</b>
-          <span>$300K–$500K</span>
+          <b>Tier II</b>
+          <span>$300K-$500K</span>
         </div>
-        <div className="doc-band gold">
-          <b>TIER III</b>
-          <span>$500K–$1M</span>
+        <div className="doc-band brass">
+          <b>Tier III</b>
+          <span>$500K-$1M</span>
         </div>
-        <div className="doc-band crimson">
-          <b>TIER IV</b>
+        <div className="doc-band seal">
+          <b>Tier IV</b>
           <span>$1M+</span>
         </div>
       </div>
       <p className="doc-note">
-        We store which band you&apos;re in. Not the number. 250k and 299k look
+        We store which band you&apos;re in, not the number. $250K and $299K look
         identical to us.
       </p>
       <figcaption className="fine">
@@ -171,13 +173,13 @@ export function RecheckDiagram() {
         aria-label="Hourly recheck: the server replays the sealed wallet list to the enclave, which re-reads balances and re-signs the tier. You sign nothing."
       >
         <Node
-          title="6FIGS SERVER"
+          title="6figs server"
           lines={["holds a sealed envelope", "it cannot open"]}
         />
         <Arrow label="sealed envelope" />
         <Node
-          title="🔒 ENCLAVE"
-          variant="gold"
+          title="Enclave"
+          variant="brass"
           lines={[
             "opens the envelope inside,",
             "re-reads balances, re-signs",
@@ -185,7 +187,7 @@ export function RecheckDiagram() {
         />
         <Arrow label="fresh tier" />
         <Node
-          title="YOUR PROFILE"
+          title="Your profile"
           lines={["tier stays fresh", "you did nothing"]}
         />
         <p className="doc-note">
@@ -195,7 +197,7 @@ export function RecheckDiagram() {
       </div>
       <figcaption className="fine">
         The sealed envelope (escrow blob) is ciphertext only the enclave can
-        open — even we can&apos;t.
+        open. Even we can&apos;t.
       </figcaption>
     </figure>
   );

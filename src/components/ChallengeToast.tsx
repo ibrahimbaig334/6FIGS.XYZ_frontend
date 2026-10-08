@@ -9,9 +9,9 @@ import { notifyError } from "../lib/notify";
 import { connectSocket } from "../lib/ws";
 
 /**
- * Global top-right challenge notification on every page (the /play list uses
- * it too). Shows pending + live room requests and auto-dismisses each at the
- * 15s request mark unless accepted/declined.
+ * Global room-request notification on every page (the play list uses it
+ * too). Shows pending and live requests, and auto-dismisses each at the 15s
+ * request mark unless accepted or declined.
  */
 export default function ChallengeToast() {
   const [items, setItems] = useState<RoomRequestInfo[]>([]);
@@ -27,7 +27,7 @@ export default function ChallengeToast() {
   }
 
   function show(r: RoomRequestInfo) {
-    // The offer's clock starts when the request was created — a reloaded page
+    // The offer's clock starts when the request was created; a reloaded page
     // only sees whatever is left of the 15s window (stale offers never show).
     const created = Date.parse(r.createdAt);
     const left = Number.isNaN(created)
@@ -46,7 +46,7 @@ export default function ChallengeToast() {
   }
 
   useEffect(() => {
-    const map = timers.current; // stable Map instance — cleanup must use it
+    const map = timers.current; // stable Map instance, cleanup must use it
     const onReq = (r: RoomRequestInfo) => show(r);
     const onCancel = (p: { requestId: string }) => drop(p.requestId);
 
@@ -57,7 +57,7 @@ export default function ChallengeToast() {
       sock.current = null;
     };
 
-    // (Re)attach whenever the session changes — Header recreates the socket
+    // (Re)attach whenever the session changes; Header recreates the socket
     // on sixfigs-auth, which orphans listeners on the old instance.
     const start = () => {
       detach();
@@ -71,7 +71,7 @@ export default function ChallengeToast() {
       sock.current = s;
       s.on("roomRequest", onReq);
       s.on("requestCancelled", onCancel);
-      // Challenges missed while this page was loading / elsewhere.
+      // Challenges missed while this page was loading or elsewhere.
       api<RoomRequestInfo[]>("/play/requests/incoming")
         .then((pending) => pending.forEach(show))
         .catch(() => {});
@@ -98,7 +98,7 @@ export default function ChallengeToast() {
       router.push(`/game/${acc.gameId}`);
     } catch (e) {
       console.error("accept failed", e);
-      notifyError(errMsg(e, "Couldn't accept the invite — try again"));
+      notifyError(errMsg(e, "Couldn't accept the invite. Try again."));
     }
   }
 
@@ -108,7 +108,7 @@ export default function ChallengeToast() {
       await api(`/play/requests/${r.id}/decline`, { method: "POST" });
     } catch (e) {
       console.error("decline failed", e);
-      notifyError(errMsg(e, "Couldn't decline the invite — try again"));
+      notifyError(errMsg(e, "Couldn't decline the invite. Try again."));
     }
   }
 
@@ -117,16 +117,16 @@ export default function ChallengeToast() {
   return (
     <div className="toast-stack" aria-live="polite">
       {items.map((r) => (
-        <div key={r.id} className="challenge-toast" role="alert">
+        <div key={r.id} className="toast toast-challenge" role="alert">
           <span>
-            <strong>{r.fromHandle}</strong> invites you to a private room
+            <strong>{r.fromHandle}</strong> invites you to a table
           </span>
           <span className="toast-actions">
-            <button className="btn-solid btn-sm" onClick={() => accept(r)}>
-              ACCEPT
+            <button className="btn btn-primary btn-sm" onClick={() => accept(r)}>
+              Accept
             </button>
             <button className="btn-ghost btn-sm" onClick={() => decline(r)}>
-              DECLINE
+              Decline
             </button>
           </span>
         </div>

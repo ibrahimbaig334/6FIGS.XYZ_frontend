@@ -1,9 +1,10 @@
 "use client";
 
 import { useState } from "react";
+import { Warning } from "@phosphor-icons/react";
 import { notifyError } from "../lib/notify";
 
-/** Delete-room confirmation: explicit checkbox + red button, no accidents. */
+/** Delete-room confirmation: explicit checkbox plus confirm, no accidents. */
 export default function DeleteRoomDialog({
   roomName,
   onConfirm,
@@ -24,75 +25,51 @@ export default function DeleteRoomDialog({
       await onConfirm();
     } catch (e2) {
       console.error("delete room failed", e2);
-      notifyError("Delete failed — try again");
+      notifyError("Delete failed. Try again.");
       setBusy(false);
     }
   }
 
   return (
-    <div className="dialog-overlay" onClick={onClose}>
+    <div className="veil" onClick={onClose}>
       <div
-        className="dialog-box"
+        className="dialog"
         onClick={(e) => e.stopPropagation()}
         role="dialog"
         aria-label="Delete room"
       >
-        <p className="mono-label" style={{ color: "var(--crimson)" }}>
-          ⚠ DELETE ROOM
+        <p className="label" style={{ display: "inline-flex", alignItems: "center", gap: "0.4rem", color: "var(--seal-bright)" }}>
+          <Warning size={14} aria-hidden="true" />
+          Delete room
         </p>
-        <h3 style={{ margin: "0.2rem 0" }}>{roomName}</h3>
-        <p className="fine" style={{ margin: "0.4rem 0" }}>
-          This permanently deletes the room for <strong>both</strong> players —
-          members and all room messages go with it. This cannot be undone.
+        <h3>{roomName}</h3>
+        <p className="fine">
+          This folds the table for both players. Members and all room messages
+          go with it. This cannot be undone.
         </p>
         <form onSubmit={submit}>
-          <label
-            style={{
-              display: "flex",
-              gap: "0.5rem",
-              alignItems: "flex-start",
-              fontFamily: "var(--font-dm-mono)",
-              fontSize: "0.72rem",
-              cursor: "pointer",
-              margin: "0.6rem 0",
-            }}
-          >
+          <label className="ack">
             <input
               type="checkbox"
               checked={ack}
               onChange={(e) => setAck(e.target.checked)}
-              style={{
-                marginTop: "0.15rem",
-                width: "1rem",
-                height: "1rem",
-                accentColor: "var(--crimson)",
-              }}
             />
-            I understand this room and its messages will be deleted forever.
+            I understand this room and its messages will be deleted.
           </label>
-          <div style={{ display: "flex", gap: "0.5rem" }}>
+          <div className="dialog-actions">
             <button
-              className="btn-solid"
+              className="btn btn-primary"
               type="submit"
               disabled={!ack || busy}
-              style={{
-                padding: "0.7rem 1rem",
-                background: "var(--crimson)",
-                borderColor: "var(--crimson)",
-                color: "#fff",
-                opacity: !ack || busy ? 0.45 : 1,
-                cursor: !ack || busy ? "not-allowed" : "pointer",
-              }}
             >
-              {busy ? "DELETING…" : "DELETE ROOM"}
+              {busy ? "Deleting" : "Delete room"}
             </button>
             <button
               className="btn-ghost"
-              style={{ padding: "0.7rem 1rem" }}
               type="button"
               onClick={onClose}
             >
-              CANCEL
+              Cancel
             </button>
           </div>
         </form>

@@ -21,6 +21,7 @@ import SelectMenu from "../../components/SelectMenu";
 import EmojiPicker from "../../components/EmojiPicker";
 import SignInButton from "../../components/SignInButton";
 import Loader from "../../components/Loader";
+import { tierEdgeClass } from "../../lib/tierEdge";
 
 export default function CreateRoomPage() {
   const [form, setForm] = useState({
@@ -42,20 +43,20 @@ export default function CreateRoomPage() {
   // Same display rule as room cards: saved handle, else the generated fallback.
   const [username, setUsername] = useState("");
   const [owned, setOwned] = useState<number | null>(null);
-  // Your tier caps the MINIMUM TIER options — a room can never demand more
-  // than you hold (higher options are hidden; backend enforces the same).
+  // Your tier caps the minimum tier options. A room can never demand more
+  // than you hold (higher options are hidden; the backend enforces the same).
   const [myTier, setMyTier] = useState<string | null>(null);
   const allowedTiers = myTier ? TIER_ORDER.slice(0, tierRank(myTier)) : [];
   const tierOptions = allowedTiers.map((t) => ({ value: t, label: t }));
 
   // Specific, actionable limit message (not the generic create failure).
   const roomsFull = owned !== null && owned >= MAX_ROOMS_PER_USER;
-  const roomsFullMsg = `Maximum room limit reached (${MAX_ROOMS_PER_USER}) — delete a previous room to create a new one.`;
+  const roomsFullMsg = `The floor is full (${MAX_ROOMS_PER_USER}). Clear a previous table before setting a new one.`;
 
   useEffect(() => {
     setReady(true);
     setTokenState(getToken());
-    // Random punch line after mount (keeps SSR/first paint identical).
+    // Random punch line after mount (keeps SSR and first paint identical).
     setPunch(
       ROOM_PUNCH_LINES[Math.floor(Math.random() * ROOM_PUNCH_LINES.length)],
     );
@@ -97,7 +98,7 @@ export default function CreateRoomPage() {
           : v;
     const next = { ...form, [k]: capped };
     setForm(next);
-    // live re-validate once errors are showing
+    // Live re-validate once errors are showing.
     setFieldErrs((prev) => {
       if (!prev.name && !prev.description && !prev.inviteCode) return prev;
       return { ...prev, ...validate(next) };
@@ -117,8 +118,8 @@ export default function CreateRoomPage() {
     ) {
       notifyError(
         myTier
-          ? `You are ${myTier} — you cannot require a higher tier`
-          : "Verify your holdings in Profile to create a tier room",
+          ? `You are ${myTier}. You cannot require a higher tier.`
+          : "Verify your holdings in Profile to create a tier table.",
       );
       return;
     }
@@ -137,8 +138,8 @@ export default function CreateRoomPage() {
     } catch (err2) {
       console.error("create room failed", err2);
       // 4xx reasons come straight from the backend: room cap, tier cap, bad
-      // fields. Anything else gets the fixed fallback — never a raw failure.
-      notifyError(errMsg(err2, "Couldn't create room — try again"));
+      // fields. Anything else gets the fixed fallback, never a raw failure.
+      notifyError(errMsg(err2, "Couldn't set the table. Try again."));
       setBusy(false);
     }
   }
@@ -159,21 +160,13 @@ export default function CreateRoomPage() {
           padding: "2rem 5vw",
           display: "grid",
           placeItems: "center",
-          minHeight: "75vh",
+          flex: 1,
         }}
       >
-        <div
-          className="card"
-          style={{
-            width: "100%",
-            maxWidth: "520px",
-            textAlign: "center",
-            padding: "2.5rem 2rem",
-          }}
-        >
-          <p className="mono-label">CREATE ROOM — SIGN IN</p>
-          <p className="fine" style={{ margin: "0.6rem 0 0", fontSize: 14 }}>
-            Connect a wallet to spin up your 1v1 room.
+        <div className="plate auth-card">
+          <h1 className="label">The door</h1>
+          <p className="fine" style={{ marginTop: "0.6rem" }}>
+            Log in to set a table of your own.
           </p>
           <div
             style={{
@@ -183,73 +176,48 @@ export default function CreateRoomPage() {
             }}
           >
             <SignInButton
+              label="Sign in"
               onDone={() => {
                 setTokenState(getToken());
               }}
             />
           </div>
-          <p className="fine" style={{ margin: "0.8rem 0 0" }}>
-            NEW HERE? CONNECTING A WALLET CREATES YOUR ACCOUNT AND PROVES YOUR
-            TIER.
-          </p>
         </div>
       </section>
     );
   }
 
-  const previewName = form.name.trim() || "Room name";
+  const previewName = form.name.trim() || "Table name";
   const previewDesc = form.description.trim() || "Description";
   const isInvite = form.accessType === "invite";
 
   return (
-    <section className="page-enter" style={{ padding: "2rem 5vw" }}>
-      <p className="mono-label">
-        <a href="/rooms" style={{ color: "inherit", fontSize: 15 }}>
-          ← PRIVATE ROOMS
+    <section className="page-enter shell">
+      <p className="fine">
+        <a href="/rooms" style={{ color: "inherit" }}>
+          Back to the floor
         </a>
       </p>
-      <h2
-        style={{
-          margin: "0.4rem 0 0.2rem",
-          fontSize: "clamp(1.8rem, 4vw, 2.6rem)",
-          letterSpacing: "-0.03em",
-        }}
-      >
-        CREATE A ROOM
-      </h2>
-      <p
-        className="fine"
-        style={{ margin: "0 0 1rem", fontSize: "0.85rem", fontStyle: "italic" }}
-      >
+      <div className="topline">
+        <h1 style={{ margin: 0 }}>Set a table</h1>
+      </div>
+      <p className="fine" style={{ fontStyle: "italic" }}>
         {punch}
       </p>
-      <div className="layout-create">
-        <form
-          onSubmit={create}
-          className="card"
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            gap: "0.9rem",
-          }}
-        >
-          <label className="mono-label">
-            NAME
+      <div className="create-grid">
+        <form onSubmit={create} className="plate create-form">
+          <label className="label">
+            Name
             <input
               className="field"
-              style={{ marginTop: "0.4rem", width: "100%" }}
               value={form.name}
               onChange={(e) => setField("name", e.target.value)}
-              placeholder="HYPE Talks"
+              placeholder="The Long Room"
             />
           </label>
-          {fieldErrs.name && (
-            <p className="err" style={{ margin: "-0.4rem 0 0" }}>
-              {fieldErrs.name}
-            </p>
-          )}
-          <label className="mono-label">
-            DESCRIPTION
+          {fieldErrs.name && <p className="err">{fieldErrs.name}</p>}
+          <label className="label">
+            Description
             <div
               style={{
                 display: "flex",
@@ -260,10 +228,9 @@ export default function CreateRoomPage() {
             >
               <input
                 className="field"
-                style={{ width: "100%" }}
                 value={form.description}
                 onChange={(e) => setField("description", e.target.value)}
-                placeholder="What is this room about? 🎲"
+                placeholder="What is this table about?"
               />
               <EmojiPicker
                 onPick={(e) =>
@@ -273,28 +240,26 @@ export default function CreateRoomPage() {
             </div>
           </label>
           {fieldErrs.description && (
-            <p className="err" style={{ margin: "-0.4rem 0 0" }}>
-              {fieldErrs.description}
-            </p>
+            <p className="err">{fieldErrs.description}</p>
           )}
           <div>
-            <p className="mono-label" style={{ marginBottom: "0.4rem" }}>
-              VIEW
+            <p className="label" style={{ marginBottom: "0.4rem" }}>
+              Entry
             </p>
             <SelectMenu
-              label="Room view"
+              label="Room entry"
               value={form.accessType}
               onChange={(v) => setField("accessType", v)}
               options={[
-                { value: "tier", label: "TIER-BASED ENTRY" },
-                { value: "invite", label: "INVITE-ONLY" },
+                { value: "tier", label: "Tier based" },
+                { value: "invite", label: "Invite only" },
               ]}
             />
           </div>
           {form.accessType === "tier" ? (
             <div>
-              <p className="mono-label" style={{ marginBottom: "0.4rem" }}>
-                MINIMUM TIER
+              <p className="label" style={{ marginBottom: "0.4rem" }}>
+                Minimum tier
               </p>
               {tierOptions.length > 0 ? (
                 <SelectMenu
@@ -304,17 +269,17 @@ export default function CreateRoomPage() {
                   options={tierOptions}
                 />
               ) : (
-                <p className="fine" style={{ margin: 0 }}>
+                <p className="fine">
                   {myTier === null
                     ? "Tier options load with your profile."
-                    : "Verify your holdings in Profile to create a tier room."}
+                    : "Verify your holdings in Profile to create a tier table."}
                 </p>
               )}
             </div>
           ) : (
             <>
-              <label className="mono-label">
-                INVITE CODE
+              <label className="label">
+                Invite code
                 <input
                   className="field"
                   style={{ marginTop: "0.4rem", width: "100%" }}
@@ -322,52 +287,48 @@ export default function CreateRoomPage() {
                   onChange={(e) =>
                     setField("inviteCode", e.target.value.toUpperCase())
                   }
-                  placeholder="SECRET1"
+                  placeholder="e.g. VELVET"
                   maxLength={32}
                 />
               </label>
               {fieldErrs.inviteCode && (
-                <p className="err" style={{ margin: "-0.4rem 0 0" }}>
-                  {fieldErrs.inviteCode}
-                </p>
+                <p className="err">{fieldErrs.inviteCode}</p>
               )}
             </>
           )}
           <div>
-            <button
-              className="btn-solid"
-              type="submit"
-              disabled={busy}
-            >
-              {busy ? "CREATING…" : "CREATE ROOM ↗"}
+            <button className="btn btn-primary" type="submit" disabled={busy || roomsFull}>
+              {busy ? "Setting" : "Set the table"}
             </button>
+            {roomsFull && <p className="err">{roomsFullMsg}</p>}
           </div>
         </form>
-        <div style={{ position: "relative", alignSelf: "center" }}>
+        <div style={{ alignSelf: "center" }}>
           <div className="ticket" aria-hidden="true">
-            <div className="ticket-ribbon">PREVIEW</div>
+            <p className="label">Preview</p>
             <div
               style={{
                 display: "flex",
                 justifyContent: "space-between",
                 alignItems: "center",
                 gap: "0.5rem",
+                marginTop: "0.7rem",
               }}
             >
-              <span className={isInvite ? "tier-badge t3" : "tier-badge"}>
-                {isInvite ? "🔒 INVITE-ONLY" : `✓ ${form.minTier}`}
+              <span className={`tier-tag ${tierEdgeClass(form.minTier)}`}>
+                {isInvite ? "Invite only" : form.minTier}
               </span>
-              <span className="fine">
-                <span className="dot" /> 0/2 ONLINE
+              <span className="fine num">
+                <span className="dot" /> 0/2 in the room
               </span>
             </div>
             <p className="ticket-name">{previewName}</p>
-            <p className="fine" style={{ margin: "0.2rem 0 0", fontSize: 20 }}>
+            <p className="fine" style={{ marginTop: "0.3rem" }}>
               {previewDesc}
             </p>
             <div className="ticket-stub">
-              <span>BY {username.toUpperCase()} · ADMIT 1V1</span>
-              <span aria-hidden="true">✕ ○ ✕</span>
+              <span>by {username || "you"}</span>
+              <span>set for two</span>
             </div>
           </div>
         </div>

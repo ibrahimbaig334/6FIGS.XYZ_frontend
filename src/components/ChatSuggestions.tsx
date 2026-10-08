@@ -2,23 +2,20 @@
 
 import { CHAT_SUGGESTIONS } from "../lib/constants";
 
-/** Tap-to-fill chat recommendations above the input. */
+/** Tap-to-fill suggestions above the chat input. */
 export default function ChatSuggestions({
   onPick,
 }: {
   onPick: (text: string) => void;
 }) {
   return (
-    <div
-      style={{ display: "flex", gap: "0.4rem", flexWrap: "wrap" }}
-      aria-label="Suggested messages"
-    >
+    <div className="suggestions" aria-label="Suggested messages">
       {CHAT_SUGGESTIONS.map((s) => (
         <button
           key={s}
           type="button"
           className="chip"
-          style={{ padding: "0.4rem 0.7rem" }}
+          style={{ padding: "0.32rem 0.65rem", fontSize: "0.68rem" }}
           onClick={() => onPick(s)}
         >
           {s}

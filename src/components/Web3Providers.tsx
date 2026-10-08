@@ -88,7 +88,12 @@ if (projectId) {
     networks,
     projectId,
     metadata,
-    themeMode: "light",
+    // Match the app's default surface: midnight unless daylight was chosen.
+    themeMode:
+      typeof window !== "undefined" &&
+      localStorage.getItem("sixfigs-theme") === "light"
+        ? "light"
+        : "dark",
     enableCoinbase: false,
     features: { email: false, socials: false, analytics: false },
   });

@@ -1,10 +1,11 @@
 "use client";
 
 import { useState } from "react";
+import { Warning } from "@phosphor-icons/react";
 
 /**
- * Generic destructive-action confirm: explicit tick (checkbox) + confirm
- * button, no accidents. Failures are toasted by the caller's onConfirm.
+ * Destructive-action confirm: explicit tick plus confirm button, no
+ * accidents. Failures are toasted by the caller's onConfirm.
  */
 export default function ConfirmDialog({
   title,
@@ -36,66 +37,41 @@ export default function ConfirmDialog({
   }
 
   return (
-    <div className="dialog-overlay" onClick={onClose}>
+    <div className="veil" onClick={onClose}>
       <div
-        className="dialog-box"
+        className="dialog"
         onClick={(e) => e.stopPropagation()}
         role="dialog"
         aria-label={title}
       >
-        <p className="mono-label" style={{ color: "var(--crimson)" }}>
-          ⚠ {title}
+        <p className="label" style={{ display: "inline-flex", alignItems: "center", gap: "0.4rem", color: "var(--seal-bright)" }}>
+          <Warning size={14} aria-hidden="true" />
+          {title}
         </p>
-        <p className="fine" style={{ margin: "0.4rem 0" }}>
-          {message}
-        </p>
+        <p className="fine">{message}</p>
         <form onSubmit={submit}>
-          <label
-            style={{
-              display: "flex",
-              gap: "0.5rem",
-              alignItems: "flex-start",
-              fontFamily: "var(--font-dm-mono)",
-              fontSize: "0.72rem",
-              cursor: "pointer",
-              margin: "0.6rem 0",
-            }}
-          >
+          <label className="ack">
             <input
               type="checkbox"
               checked={ack}
               onChange={(e) => setAck(e.target.checked)}
-              style={{
-                marginTop: "0.15rem",
-                width: "1rem",
-                height: "1rem",
-                accentColor: "var(--crimson)",
-              }}
             />
             {ackLabel}
-          </label>          <div style={{ display: "flex", gap: "0.5rem" }}>
+          </label>
+          <div className="dialog-actions">
             <button
-              className="btn-solid"
+              className="btn btn-primary"
               type="submit"
               disabled={!ack || busy}
-              style={{
-                padding: "0.7rem 1rem",
-                background: "var(--crimson)",
-                borderColor: "var(--crimson)",
-                color: "#fff",
-                opacity: !ack || busy ? 0.45 : 1,
-                cursor: !ack || busy ? "not-allowed" : "pointer",
-              }}
             >
-              {busy ? "WORKING…" : confirmLabel}
+              {busy ? "Working" : confirmLabel}
             </button>
             <button
               className="btn-ghost"
-              style={{ padding: "0.7rem 1rem" }}
               type="button"
               onClick={onClose}
             >
-              CANCEL
+              Cancel
             </button>
           </div>
         </form>

@@ -5,11 +5,11 @@ import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 
 const PAGES = [
-  { href: "/docs", label: "START HERE" },
-  { href: "/docs/how-it-works", label: "HOW IT WORKS" },
-  { href: "/docs/tiers", label: "TIERS & WHAT'S SHOWN" },
-  { href: "/docs/wallets", label: "WALLETS & ACCOUNTS" },
-  { href: "/docs/privacy", label: "PRIVACY & TRUST" },
+  { href: "/docs", label: "Start here" },
+  { href: "/docs/how-it-works", label: "How it works" },
+  { href: "/docs/tiers", label: "Tiers and what's shown" },
+  { href: "/docs/wallets", label: "Wallets and accounts" },
+  { href: "/docs/privacy", label: "Privacy and trust" },
   { href: "/docs/faq", label: "FAQ" },
 ];
 
@@ -23,7 +23,7 @@ export default function DocsLayout({
   const [progress, setProgress] = useState(0);
   useEffect(() => setReady(true), []);
 
-  // Track the (responsive) masthead height so sticky docs chrome sits
+  // Track the (responsive) masthead height so the sticky docs chrome sits
   // exactly below it at every breakpoint.
   useEffect(() => {
     const sync = () => {
@@ -60,15 +60,15 @@ export default function DocsLayout({
   return (
     <section className="page-enter docs-shell">
       <div className="docs-head">
-        <p className="mono-label">6FIGS.XYZ — PROTOCOL DOCS</p>
+        <p className="label">6figs.xyz, the handbook</p>
         <h1>The handbook</h1>
         <p className="fine">
-          How proving your bags works, what we can and cannot see, and why.
+          How proving your holdings works, what we can and cannot see, and why.
         </p>
       </div>
       <div className="docs-body">
-        <aside className="docs-nav" aria-label="Docs chapters">
-          <p className="docs-nav-head">CONTENTS</p>
+        <aside className="docs-nav" aria-label="Handbook chapters">
+          <p className="docs-nav-head">Contents</p>
           {PAGES.map((p, i) => (
             <Link
               key={p.href}
@@ -76,7 +76,7 @@ export default function DocsLayout({
               className={isActive(p.href) ? "active" : ""}
               aria-current={isActive(p.href) ? "page" : undefined}
             >
-              <span className="docs-nav-num">
+              <span className="docs-nav-num num">
                 {String(i + 1).padStart(2, "0")}
               </span>
               {p.label}
@@ -84,10 +84,7 @@ export default function DocsLayout({
           ))}
         </aside>
         <article className="docs-article">
-          <div
-            className="docs-progress"
-            aria-hidden="true"
-          >
+          <div className="docs-progress" aria-hidden="true">
             <span style={{ width: `${Math.round(progress * 100)}%` }} />
           </div>
           {children}

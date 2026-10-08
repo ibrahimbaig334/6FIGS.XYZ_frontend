@@ -4,7 +4,7 @@ import { Pager } from "./components/pager";
 import { DocHeader } from "./components/doc-header";
 
 export const metadata: Metadata = {
-  title: "6FIGS.XYZ — Docs: Start here",
+  title: "6figs. Docs: Start here",
 };
 
 const CHAPTERS = [
@@ -12,7 +12,7 @@ const CHAPTERS = [
     href: "/docs/how-it-works",
     label: "HOW IT WORKS",
     blurb:
-      "The full journey of a verification, in five steps — who sees what at each point.",
+      "The full journey of a verification, in five steps. Who sees what at each point.",
   },
   {
     href: "/docs/tiers",
@@ -36,7 +36,7 @@ const CHAPTERS = [
     href: "/docs/faq",
     label: "FAQ",
     blurb:
-      "Spam tokens, price swings, losing a device, deleting your account — the questions people actually ask.",
+      "Spam tokens, price swings, losing a device, deleting your account. The questions people actually ask.",
   },
 ];
 
@@ -44,8 +44,6 @@ export default function DocsIndex() {
   return (
     <>
       <DocHeader
-        index="01"
-        chapter="START HERE"
         title={
           <>
             Proof of bags, <span className="accent">in plain words.</span>
@@ -53,7 +51,7 @@ export default function DocsIndex() {
         }
         lede={
           <>
-            6FIGS proves you hold six figures or more in crypto — without
+            6figs proves you hold six figures or more in crypto, without
             ever seeing your address or your balance. Not &ldquo;we promise
             not to look.&rdquo; Provable: the code that would see your data
             is sealed, attested, and public.
@@ -62,11 +60,11 @@ export default function DocsIndex() {
       />
 
       <div className="docs-card">
-        <p className="mono-label">THE DEAL, IN THREE LINES</p>
+        <p className="label">THE DEAL, IN THREE LINES</p>
         <ul className="docs-list">
           <li>
-            <strong>Prove you hold.</strong> Connect your wallets,
-            sign one message per wallet. No transaction, no gas.
+            <strong>Prove you hold.</strong> Connect your wallets, sign one
+            message per wallet. No transaction, no gas.
           </li>
           <li>
             <strong>A sealed enclave reads your balances</strong> and prices
@@ -74,7 +72,7 @@ export default function DocsIndex() {
           </li>
           <li>
             <strong>Only your tier survives.</strong> What 6figs keeps is a
-            badge — never a number, never a wallet.
+            badge. Never a number, never a wallet.
           </li>
         </ul>
       </div>
@@ -88,14 +86,14 @@ export default function DocsIndex() {
             <span className="docs-grid-num">
               CHAPTER {String(i + 2).padStart(2, "0")}
             </span>
-            <p className="mono-label">{c.label}</p>
+            <p className="label">{c.label}</p>
             <p className="fine">{c.blurb}</p>
           </a>
         ))}
       </div>
 
       <div className="docs-callout">
-        <p className="mono-label">THE ONE-SENTENCE VERSION</p>
+        <p className="label">THE ONE-SENTENCE VERSION</p>
         <p>
           Your wallet set is your identity; an attested enclave computes your
           tier inside a sealed box and signs the answer; the 6figs server can

@@ -84,16 +84,16 @@ function AccountConfirm({
       }}
     >
       <p className="fine" style={{ margin: 0, textAlign: "center" }}>
-        {family === "evm" ? "EVM" : "SOLANA"} ACCOUNT{" "}
+        {family === "evm" ? "EVM" : "Solana"} account{" "}
         <strong>{shortAddress(address)}</strong>
         <br />
-        CHECK THIS IS THE ONE YOU WANT TO PROVE.
+        Check this is the one you want to prove.
       </p>
-      <button className="btn-solid" onClick={onConfirm}>
-        CONFIRM &amp; SIGN
+      <button className="btn btn-primary" onClick={onConfirm}>
+        Confirm and sign
       </button>
       <button className="btn-ghost" onClick={onOther}>
-        USE ANOTHER ACCOUNT
+        Use another account
       </button>
     </div>
   );
@@ -425,8 +425,8 @@ function TeeProveInner({
         alignItems: "center",
       }}
     >
-      <button className="btn-solid" disabled>
-        {sig ? "SUBMITTING…" : busyLabel}
+      <button className="btn" disabled>
+        {sig ? "Submitting…" : busyLabel}
       </button>
       {diag && !stalled && (
         <p
@@ -446,7 +446,7 @@ function TeeProveInner({
       {(stalled || showFallback) && (
         <>
           <p className="fine" style={{ margin: 0, textAlign: "center" }}>
-            THE WALLET PICKER IS NOT SHOWING. OPEN IT AGAIN, OR CANCEL.
+            The wallet picker isn&apos;t showing. Open it again, or cancel.
           </p>
           {diag && (
             <p
@@ -473,7 +473,7 @@ function TeeProveInner({
               });
             }}
           >
-            OPEN THE WALLET PICKER AGAIN
+            Open the wallet picker again
           </button>
         </>
       )}

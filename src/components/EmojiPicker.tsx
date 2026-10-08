@@ -1,9 +1,11 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { Smiley } from "@phosphor-icons/react";
 import { CHAT_EMOJIS } from "../lib/constants";
 
-/** Emoji picker popup (gold-hover grid, same language as other dropdowns). */
+/** Emoji picker popup for chat and room descriptions (the emojis are chat
+ *  content; the control itself wears the house materials). */
 export default function EmojiPicker({
   onPick,
 }: {
@@ -37,22 +39,17 @@ export default function EmojiPicker({
         aria-label="Pick an emoji"
         aria-expanded={open}
         onClick={() => setOpen(!open)}
-        style={{ padding: "0.7rem 0.8rem", fontSize: "1rem" }}
+        style={{ padding: "0.55rem 0.7rem", color: "var(--tx)" }}
       >
-        😀
+        <Smiley size={15} aria-hidden="true" />
       </button>
       {open && (
         <div
-          className="dropdown"
+          className="menu menu-up"
           role="menu"
           style={{
-            position: "absolute",
             bottom: "110%",
             right: 0,
-            background: "var(--paper)",
-            border: "2px solid var(--ink)",
-            boxShadow: "4px 4px 0 var(--shadow)",
-            zIndex: 40,
             padding: "0.5rem",
             display: "grid",
             gridTemplateColumns: "repeat(6, 1fr)",
@@ -74,17 +71,11 @@ export default function EmojiPicker({
               style={{
                 border: 0,
                 background: "none",
-                fontSize: "1.3rem",
+                borderRadius: "4px",
+                fontSize: "1.25rem",
                 lineHeight: 1,
                 padding: "0.4rem",
                 cursor: "pointer",
-              }}
-              onMouseEnter={(ev) => {
-                (ev.target as HTMLButtonElement).style.background =
-                  "var(--gold)";
-              }}
-              onMouseLeave={(ev) => {
-                (ev.target as HTMLButtonElement).style.background = "none";
               }}
             >
               {e}

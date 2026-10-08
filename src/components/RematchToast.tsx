@@ -1,9 +1,9 @@
 "use client";
 
 /**
- * Rematch offer toast (top-right, challenge-toast look): ACCEPT resets the
- * board for both players, DECLINE tells the offerer. Rendered by the game
- * pages when a `rematchOffer` arrives for the open game.
+ * Rematch offer toast: Accept resets the board for both players, Decline
+ * tells the offerer. Rendered by the game pages when a `rematchOffer`
+ * arrives for the open game.
  */
 export default function RematchToast({
   fromHandle,
@@ -15,17 +15,17 @@ export default function RematchToast({
   onDecline: () => void;
 }) {
   return (
-    <div className="offer-stack" role="alert">
-      <div className="challenge-toast">
+    <div className="toast-stack" role="alert">
+      <div className="toast toast-challenge">
         <span>
           <strong>{fromHandle}</strong> wants a rematch
         </span>
         <span className="toast-actions">
-          <button className="btn-solid btn-sm" onClick={onAccept}>
-            ACCEPT
+          <button className="btn btn-primary btn-sm" onClick={onAccept}>
+            Accept
           </button>
           <button className="btn-ghost btn-sm" onClick={onDecline}>
-            DECLINE
+            Decline
           </button>
         </span>
       </div>

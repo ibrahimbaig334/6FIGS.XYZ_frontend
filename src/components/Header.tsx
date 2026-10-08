@@ -1,27 +1,31 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { usePathname } from "next/navigation";
+import { CaretDown, Moon, Sun } from "@phosphor-icons/react";
 import { api, ApiError, clearToken, getToken, Profile } from "../lib/api";
 import { connectSocket, disconnectSocket } from "../lib/ws";
-import SignInButton from "./SignInButton";
 import { disconnectWallets } from "./Web3Providers";
+import SignInButton from "./SignInButton";
+import { BrandChop } from "./Chop";
 
 const NAV = [
-  { href: "/", label: "HOME" },
-  { href: "/profile", label: "PROFILE" },
-  { href: "/play", label: "PLAY" },
-  { href: "/create", label: "CREATE" },
-  { href: "/docs", label: "DOCS" },
+  { href: "/", label: "Home" },
+  { href: "/rooms", label: "Rooms" },
+  { href: "/play", label: "Play" },
+  { href: "/create", label: "Create" },
+  { href: "/docs", label: "Docs" },
 ];
 
 export default function Header() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [menu, setMenu] = useState(false);
-  const [dark, setDark] = useState(false);
+  const [dark, setDark] = useState(true);
   const menuRef = useRef<HTMLDivElement>(null);
   const profileFreshRef = useRef(false);
+  const pathname = usePathname();
 
-  // Close the wallet dropdown on outside click / Escape.
+  // Close the account menu on outside click / Escape.
   useEffect(() => {
     if (!menu) return;
     const close = (e: MouseEvent) => {
@@ -39,16 +43,17 @@ export default function Header() {
     };
   }, [menu]);
 
+  // Midnight unless the visitor explicitly chose daylight.
   useEffect(() => {
-    const d = localStorage.getItem("sixfigs-theme") === "dark";
+    const d = localStorage.getItem("sixfigs-theme") !== "light";
     setDark(d);
-    document.body.classList.toggle("dark", d);
+    document.documentElement.classList.toggle("dark", d);
   }, []);
 
   function toggleTheme() {
     const next = !dark;
     setDark(next);
-    document.body.classList.toggle("dark", next);
+    document.documentElement.classList.toggle("dark", next);
     localStorage.setItem("sixfigs-theme", next ? "dark" : "light");
   }
 
@@ -60,23 +65,23 @@ export default function Header() {
     try {
       setProfile(await api<Profile>("/profile/user"));
     } catch (e) {
-      // 401 clears the token centrally in api(); network blips keep the session + cached badge.
+      // 401 clears the token centrally in api(); network blips keep the session and the badge.
       if (e instanceof ApiError && e.status === 401) setProfile(null);
     }
   }
 
   useEffect(() => {
     if (getToken()) {
-      connectSocket(); // online immediately on cached session — drives 1v1 presence
+      connectSocket(); // online immediately on a cached session, drives 1v1 presence
     }
     load();
     const h = () => {
-      // Login delivers the profile via onDone first — skip the redundant fetch.
+      // Login delivers the profile via onDone first, skip the redundant fetch.
       if (!profileFreshRef.current) load();
       profileFreshRef.current = false;
       if (getToken()) {
         disconnectSocket();
-        connectSocket(); // session changed → re-auth the socket
+        connectSocket(); // session changed, re-auth the socket
       }
     };
     window.addEventListener("sixfigs-auth", h);
@@ -86,13 +91,13 @@ export default function Header() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  /** Login success: the response already carries the profile — render the
-   *  tier badge immediately (no follow-up fetch → no LOG IN flash). */
+  /** Login success: the response already carries the profile, so the badge
+   *  renders immediately with no follow-up fetch and no flash. */
   function authed(p?: Profile) {
     if (p) {
       profileFreshRef.current = true;
-      // Flag is short-lived: h consumes it on the login event; clear it so a
-      // later unrelated event (recheck/mutation) still triggers a real load.
+      // Short-lived flag: h consumes it on the login event; a later unrelated
+      // event (recheck, mutation) still triggers a real load.
       window.setTimeout(() => {
         profileFreshRef.current = false;
       }, 1000);
@@ -114,61 +119,58 @@ export default function Header() {
     location.href = "/";
   }
 
+  const isActive = (href: string) =>
+    href === "/" ? pathname === "/" : pathname.startsWith(href);
+
   return (
     <header className="masthead">
       <a href="/" className="wordmark">
-        6FIGS<span>.XYZ</span>
+        <BrandChop size="md" />
+        figs
+        <span className="xyz">.XYZ</span>
       </a>
       <nav className="site-nav" aria-label="Primary">
         {NAV.map((n) => (
-          <a key={n.href} href={n.href}>
+          <a key={n.href} href={n.href} className={isActive(n.href) ? "active" : ""}>
             {n.label}
           </a>
         ))}
       </nav>
-      <div
-        className="masthead-actions"
-        style={{
-          display: "flex",
-          gap: "0.5rem",
-          alignItems: "center",
-          position: "relative",
-        }}
-      >
+      <div className="masthead-actions">
         <button
-          className="btn-ghost"
-          style={{ padding: "0.6rem 0.8rem" }}
+          className="btn-ghost theme-toggle"
           onClick={toggleTheme}
-          title={dark ? "Switch to light mode" : "Switch to dark mode"}
+          aria-label={dark ? "Switch to daylight" : "Switch to midnight"}
         >
-          {dark ? "☀ LIGHT" : "🌙 DARK"}
+          {dark ? <Sun size={14} /> : <Moon size={14} />}
+          {dark ? "Day" : "Night"}
         </button>
         {profile ? (
           <div ref={menuRef} style={{ position: "relative" }}>
             <button
-              className="tier-badge"
+              className="btn-ghost"
               style={{
-                cursor: "pointer",
-                border: "2px solid var(--ink)",
-                padding: "0.65rem 0.9rem",
-                fontSize: "0.72rem",
-                width: "100%",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "0.4rem",
+                fontSize: "0.7rem",
               }}
               onClick={() => setMenu(!menu)}
               aria-haspopup="menu"
               aria-expanded={menu}
             >
-              {profile.eligibility.tier ?? "UNVERIFIED"} ▾
+              {profile.eligibility.tier ?? "Unverified"}
+              <CaretDown size={11} aria-hidden="true" />
             </button>
             {menu && (
-              <div style={menuBox} className="dropdown" role="menu">
-                <a href="/profile">PROFILE</a>
-                <button onClick={disconnect}>DISCONNECT</button>
+              <div style={menuBox} className="menu" role="menu">
+                <a href="/profile">Profile</a>
+                <button onClick={disconnect}>Log out</button>
               </div>
             )}
           </div>
         ) : (
-          <SignInButton onDone={authed} label="SIGN IN" />
+          <SignInButton onDone={authed} label="Sign in" />
         )}
       </div>
     </header>
@@ -180,10 +182,4 @@ const menuBox: React.CSSProperties = {
   left: 0,
   right: 0,
   top: "110%",
-  background: "var(--paper)",
-  border: "2px solid var(--ink)",
-  boxShadow: "4px 4px 0 var(--shadow)",
-  display: "flex",
-  flexDirection: "column",
-  zIndex: 40,
 };

@@ -29,7 +29,7 @@ export function Pager({ current }: { current: string }) {
           <span className="title">{next.label}</span>
         </Link>
       ) : (
-        <span className="docs-pager-filler">END OF HANDBOOK ✓</span>
+        <span className="docs-pager-filler">End of the handbook</span>
       )}
     </div>
   );

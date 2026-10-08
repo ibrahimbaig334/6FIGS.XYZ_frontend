@@ -1,6 +1,13 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import {
+  CaretDoubleLeft,
+  CaretDoubleRight,
+  CaretLeft,
+  CaretRight,
+  LockSimple,
+} from "@phosphor-icons/react";
 import { api, errMsg, getToken, Room, RoomList, RoomMeta } from "../../lib/api";
 import { notifyError } from "../../lib/notify";
 import { ROOMS_PAGE_SIZE, MAX_ROOMS_PER_USER } from "../../lib/constants";
@@ -9,10 +16,11 @@ import SelectMenu from "../../components/SelectMenu";
 import InviteDialog from "../../components/InviteDialog";
 import DeleteRoomDialog from "../../components/DeleteRoomDialog";
 import Loader from "../../components/Loader";
+import TierTag from "../../components/TierTag";
 
 const TIER_ONLY_PREFIX = "only:";
 
-/** Sliding page list with ellipsis: 1 … 4 5 6 … 12. */
+/** Sliding page list with ellipsis: 1 ... 4 5 6 ... 12. */
 function pageWindow(cur: number, totalPages: number): (number | "…")[] {
   if (totalPages <= 7)
     return Array.from({ length: totalPages }, (_, i) => i + 1);
@@ -66,7 +74,7 @@ export default function RoomsPage() {
       setOwned(res.ownedCount ?? 0);
     } catch (e) {
       console.error("rooms load failed", e);
-      notifyError(errMsg(e, "Couldn't load rooms — try again"));
+      notifyError(errMsg(e, "Couldn't load rooms. Try again."));
     } finally {
       setLoading(false);
     }
@@ -87,31 +95,31 @@ export default function RoomsPage() {
       console.error("join failed", e);
       if (r.accessType === "invite") {
         // Dialog stays open for a retry; the reason lands in the error box.
-        notifyError(errMsg(e, "Wrong invite code — try again"));
+        notifyError(errMsg(e, "Wrong invite code. Try again."));
         return;
       }
-      // Tier room: read the entry gate — it carries the specific REASON
-      // (tier shortfall, room full, …). The box names the room for context.
+      // Tier room: read the entry gate, which carries the specific reason
+      // (tier shortfall, room full). The toast names the room for context.
       let reason = "";
       try {
         const m = await api<RoomMeta>(`/rooms/${r.id}/meta`);
         reason = m.joinReason ?? "";
       } catch {
-        /* meta unavailable — fall back below */
+        /* meta unavailable, fall back below */
       }
       if (!reason)
         reason = errMsg(
           e,
           r.minTier
-            ? `Couldn't join this ${r.minTier} room — try again`
-            : "Couldn't join this room — try again",
+            ? `Couldn't join this ${r.minTier} room. Try again.`
+            : "Couldn't join this room. Try again.",
         );
       notifyError(`${r.name}: ${reason}`);
     }
   }
 
   function askJoin(r: Room) {
-    // Invite rooms enforce the password for everyone — even the creator/members.
+    // Invite rooms enforce the password for everyone, even the creator.
     if (r.accessType === "invite") {
       setInviteFor(r);
       return;
@@ -133,7 +141,7 @@ export default function RoomsPage() {
 
   function pickAccess(f: string) {
     setAccessFilter(f);
-    // No tier ordering exists for invite rooms — fall back to newest.
+    // No tier ordering exists for invite rooms, fall back to newest.
     if (
       f === "invite" &&
       (sort === "tier" || sort.startsWith(TIER_ONLY_PREFIX))
@@ -175,16 +183,8 @@ export default function RoomsPage() {
           placeItems: "center",
         }}
       >
-        <div
-          className="card"
-          style={{
-            width: "100%",
-            maxWidth: "520px",
-            textAlign: "center",
-            padding: "2.5rem 2rem",
-          }}
-        >
-          <p className="mono-label">ROOMS — SIGN IN</p>
+        <div className="plate auth-card">
+          <h1 className="label">The door</h1>
           <div
             style={{
               marginTop: "1.2rem",
@@ -192,11 +192,11 @@ export default function RoomsPage() {
               justifyContent: "center",
             }}
           >
-            <SignInButton onDone={load} />
+            <SignInButton onDone={load} label="Sign in" />
           </div>
-          <p className="fine" style={{ margin: "0.8rem 0 0" }}>
-            NEW HERE? CONNECTING A WALLET CREATES YOUR ACCOUNT AND PROVES YOUR
-            TIER.
+          <p className="fine" style={{ margin: 0 }}>
+            New here? Connecting a wallet creates your account and proves
+            your tier.
           </p>
         </div>
       </section>
@@ -204,29 +204,21 @@ export default function RoomsPage() {
   }
 
   return (
-    <section
-      className="page-enter"
-      style={{
-        padding: "2rem 5vw",
-        flex: 1,
-        display: "flex",
-        flexDirection: "column",
-        gap: "1rem",
-      }}
-    >
-      <div className="topline" style={{ marginBottom: 0 }}>
-        <div className="tabs">
+    <section className="page-enter shell" style={{ flex: 1 }}>
+      <h1 className="vh">The floor</h1>
+      <div className="topline">
+        <div className="tabbar">
           <a href="/rooms" className="active">
             Private rooms
           </a>
-          <a href="/play">1v1 chat</a>
+          <a href="/play">1-on-1</a>
         </div>
-        <a href="/create" className="btn-solid">
-          + CREATE ROOM
+        <a href="/create" className="btn btn-primary">
+          Set a table
         </a>
       </div>
-      {/* Join-code feedback lives inside the dialog (error prop below). */}
-      <div className="rooms-filter">
+
+      <div className="filters">
         <input
           className="field rooms-q"
           value={q}
@@ -234,143 +226,147 @@ export default function RoomsPage() {
             setQ(e.target.value);
             setPage(1);
           }}
-          placeholder="search…"
+          placeholder="Search tables"
         />
         <div className="filter-chips">
           {["", "tier", "invite"].map((f) => (
             <button
               key={f || "all"}
-              className={accessFilter === f ? "chip active" : "chip"}
+              className={accessFilter === f ? "chip on" : "chip"}
               onClick={() => pickAccess(f)}
             >
-              {f === ""
-                ? "ALL"
-                : f === "tier"
-                  ? "TIER-BASED"
-                  : "🔒 INVITE-ONLY"}
+              {f === "invite" && <LockSimple size={11} aria-hidden="true" />}
+              {f === "" ? "All" : f === "tier" ? "Tier based" : "Invite only"}
             </button>
           ))}
         </div>
         <div className="sortmenu-wrap">
           <SelectMenu
-            label="Sort rooms"
+            label="Sort tables"
             value={sort}
             onChange={pickSort}
             options={[
-              { value: "created", label: "NEWEST" },
-              { value: "members", label: "MOST MEMBERS" },
-              { value: "mine", label: "MY ROOMS" },
-              // Invite rooms carry no tier — no tier options under invite-only.
+              { value: "created", label: "Newest" },
+              { value: "members", label: "Most members" },
+              { value: "mine", label: "My tables" },
+              // Invite rooms carry no tier, so no tier options under invite-only.
               ...(accessFilter !== "invite"
                 ? [
-                    { value: "tier", label: "TOP TIER" },
-                    { value: "only:TIER I", label: "TIER I ONLY" },
-                    { value: "only:TIER II", label: "TIER II ONLY" },
-                    { value: "only:TIER III", label: "TIER III ONLY" },
-                    { value: "only:TIER IV", label: "TIER IV ONLY" },
+                    { value: "tier", label: "Top tier" },
+                    { value: "only:TIER I", label: "Tier I only" },
+                    { value: "only:TIER II", label: "Tier II only" },
+                    { value: "only:TIER III", label: "Tier III only" },
+                    { value: "only:TIER IV", label: "Tier IV only" },
                   ]
                 : []),
             ]}
           />
         </div>
-        <span className="fine rooms-count">
-          {total} ROOMS · MY ROOMS {owned}/{MAX_ROOMS_PER_USER} · 1V1 MAX 2 EACH
+        <span className="fine num rooms-count">
+          {total === 1 ? "1 table" : `${total} tables`}, {owned}/
+          {MAX_ROOMS_PER_USER} yours
         </span>
       </div>
+
       {loading ? (
-        <div className="loader-block">
-          <Loader label="LOADING ROOMS…" />
+        <div className="floor" aria-busy="true">
+          {[0, 1, 2, 3].map((i) => (
+            <div key={i} className="skeleton skeleton-table" />
+          ))}
         </div>
       ) : rooms.length > 0 ? (
-        <div className="room-rows">
+        <div className="floor">
           {rooms.map((r) => {
             const onlinePct = Math.min(100, (r.onlineCount / 2) * 100);
             return (
-              <div key={r.id} className="room-row">
-                <div className="room-main">
-                  <div className="room-topline">
-                    <span
-                      className={
-                        r.accessType === "invite"
-                          ? "tier-badge t3"
-                          : "tier-badge"
-                      }
-                    >
-                      {r.accessType === "invite"
-                        ? "🔒 INVITE-ONLY"
-                        : `✓ ${r.minTier}`}
+              <article key={r.id} className="table-card">
+                <div className="table-scene" aria-hidden="true">
+                  <span
+                    className={`table-seat seat-l${r.memberCount >= 1 ? " on" : ""}${r.onlineCount >= 1 ? " live" : ""}`}
+                  />
+                  <div className="table-top">
+                    <span className="table-name" title={r.name}>
+                      {r.name}
                     </span>
-                    {r.isOwner && <span className="tier-badge">OWNER</span>}
                   </div>
-                  <h3 className="room-name" title={r.name}>
-                    {r.name}
-                  </h3>
+                  <span
+                    className={`table-seat seat-r${r.memberCount >= 2 ? " on" : ""}${r.onlineCount >= 2 ? " live" : ""}`}
+                  />
+                </div>
+                <div className="table-info">
+                  <div className="dir-topline">
+                    {r.accessType === "invite" ? (
+                      <span className="tier-tag">
+                        <LockSimple size={11} aria-hidden="true" />
+                        Invite only
+                      </span>
+                    ) : (
+                      <TierTag tier={r.minTier} />
+                    )}
+                    {r.isOwner && <span className="tier-tag">Yours</span>}
+                  </div>
                   {r.description && (
-                    <p className="fine room-desc" title={r.description}>
+                    <p className="fine dir-desc" title={r.description}>
                       {r.description}
                     </p>
                   )}
-                  <p className="fine room-meta">
-                    BY {r.creatorHandle.toUpperCase()}
-                  </p>
-                </div>
-                <div className="room-side">
-                  <span className="fine room-occ">
-                    <span className={r.onlineCount > 0 ? "dot on" : "dot"} />
-                    {r.onlineCount}/2 ONLINE
-                  </span>
+                  <p className="fine dir-meta">by {r.creatorHandle}</p>
+                  <div className="table-actions">
+                    <span
+                      className="fine num"
+                      style={{ display: "inline-flex", alignItems: "center", gap: "0.4rem" }}
+                    >
+                      <span className={r.onlineCount > 0 ? "dot on" : "dot"} />
+                      {r.onlineCount}/2 in the room
+                    </span>
+                    <button
+                      className="btn-primary btn btn-sm"
+                      style={{ marginLeft: "auto" }}
+                      onClick={() => askJoin(r)}
+                    >
+                      {r.accessType === "invite" || !r.isMember
+                        ? "Join"
+                        : "Enter"}
+                    </button>
+                    {r.isOwner && (
+                      <button
+                        className="chip danger"
+                        onClick={() => setDeleteFor(r)}
+                      >
+                        Delete
+                      </button>
+                    )}
+                  </div>
                   <div
                     className="meter"
                     role="progressbar"
                     aria-valuenow={r.onlineCount}
                     aria-valuemin={0}
                     aria-valuemax={2}
-                    aria-label={`${r.onlineCount} of 2 online`}
+                    aria-label={`${r.onlineCount} of 2 in the room`}
                   >
                     <i style={{ width: `${onlinePct}%` }} />
                   </div>
-                  <button
-                    className="btn-solid btn-sm"
-                    onClick={() => askJoin(r)}
-                  >
-                    {r.accessType === "invite" || !r.isMember
-                      ? "JOIN 1V1 ↗"
-                      : "ENTER ↗"}
-                  </button>
-                  {r.isOwner && (
-                    <button
-                      className="chip room-del"
-                      onClick={() => setDeleteFor(r)}
-                    >
-                      DELETE
-                    </button>
-                  )}
                 </div>
-              </div>
+              </article>
             );
           })}
         </div>
       ) : (
-        <div
-          className="card"
-          style={{ textAlign: "center", padding: "2.5rem 1.5rem" }}
-        >
-          <p className="mono-label">NO ROOMS YET</p>
+        <div className="plate empty">
+          <p className="label">No tables set</p>
           <p className="fine">
-            Be the first — spin up a 1v1 room for you and a peer.
+            The floor is quiet. Set the first table for you and a peer.
           </p>
-          <a
-            href="/create"
-            className="btn-solid btn-sm"
-            style={{ marginTop: "10px" }}
-          >
-            + CREATE ROOM
+          <a href="/create" className="btn btn-primary btn-sm">
+            Set a table
           </a>
         </div>
       )}
+
       <div className="pager">
-        <span className="fine pager-stat">
-          PAGE {page} / {pages} · {total} ROOMS
+        <span className="fine num pager-stat">
+          Page {page} of {pages}
         </span>
         <div className="pager-nav">
           <button
@@ -380,7 +376,7 @@ export default function RoomsPage() {
             title="First page"
             aria-label="First page"
           >
-            «
+            <CaretDoubleLeft size={12} aria-hidden="true" />
           </button>
           <button
             className="chip"
@@ -389,7 +385,7 @@ export default function RoomsPage() {
             title="Previous page"
             aria-label="Previous page"
           >
-            ‹
+            <CaretLeft size={12} aria-hidden="true" />
           </button>
           <span className="pager-nums">
             {pageWindow(page, pages).map((n, i) =>
@@ -400,7 +396,7 @@ export default function RoomsPage() {
               ) : (
                 <button
                   key={n}
-                  className={n === page ? "chip active" : "chip"}
+                  className={n === page ? "chip on" : "chip"}
                   onClick={() => setPage(n)}
                   aria-label={`Page ${n}`}
                   aria-current={n === page ? "page" : undefined}
@@ -417,7 +413,7 @@ export default function RoomsPage() {
             title="Next page"
             aria-label="Next page"
           >
-            ›
+            <CaretRight size={12} aria-hidden="true" />
           </button>
           <button
             className="chip"
@@ -426,7 +422,7 @@ export default function RoomsPage() {
             title="Last page"
             aria-label="Last page"
           >
-            »
+            <CaretDoubleRight size={12} aria-hidden="true" />
           </button>
         </div>
         <label className="pager-goto">
@@ -434,7 +430,7 @@ export default function RoomsPage() {
             className="field"
             inputMode="numeric"
             pattern="[0-9]*"
-            placeholder="GO TO PAGE"
+            placeholder="Page"
             value={goto}
             onChange={(e) => setGoto(e.target.value.replace(/[^0-9]/g, ""))}
             onKeyDown={(e) => {
@@ -443,10 +439,11 @@ export default function RoomsPage() {
             aria-label="Go to page"
           />
           <button className="chip" onClick={goToPage}>
-            GO
+            Go
           </button>
         </label>
       </div>
+
       {inviteFor && (
         <InviteDialog
           roomName={inviteFor.name}

@@ -179,16 +179,35 @@ function ForgotFlow() {
         no session is created.
       </p>
       {active ? (
-        <TeeProve
-          mode="identify"
-          busyLabel="CHECKING…"
-          onIdentified={(account) => {
-            setActive(false);
-            setFound(account);
-            setNewUsername(account.username ?? "");
-          }}
-          onDismiss={() => setActive(false)}
-        />
+        <div className="dialog-overlay">
+          <div
+            className="dialog-box"
+            style={{ alignItems: "center", textAlign: "center" }}
+            role="dialog"
+            aria-label="Recover with a wallet"
+          >
+            <p className="mono-label" style={{ margin: 0 }}>
+              RECOVER WITH A WALLET
+            </p>
+            <TeeProve
+              mode="identify"
+              busyLabel="CHECKING…"
+              onIdentified={(account) => {
+                setActive(false);
+                setFound(account);
+                setNewUsername(account.username ?? "");
+              }}
+              onDismiss={() => setActive(false)}
+            />
+            <button
+              className="btn-ghost"
+              style={{ padding: "0.5rem 1rem" }}
+              onClick={() => setActive(false)}
+            >
+              CANCEL
+            </button>
+          </div>
+        </div>
       ) : (
         <button
           className="btn-solid"

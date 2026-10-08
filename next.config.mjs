@@ -10,6 +10,9 @@ const nextConfig = {
     config.resolve.alias = {
       ...config.resolve.alias,
       "@x402": false,
+      // React Native only; the MetaMask SDK imports it behind a platform
+      // guard that webpack still tries to resolve.
+      "@react-native-async-storage/async-storage": false,
     };
     return config;
   },

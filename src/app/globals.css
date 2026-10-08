@@ -56,6 +56,8 @@ body > main {
   position: fixed;
   inset: 0;
   background: rgba(18, 18, 18, 0.55);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
   display: grid;
   place-items: center;
   z-index: 50;
@@ -79,6 +81,45 @@ body > main {
     transform: translate(-3px, -3px);
     opacity: 0;
   }
+}
+
+/* Sign-in chooser: two stacked, tappable option cards. Hard edges and a
+   hard shadow to match the rest of the house style, no rounded chrome. */
+.auth-option {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  align-items: flex-start;
+  width: 100%;
+  padding: 0.9rem 1rem;
+  border: 2px solid var(--ink);
+  background: transparent;
+  box-shadow: 4px 4px 0 var(--shadow);
+  color: inherit;
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+  transition: transform 0.08s ease, box-shadow 0.08s ease;
+}
+
+.auth-option:hover,
+.auth-option:focus-visible {
+  transform: translate(-2px, -2px);
+  box-shadow: 6px 6px 0 var(--shadow);
+  outline: none;
+}
+
+.auth-option-title {
+  font-family: var(--font-dm-mono);
+  font-size: 0.82rem;
+  letter-spacing: 0.05em;
+}
+
+.auth-option-sub {
+  font-family: var(--font-grotesk);
+  font-size: 0.78rem;
+  line-height: 1.4;
+  opacity: 0.72;
 }
 
 ::selection {

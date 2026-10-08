@@ -9,9 +9,15 @@ import { isAppKitReady } from "./Web3Providers";
 /**
  * One auth entry point, two ways in. Wallet proof is the default because it is
  * what creates the account and the tier; username + password exists for people
- * who already set one up and just want to get back in on another device
- * without touching a wallet. Choosing credentials routes to /recover, which
- * also carries the wallet recovery flow.
+ * who already set one up and just want to get back in on another device.
+ *
+ * Both phases stay inside this dialog — including the account confirmation —
+ * so nothing ever renders in place of the header button.
+ *
+ * The wallet phase uses the standard dialog backdrop (z-50). That is safe
+ * under AppKit's picker: AppKit appends its modal to <body> at z-index 9999,
+ * so the picker always paints above, and the global PickerScrim blurs
+ * everything behind it while open.
  */
 export default function AuthModal({
   onClose,
@@ -32,23 +38,30 @@ export default function AuthModal({
 
   if (wallet) {
     return (
-      <div className="dialog-overlay" onClick={onClose}>
+      <div className="dialog-overlay">
         <div
           className="dialog-box"
-          style={{ alignItems: "center" }}
-          onClick={(e) => e.stopPropagation()}
+          style={{ alignItems: "center", textAlign: "center" }}
           role="dialog"
           aria-label="Connect a wallet"
         >
           <TeeProve
             mode="establish"
             sessionless
+            busyLabel="OPENING YOUR WALLET…"
             onDone={(p) => {
               onDone(p);
               onClose();
             }}
             onDismiss={() => setWallet(false)}
           />
+          <button
+            className="btn-ghost"
+            style={{ padding: "0.5rem 1rem" }}
+            onClick={onClose}
+          >
+            CANCEL
+          </button>
         </div>
       </div>
     );
@@ -58,14 +71,17 @@ export default function AuthModal({
     <div className="dialog-overlay" onClick={onClose}>
       <div
         className="dialog-box"
-        style={{ textAlign: "center" }}
+        style={{ textAlign: "left" }}
         onClick={(e) => e.stopPropagation()}
         role="dialog"
         aria-label="Sign in"
       >
-        <p className="mono-label">SIGN IN</p>
+        <p className="mono-label" style={{ margin: 0, textAlign: "center" }}>
+          SIGN IN
+        </p>
+
         <button
-          className="btn-solid"
+          className="auth-option"
           onClick={() => {
             if (!isAppKitReady()) {
               notifyError(
@@ -76,20 +92,26 @@ export default function AuthModal({
             setWallet(true);
           }}
         >
-          CONNECT WALLET ↗
+          <span className="auth-option-title">CONNECT A WALLET ↗</span>
+          <span className="auth-option-sub">
+            New here? This creates your account and proves your tier. Returning?
+            Any enrolled wallet signs you straight in.
+          </span>
         </button>
-        <p className="fine" style={{ margin: 0 }}>
-          First time? Connecting a wallet creates your account and proves your
-          tier. Returning? Any enrolled wallet signs you straight in.
-        </p>
-        <p className="fine" style={{ margin: 0 }}>
-          Already set up a username and password? Sign in without a wallet — or
-          recover it with one.
-        </p>
-        <a className="btn-solid" href="/recover">
-          USERNAME + PASSWORD ↗
+
+        <a className="auth-option" href="/recover">
+          <span className="auth-option-title">USERNAME + PASSWORD ↗</span>
+          <span className="auth-option-sub">
+            Set one up in your profile to skip wallets on other devices. Forgot
+            it? Recover with any enrolled wallet.
+          </span>
         </a>
-        <button className="btn-ghost" onClick={onClose}>
+
+        <button
+          className="btn-ghost"
+          style={{ alignSelf: "center", padding: "0.5rem 1rem" }}
+          onClick={onClose}
+        >
           CANCEL
         </button>
       </div>

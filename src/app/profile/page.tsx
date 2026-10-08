@@ -521,12 +521,34 @@ function ProfileView({
           </div>
         )}
         {proveMode && (
-          <TeeProve
-            key={proveMode}
-            mode={proveMode}
-            onDone={onProveDone}
-            onDismiss={onDismissFlow}
-          />
+          <div className="dialog-overlay">
+            <div
+              className="dialog-box"
+              style={{ alignItems: "center", textAlign: "center" }}
+              role="dialog"
+              aria-label={
+                proveMode === "add" ? "Add a wallet" : "Connect a wallet"
+              }
+            >
+              <p className="mono-label" style={{ margin: 0 }}>
+                {proveMode === "add" ? "ADD WALLET" : "CONNECT WALLET"}
+              </p>
+              <TeeProve
+                key={proveMode}
+                mode={proveMode}
+                busyLabel="OPENING YOUR WALLET…"
+                onDone={onProveDone}
+                onDismiss={onDismissFlow}
+              />
+              <button
+                className="btn-ghost"
+                style={{ padding: "0.5rem 1rem" }}
+                onClick={onDismissFlow}
+              >
+                CANCEL
+              </button>
+            </div>
+          </div>
         )}
         <div className="wallet-actions">
           {!proveMode &&

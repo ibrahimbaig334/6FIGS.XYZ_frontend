@@ -28,7 +28,8 @@ import {
 import {
   disconnectWallets,
   isAppKitReady,
-  openWalletModal,
+  openWalletModalVerified,
+  walletModalDiagnostics,
 } from "./Web3Providers";
 
 type ProveMode = "establish" | "add" | "identify";
@@ -175,6 +176,9 @@ function TeeProveInner({
   const [confirmed, setConfirmed] = useState(false);
   const [prepared, setPrepared] = useState<Prepared | null>(null);
   const [sig, setSig] = useState<string | null>(null);
+  const [stalled, setStalled] = useState(false);
+  const [showFallback, setShowFallback] = useState(false);
+  const [diag, setDiag] = useState<string | null>(null);
   const wasOpenRef = useRef(false);
   const prepSeq = useRef(0);
   const signingForRef = useRef<string | null>(null);
@@ -182,10 +186,51 @@ function TeeProveInner({
 
   // Mount: open the connect modal unless a wallet is already connected (a
   // stale connection is consumed directly, e.g. a retry after a failure).
+  // AppKit can mount an empty shell if open() races its first render, so the
+  // verified opener retries and the fallback surfaces if it can't.
   useEffect(() => {
-    if (!isConnected) void openWalletModal();
+    if (isConnected) return;
+    let cancelled = false;
+    openWalletModalVerified()
+      .then((shown) => {
+        if (cancelled || shown) return;
+        notifyError("Couldn't open the wallet picker — reload and try again");
+        setShowFallback(true);
+      })
+      .catch((e) => {
+        console.error("wallet modal failed to open", e);
+        if (cancelled) return;
+        notifyError("Couldn't open the wallet picker — reload and try again");
+        onDismiss();
+      });
+    return () => {
+      cancelled = true;
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Dev probe: while waiting on a connection, report what the AppKit modal is
+  // actually doing so a stuck flow is diagnosable without guesswork.
+  useEffect(() => {
+    if (staged || process.env.NODE_ENV === "production") return;
+    const t = setTimeout(() => {
+      walletModalDiagnostics()
+        .then((d) => {
+          setDiag(d);
+          console.warn("[tee] wallet modal diagnostics:", d);
+        })
+        .catch((e) => setDiag(`diagnostics failed: ${String(e)}`));
+    }, 3_000);
+    return () => clearTimeout(t);
+  }, [staged]);
+
+  // Watchdog: if the picker never yields a connection, offer a way out instead
+  // of stranding the user on a spinner.
+  useEffect(() => {
+    if (staged) return;
+    const t = setTimeout(() => setStalled(true), 12_000);
+    return () => clearTimeout(t);
+  }, [staged]);
 
   // Modal closed with nothing connected = dismissal.
   useEffect(() => {
@@ -299,7 +344,7 @@ function TeeProveInner({
         onDismiss();
       });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [prepared, staged, sig, isConnected, address]);
+  }, [prepared, staged, sig, confirmed, isConnected, address]);
 
   // Signed: submit (deduped by message — single-use nonces can't be spent
   // twice). Disconnect afterwards so the next run picks a fresh wallet.
@@ -365,15 +410,73 @@ function TeeProveInner({
         onOther={() => {
           setStaged(null);
           setPrepared(null);
-          void disconnectWallets().then(() => openWalletModal());
+          void disconnectWallets().then(() => openWalletModalVerified());
         }}
       />
     );
   }
 
   return (
-    <button className="btn-solid" disabled>
-      {sig ? "SUBMITTING…" : busyLabel}
-    </button>
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        gap: "0.5rem",
+        alignItems: "center",
+      }}
+    >
+      <button className="btn-solid" disabled>
+        {sig ? "SUBMITTING…" : busyLabel}
+      </button>
+      {diag && !stalled && (
+        <p
+          className="fine"
+          style={{
+            margin: 0,
+            textAlign: "center",
+            maxWidth: 320,
+            wordBreak: "break-word",
+            fontSize: "0.68rem",
+            opacity: 0.7,
+          }}
+        >
+          {diag}
+        </p>
+      )}
+      {(stalled || showFallback) && (
+        <>
+          <p className="fine" style={{ margin: 0, textAlign: "center" }}>
+            THE WALLET PICKER IS NOT SHOWING. OPEN IT AGAIN, OR CANCEL.
+          </p>
+          {diag && (
+            <p
+              className="fine"
+              style={{
+                margin: 0,
+                textAlign: "center",
+                maxWidth: 320,
+                wordBreak: "break-word",
+                fontSize: "0.66rem",
+                opacity: 0.7,
+              }}
+            >
+              {diag}
+            </p>
+          )}
+          <button
+            className="btn-ghost"
+            onClick={() => {
+              setStalled(false);
+              setShowFallback(false);
+              void openWalletModalVerified().then((shown) => {
+                if (!shown) setShowFallback(true);
+              });
+            }}
+          >
+            OPEN THE WALLET PICKER AGAIN
+          </button>
+        </>
+      )}
+    </div>
   );
 }

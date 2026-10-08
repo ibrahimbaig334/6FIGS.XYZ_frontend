@@ -8,6 +8,9 @@ import AuthModal from "./AuthModal";
  * The single sign-in call to action. Owns its own modal so every gate (header,
  * rooms, play, create, game, profile) is one tag: one button, then a choice
  * between connecting a wallet and using a username + password.
+ *
+ * Only the trigger lives here — every phase of the flow, including the account
+ * confirmation, renders inside the dialog so it never replaces the button.
  */
 export default function SignInButton({
   onDone,

@@ -1,24 +1,15 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { useWallet } from "@solana/wallet-adapter-react";
-import { useWalletModal } from "@solana/wallet-adapter-react-ui";
-import {
-  ApiError,
-  errMsg,
-  teeIdentify,
-  usernameLogin,
-  usernameReset,
-} from "../../lib/api";
+import { useState } from "react";
+import { errMsg, usernameLogin, usernameReset } from "../../lib/api";
 import { notifyError } from "../../lib/notify";
-import { base58Encode } from "@sixfigs/tee/shared";
-import { prepareSetPublic } from "../../lib/teeVerify";
+import TeeProve, { type IdentifiedAccount } from "../../components/TeeProve";
+import { isAppKitReady } from "../../components/Web3Providers";
 
 /**
  * Device-free sign-in hub. Two modes: username + password sign-in, or
- * forgot-either recovery by signing with a linked wallet (no session, and
- * deliberately NOT the wallet-login flow — recovery must never create or
- * switch accounts).
+ * forgot-either recovery by proving an enrolled wallet (no session is
+ * created; the reset signs the holder into the recovered account).
  */
 export default function RecoverPage() {
   const [mode, setMode] = useState<"signin" | "forgot">("signin");
@@ -122,166 +113,12 @@ function SigninForm() {
   );
 }
 
-/**
- * Singleton identify coordinator. One prepare per address: concurrent runs
- * would each fetch a public nonce, but only the shared attempt prompts —
- * everyone else joins it (same rationale as the login coordinator).
- */
-let currentIdentify: {
-  address: string;
-  promise: Promise<{ username: string | null; recoveryToken: string }>;
-} | null = null;
-
-function identifyOnce(
-  address: string,
-  sign: (m: Uint8Array) => Promise<Uint8Array | { signature: Uint8Array }>,
-): Promise<{ username: string | null; recoveryToken: string }> {
-  if (currentIdentify && currentIdentify.address === address) {
-    return currentIdentify.promise;
-  }
-  const entry: {
-    address: string;
-    promise: Promise<{ username: string | null; recoveryToken: string }>;
-  } = {
-    address,
-    promise: (async () => {
-      // No addresses leave the browser: the enclave sees them inside sealed
-      // memory; the backend sees only the countersigned nullifiers.
-      const { client, prepared } = await prepareSetPublic({
-        wallets: [{ family: "solana", chainId: 0, address }],
-      });
-      const raw = (await sign(
-        new TextEncoder().encode(prepared.message),
-      )) as unknown as Uint8Array | { signature: Uint8Array };
-      const signed = await client.submit({
-        prepared,
-        signatures: {
-          [`solana:${address.toLowerCase()}`]: base58Encode(
-            raw instanceof Uint8Array ? raw : raw.signature,
-          ),
-        },
-      });
-      return teeIdentify(signed);
-    })(),
-  };
-  entry.promise = entry.promise.catch((e) => {
-    // Failed flows must be retryable — only successes are shared.
-    if (currentIdentify === entry) currentIdentify = null;
-    throw e;
-  });
-  currentIdentify = entry;
-  return entry.promise;
-}
-
 function ForgotFlow() {
-  const { publicKey, signMessage, wallet, connected, connecting, connect, disconnect, select } =
-    useWallet();
-  const { visible, setVisible } = useWalletModal();
-  const [phase, setPhase] = useState<"idle" | "choose" | "connect">("idle");
-  const [busy, setBusy] = useState(false);
-  const [found, setFound] = useState<{
-    username: string | null;
-    recoveryToken: string;
-  } | null>(null);
+  const [active, setActive] = useState(false);
+  const [found, setFound] = useState<IdentifiedAccount | null>(null);
   const [newUsername, setNewUsername] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [saving, setSaving] = useState(false);
-  const connRef = useRef(false);
-  const doneFor = useRef<string | null>(null);
-
-  // Dropped mid-attempt: back to idle (a reconnect starts a fresh attempt).
-  // (The in-flight run's own cleanup cancels it, so it can't clear this.)
-  // Separate ref: connRef guards the connect() call below.
-  const wasConnRef = useRef(false);
-  useEffect(() => {
-    if (wasConnRef.current && !connected) {
-      doneFor.current = null;
-      setBusy(false);
-    }
-    wasConnRef.current = connected;
-  }, [connected]);
-
-  // Same modal discipline as the prove flow: modal only selects. Selections
-  // are cleared on press, so a present selection at close is always a real
-  // pick — a dismissed popup can never auto-connect a stale wallet.
-  useEffect(() => {
-    if (visible || phase !== "choose") return;
-    if (!wallet) setPhase("idle");
-    else setPhase("connect");
-  }, [visible, phase, wallet]);
-
-  useEffect(() => {
-    if (phase !== "connect") return;
-    if (connected) {
-      setPhase("idle");
-      return;
-    }
-    if (!wallet) {
-      if (!visible) setPhase("idle");
-      return;
-    }
-    if (connecting || connRef.current) return;
-    connRef.current = true;
-    connect()
-      .catch((e) => {
-        console.error("wallet connect failed", e);
-        notifyError("Connection failed — try again");
-      })
-      .finally(() => {
-        connRef.current = false;
-        setPhase("idle");
-      });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [phase, wallet, connected, connecting, visible]);
-
-  // Connected (and not yet identified with it): enclave prepare → sign →
-  // identify. Never any login endpoint — recovery must not create a session.
-  // doneFor is NEVER cleared on failure: combined with the disconnect
-  // below, a failed address cannot refire by itself (no retry storm).
-  // NOTE: `busy`/`found` are deliberately NOT deps: this effect sets them,
-  // and listing them would run cleanup (cancelled=true) on its own update —
-  // self-cancelling the attempt so the toast + reset never run (stuck on
-  // CHECKING…). doneFor alone guards re-entry.
-  useEffect(() => {
-    if (!connected || !publicKey || !signMessage || busy || found) return;
-    const address = publicKey.toString();
-    if (doneFor.current === address) return;
-    doneFor.current = address;
-    let cancelled = false;
-    setBusy(true);
-    const sign = (m: Uint8Array) =>
-      signMessage(m) as unknown as Promise<
-        Uint8Array | { signature: Uint8Array }
-      >;
-    const timeout = new Promise<never>((_, reject) =>
-      setTimeout(() => reject(new ApiError("Timed out — try again", 408)), 45000),
-    );
-    (async () => {
-      try {
-        const res = await Promise.race([identifyOnce(address, sign), timeout]);
-        if (cancelled) return;
-        setFound({ username: res.username, recoveryToken: res.recoveryToken });
-        setNewUsername(res.username ?? "");
-        // Recovery over — drop the adapter connection; the reset below is sessionless.
-        disconnect().catch(() => {});
-      } catch (e) {
-        if (!cancelled) {
-          console.error("recovery failed", e);
-          notifyError(errMsg(e, "Couldn't recover — try again"));
-          // Break any loop: stay done for this address AND drop the
-          // connection (fire-forget — never awaited), so only a fresh
-          // button press retries.
-          disconnect().catch(() => {});
-        }
-      } finally {
-        if (!cancelled) setBusy(false);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [connected, publicKey]);
 
   async function finish() {
     if (saving || !found) return;
@@ -305,7 +142,6 @@ function ForgotFlow() {
     }
   }
 
-  // Top-of-render redirect breaks hooks order — profile gate handles authed users.
   if (found) {
     return (
       <div style={{ display: "flex", flexDirection: "column", gap: "0.6rem" }}>
@@ -339,27 +175,36 @@ function ForgotFlow() {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "0.6rem" }}>
       <p className="fine" style={{ margin: 0 }}>
-        Connect one of your linked wallets and sign — that proves ownership,
+        Connect one of your enrolled wallets and sign — that proves ownership;
         no session is created.
       </p>
-      <button
-        className="btn-solid"
-        disabled={busy || connecting}
-        onClick={() => {
-          // Fresh explicit attempt (also re-arms after a failed one).
-          // Clearing the selection first: any selection at close is a pick.
-          doneFor.current = null;
-          try {
-            select(null);
-          } catch {
-            /* selection unsupported — popup still opens */
-          }
-          setVisible(true);
-          setPhase("choose");
-        }}
-      >
-        {busy || connecting ? "CHECKING…" : "CONNECT WALLET ↗"}
-      </button>
+      {active ? (
+        <TeeProve
+          mode="identify"
+          busyLabel="CHECKING…"
+          onIdentified={(account) => {
+            setActive(false);
+            setFound(account);
+            setNewUsername(account.username ?? "");
+          }}
+          onDismiss={() => setActive(false)}
+        />
+      ) : (
+        <button
+          className="btn-solid"
+          onClick={() => {
+            if (!isAppKitReady()) {
+              notifyError(
+                "Wallet connect is not configured — set NEXT_PUBLIC_REOWN_PROJECT_ID",
+              );
+              return;
+            }
+            setActive(true);
+          }}
+        >
+          CONNECT WALLET ↗
+        </button>
+      )}
     </div>
   );
 }

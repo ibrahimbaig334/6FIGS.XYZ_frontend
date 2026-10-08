@@ -22,7 +22,7 @@ import {
 } from "../../lib/constants";
 import { connectSocket } from "../../lib/ws";
 import { notifyError } from "../../lib/notify";
-import TeeConnect from "../../components/TeeConnect";
+import SignInButton from "../../components/SignInButton";
 import SelectMenu from "../../components/SelectMenu";
 import Loader from "../../components/Loader";
 
@@ -383,7 +383,7 @@ export default function PlayPage() {
             padding: "2.5rem 2rem",
           }}
         >
-          <p className="mono-label">PLAY — CONNECT WALLET</p>
+          <p className="mono-label">PLAY — SIGN IN</p>
           <div
             style={{
               marginTop: "1.2rem",
@@ -391,10 +391,11 @@ export default function PlayPage() {
               justifyContent: "center",
             }}
           >
-            <TeeConnect onDone={load} />
+            <SignInButton onDone={load} />
           </div>
           <p className="fine" style={{ margin: "0.8rem 0 0" }}>
-            <a href="/recover">USE USERNAME INSTEAD ↗</a>
+            NEW HERE? CONNECTING A WALLET CREATES YOUR ACCOUNT AND PROVES YOUR
+            TIER.
           </p>
         </div>
       </section>

@@ -17,7 +17,7 @@ import {
   OPP_RETURN_MS,
   POLL_GAME_LIVE_MS,
 } from "../../../lib/constants";
-import TeeConnect from "../../../components/TeeConnect";
+import SignInButton from "../../../components/SignInButton";
 import GamePanel from "../../../components/GamePanel";
 import RematchToast from "../../../components/RematchToast";
 import Loader from "../../../components/Loader";
@@ -342,7 +342,7 @@ export default function GamePage() {
         }}
       >
         <div className="card auth-card">
-          <p className="mono-label">GAME — CONNECT WALLET</p>
+          <p className="mono-label">GAME — SIGN IN</p>
           <div
             style={{
               marginTop: "1.2rem",
@@ -350,10 +350,11 @@ export default function GamePage() {
               justifyContent: "center",
             }}
           >
-            <TeeConnect onDone={load} />
+            <SignInButton onDone={load} />
           </div>
           <p className="fine" style={{ margin: "0.8rem 0 0" }}>
-            <a href="/recover">USE USERNAME INSTEAD ↗</a>
+            NEW HERE? CONNECTING A WALLET CREATES YOUR ACCOUNT AND PROVES YOUR
+            TIER.
           </p>
         </div>
       </section>

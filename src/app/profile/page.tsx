@@ -7,6 +7,7 @@ import {
   errMsg,
   getToken,
   removeTeeWallet,
+  resetTeeIdentity,
   teeRecheck,
   usernameChange,
   usernameSetup,
@@ -19,7 +20,7 @@ import { handleError } from "../../lib/validate";
 import { MAX_WALLETS } from "../../lib/constants";
 import { disconnectSocket } from "../../lib/ws";
 import { notifyError } from "../../lib/notify";
-import TeeConnect from "../../components/TeeConnect";
+import SignInButton from "../../components/SignInButton";
 import TeeProve from "../../components/TeeProve";
 import ConfirmDialog from "../../components/ConfirmDialog";
 import WalletIcon from "../../components/WalletIcon";
@@ -122,8 +123,7 @@ export default function ProfilePage() {
 
   /** Single-wallet removal (tick-confirmed). For a tee account the session
    *  authorizes the enclave to detach the wallet and re-sign the remaining
-   *  set; no wallet signature or address is involved. Legacy wallet rows keep
-   *  the old disconnect behavior. */
+   *  set; no wallet signature or address is involved. */
   async function disconnectOne() {
     if (!confirmOne) return;
     if ((profile?.wallets.length ?? 0) <= 1) {
@@ -131,16 +131,9 @@ export default function ProfilePage() {
       notifyError("You cannot remove your only wallet");
       return;
     }
-    const teeAccount = profile?.eligibility.source === "tee";
     try {
-      if (teeAccount) {
-        applyProfile(await removeTeeWallet(confirmOne.id));
-        setBanner("Wallet removed — your tier now reflects the remaining wallets.");
-      } else {
-        await api(`/wallet/${confirmOne.id}`, { method: "DELETE" });
-        await load();
-        setBanner("Wallet disconnected — press CONNECT WALLET to restore your tier.");
-      }
+      applyProfile(await removeTeeWallet(confirmOne.id));
+      setBanner("Wallet removed — your tier now reflects the remaining wallets.");
       setConfirmOne(null);
       clearProvedWallets();
       window.dispatchEvent(new Event("sixfigs-auth"));
@@ -154,7 +147,7 @@ export default function ProfilePage() {
    *  CONNECT WALLET to start over. */
   async function disconnectAll() {
     try {
-      await api("/wallet", { method: "DELETE" });
+      await resetTeeIdentity();
       setConfirmAll(false);
       clearProvedWallets();
       await load();
@@ -198,10 +191,18 @@ export default function ProfilePage() {
             gap: "1rem",
           }}
         >
-          <p className="mono-label">PROFILE — CONNECT WALLET</p>
-          <TeeConnect onDone={() => void load()} />
+          <p className="mono-label">PROFILE — SIGN IN</p>
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "center",
+            }}
+          >
+            <SignInButton onDone={() => void load()} />
+          </div>
           <p className="fine" style={{ margin: 0 }}>
-            <a href="/recover">USE USERNAME INSTEAD ↗</a>
+            NEW HERE? CONNECTING A WALLET CREATES YOUR ACCOUNT AND PROVES YOUR
+            TIER.
           </p>
         </div>
       </section>
@@ -308,6 +309,7 @@ function ProfileView({
   onDisconnectAll: () => void;
   onLogout: () => void;
 }) {
+  const [walletSetDismissed, setWalletSetDismissed] = useState(false);
   const tee = isTee(profile.eligibility) ? profile.eligibility : null;
   const username = profile.handle ?? `user_${profile.id.slice(-4)}`;
   const hasIdentity = tee !== null;
@@ -464,6 +466,27 @@ function ProfileView({
             {profile.wallets.length}/{MAX_WALLETS}
           </span>
         </div>
+        {profile.wallets.length === 1 && !walletSetDismissed && (
+          <div
+            style={{
+              marginTop: "0.6rem",
+              border: "2px solid var(--ink)",
+              padding: "0.7rem 0.9rem",
+              display: "flex",
+              gap: "0.6rem",
+              alignItems: "center",
+              flexWrap: "wrap",
+            }}
+          >
+            <span className="fine" style={{ margin: 0 }}>
+              YOUR TIER REFLECTS THE ONE WALLET CONNECTED SO FAR. ADD YOUR OTHER
+              WALLETS — IT CAN ONLY GO UP.
+            </span>
+            <button className="chip" onClick={() => setWalletSetDismissed(true)}>
+              GOT IT
+            </button>
+          </div>
+        )}
         {profile.wallets.length === 0 ? (
           <p className="fine">
             No wallets enrolled. Prove your first wallet below.
@@ -506,31 +529,24 @@ function ProfileView({
           />
         )}
         <div className="wallet-actions">
-          {proveMode ? (
-            <button
-              className="btn-solid"
-              style={{ padding: "0.6rem 1rem" }}
-              disabled
-            >
-              CONNECTING…
-            </button>
-          ) : !addOnly || !tierActive ? (
-            <button
-              className="btn-solid"
-              style={{ padding: "0.6rem 1rem" }}
-              onClick={() => onProve("establish")}
-            >
-              CONNECT WALLET ↗
-            </button>
-          ) : (
-            <button
-              className="btn-solid"
-              style={{ padding: "0.6rem 1rem" }}
-              onClick={() => onProve("add")}
-            >
-              ADD WALLET ↗
-            </button>
-          )}
+          {!proveMode &&
+            (!addOnly || !tierActive ? (
+              <button
+                className="btn-solid"
+                style={{ padding: "0.6rem 1rem" }}
+                onClick={() => onProve("establish")}
+              >
+                CONNECT WALLET ↗
+              </button>
+            ) : (
+              <button
+                className="btn-solid"
+                style={{ padding: "0.6rem 1rem" }}
+                onClick={() => onProve("add")}
+              >
+                ADD WALLET ↗
+              </button>
+            ))}
             <button
               className="btn-ghost"
               style={{ padding: "0.6rem 1rem", margin: "0 auto" }}

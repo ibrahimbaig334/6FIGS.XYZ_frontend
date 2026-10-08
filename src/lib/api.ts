@@ -314,6 +314,14 @@ export async function removeTeeWallet(walletId: string): Promise<Profile> {
   return api<Profile>("/profile/user");
 }
 
+/**
+ * Disconnect every wallet: wipes the attested verification (identity,
+ * bindings, tier cache). The username sign-in survives. Idempotent.
+ */
+export async function resetTeeIdentity(): Promise<void> {
+  await api("/eligibility/tee-identity", { method: "DELETE" });
+}
+
 export interface Peer {
   id: string;
   handle: string;

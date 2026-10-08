@@ -4,7 +4,7 @@ import "./globals.css";
 import Header from "../components/Header";
 import ChallengeToast from "../components/ChallengeToast";
 import ErrorToast from "../components/ErrorToast";
-import SolanaProviders from "../components/SolanaProviders";
+import Web3Providers from "../components/Web3Providers";
 
 const grotesk = Space_Grotesk({
   subsets: ["latin"],
@@ -33,7 +33,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${grotesk.variable} ${dmMono.variable}`}>
-        <SolanaProviders>
+        <Web3Providers>
           <div className="ticker" aria-hidden="true">
             <div className="ticker-inner">
               PROOF OF BAGS ✕ SIX FIGURES OR NOTHING ✕ NO BALANCES SHOWN ✕ FAIR
@@ -65,7 +65,7 @@ export default function RootLayout({
             </p>
             <p style={{ margin: 0 }}>© 2026</p>
           </footer>
-        </SolanaProviders>
+        </Web3Providers>
       </body>
     </html>
   );

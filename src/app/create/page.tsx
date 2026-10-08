@@ -19,7 +19,7 @@ import {
 import { notifyError } from "../../lib/notify";
 import SelectMenu from "../../components/SelectMenu";
 import EmojiPicker from "../../components/EmojiPicker";
-import TeeConnect from "../../components/TeeConnect";
+import SignInButton from "../../components/SignInButton";
 import Loader from "../../components/Loader";
 
 export default function CreateRoomPage() {
@@ -171,7 +171,7 @@ export default function CreateRoomPage() {
             padding: "2.5rem 2rem",
           }}
         >
-          <p className="mono-label">CREATE ROOM — CONNECT WALLET</p>
+          <p className="mono-label">CREATE ROOM — SIGN IN</p>
           <p className="fine" style={{ margin: "0.6rem 0 0", fontSize: 14 }}>
             Connect a wallet to spin up your 1v1 room.
           </p>
@@ -182,14 +182,15 @@ export default function CreateRoomPage() {
               justifyContent: "center",
             }}
           >
-            <TeeConnect
+            <SignInButton
               onDone={() => {
                 setTokenState(getToken());
               }}
             />
           </div>
           <p className="fine" style={{ margin: "0.8rem 0 0" }}>
-            <a href="/recover">USE USERNAME INSTEAD ↗</a>
+            NEW HERE? CONNECTING A WALLET CREATES YOUR ACCOUNT AND PROVES YOUR
+            TIER.
           </p>
         </div>
       </section>

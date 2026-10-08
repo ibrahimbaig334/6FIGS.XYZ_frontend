@@ -18,7 +18,7 @@ import { connectSocket } from "../../../lib/ws";
 import { notifyError } from "../../../lib/notify";
 import GamePanel from "../../../components/GamePanel";
 import RematchToast from "../../../components/RematchToast";
-import TeeConnect from "../../../components/TeeConnect";
+import SignInButton from "../../../components/SignInButton";
 import InviteDialog from "../../../components/InviteDialog";
 import DeleteRoomDialog from "../../../components/DeleteRoomDialog";
 import Loader from "../../../components/Loader";
@@ -452,7 +452,7 @@ export default function RoomPage() {
             padding: "2.5rem 2rem",
           }}
         >
-          <p className="mono-label">ROOM — CONNECT WALLET</p>
+          <p className="mono-label">ROOM — SIGN IN</p>
           <div
             style={{
               marginTop: "1.2rem",
@@ -460,10 +460,11 @@ export default function RoomPage() {
               justifyContent: "center",
             }}
           >
-            <TeeConnect onDone={load} />
+            <SignInButton onDone={load} />
           </div>
           <p className="fine" style={{ margin: "0.8rem 0 0" }}>
-            <a href="/recover">USE USERNAME INSTEAD ↗</a>
+            NEW HERE? CONNECTING A WALLET CREATES YOUR ACCOUNT AND PROVES YOUR
+            TIER.
           </p>
         </div>
       </section>

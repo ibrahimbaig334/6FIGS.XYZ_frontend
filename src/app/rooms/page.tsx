@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { api, errMsg, getToken, Room, RoomList, RoomMeta } from "../../lib/api";
 import { notifyError } from "../../lib/notify";
 import { ROOMS_PAGE_SIZE, MAX_ROOMS_PER_USER } from "../../lib/constants";
-import TeeConnect from "../../components/TeeConnect";
+import SignInButton from "../../components/SignInButton";
 import SelectMenu from "../../components/SelectMenu";
 import InviteDialog from "../../components/InviteDialog";
 import DeleteRoomDialog from "../../components/DeleteRoomDialog";
@@ -184,7 +184,7 @@ export default function RoomsPage() {
             padding: "2.5rem 2rem",
           }}
         >
-          <p className="mono-label">ROOMS — CONNECT WALLET</p>
+          <p className="mono-label">ROOMS — SIGN IN</p>
           <div
             style={{
               marginTop: "1.2rem",
@@ -192,10 +192,11 @@ export default function RoomsPage() {
               justifyContent: "center",
             }}
           >
-            <TeeConnect onDone={load} />
+            <SignInButton onDone={load} />
           </div>
           <p className="fine" style={{ margin: "0.8rem 0 0" }}>
-            <a href="/recover">USE USERNAME INSTEAD ↗</a>
+            NEW HERE? CONNECTING A WALLET CREATES YOUR ACCOUNT AND PROVES YOUR
+            TIER.
           </p>
         </div>
       </section>

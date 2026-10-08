@@ -2,6 +2,10 @@
   "name": "sixfigs-frontend",
   "version": "0.1.0",
   "private": true,
+  "resolutions": {
+    "@wagmi/connectors": "6.2.0",
+    "bs58": "4.0.1"
+  },
   "scripts": {
     "dev": "next dev",
     "build": "next build",
@@ -10,20 +14,18 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@reown/appkit": "1.8.24",
+    "@reown/appkit-adapter-solana": "1.8.24",
+    "@reown/appkit-adapter-wagmi": "1.8.24",
     "@sixfigs/tee": "github:A-Mannan/6figs-tee#tee-2026-10-06",
-    "@solana/wallet-adapter-base": "^0.9.28",
-    "@solana/wallet-adapter-coinbase": "^0.1.24",
-    "@solana/wallet-adapter-ledger": "^0.9.30",
-    "@solana/wallet-adapter-phantom": "^0.9.30",
-    "@solana/wallet-adapter-react": "^0.15.40",
-    "@solana/wallet-adapter-react-ui": "^0.9.40",
-    "@solana/wallet-adapter-solflare": "^0.6.34",
-    "@solana/wallet-adapter-trust": "^0.1.18",
-    "@solana/web3.js": "^1.99.0",
+    "@tanstack/react-query": "5.104.1",
+    "@wagmi/connectors": "6.2.0",
     "next": "14.2.5",
     "react": "18.3.1",
     "react-dom": "18.3.1",
-    "socket.io-client": "4.7.5"
+    "socket.io-client": "4.7.5",
+    "viem": "2.57.4",
+    "wagmi": "2.19.5"
   },
   "devDependencies": {
     "@types/node": "20.16.0",

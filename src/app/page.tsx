@@ -6,7 +6,7 @@ import { ScrollTrigger } from "gsap/ScrollTrigger";
 import Lenis from "lenis";
 import { api, getToken, getTiers, Profile, TierInfo } from "../lib/api";
 import { tierEdgeClass } from "../lib/tierEdge";
-import { BrandChop } from "../components/Chop";
+import Chop from "../components/Chop";
 
 const DIGEST = (process.env.NEXT_PUBLIC_IMAGE_DIGEST ?? "").trim();
 
@@ -53,9 +53,22 @@ export default function Home() {
         { opacity: 1, y: 0, duration: 0.7, stagger: 0.09, ease: "power3.out" },
       );
       gsap.fromTo(
-        ".hero-table",
+        ".hero-seat",
         { opacity: 0, y: 18 },
         { opacity: 1, y: 0, duration: 0.85, delay: 0.25, ease: "power3.out" },
+      );
+      // The deal: your card slides onto the felt and settles into its lean.
+      gsap.fromTo(
+        ".hero-card",
+        { opacity: 0, y: 30, rotate: -11 },
+        {
+          opacity: 1,
+          y: 0,
+          rotate: -4,
+          duration: 0.9,
+          delay: 0.4,
+          ease: "power3.out",
+        },
       );
       gsap.utils.toArray<HTMLElement>(".reveal").forEach((el) => {
         gsap.fromTo(
@@ -99,47 +112,18 @@ export default function Home() {
             </div>
           </div>
           <div
-            className="hero-table-wrap"
+            className="hero-seat"
             role="img"
-            aria-label="A reserved card table seen from above: your place card on the left, a face-down card across, and a tic-tac-toe board between them"
+            aria-label="Your reserved seat: a member card bearing your chop, waiting under the lamp"
           >
-            <div className="hero-table">
-              <div className="hero-table-top">
-                <span className="hero-chair hero-chair-l" aria-hidden="true" />
-                <span className="hero-chair hero-chair-r" aria-hidden="true" />
-                <div className="hero-seat hero-seat-l">
-                  <div className="place-card">
-                    <BrandChop size="md" />
-                    <span className="who">you</span>
-                    <span className="what">when verified</span>
-                  </div>
-                </div>
-                <div className="hero-board" aria-hidden="true">
-                  {["x", "x", "", "o", "o", "", "x", "", ""].map((c, i) => (
-                    <span key={i} className={`hero-cell${c === "o" ? " mark-o" : ""}`}>
-                      {c === "x" && (
-                        <svg viewBox="0 0 24 24">
-                          <path d="M5 5 L19 19" />
-                          <path d="M19 5 L5 19" />
-                        </svg>
-                      )}
-                      {c === "o" && (
-                        <svg viewBox="0 0 24 24">
-                          <circle cx="12" cy="12" r="7.5" />
-                        </svg>
-                      )}
-                    </span>
-                  ))}
-                </div>
-                <div className="hero-seat hero-seat-r">
-                  <div className="place-card back" aria-hidden="true">
-                    <BrandChop size="md" />
-                  </div>
-                </div>
-                <span className="hero-plate">Reserved</span>
-              </div>
+            <div className="hero-lamp" aria-hidden="true" />
+            <div className="place-card hero-card">
+              <Chop id="you" size="lg" />
+              <span className="who">you</span>
+              <span className="what">when verified</span>
             </div>
-            <p className="fine hero-table-caption">A table, kept private.</p>
+            <span className="hero-plate">Reserved</span>
+            <p className="fine hero-table-caption">Your seat is waiting.</p>
           </div>
         </div>
       </section>
@@ -241,13 +225,19 @@ export default function Home() {
               <div className={locked ? "veiled" : undefined} aria-hidden={locked}>
                 <div className="mini-dir">
                   <span>
-                    <b>The Long Room</b> invite only
+                    <i className="dot on" aria-hidden="true" />
+                    <b>The Long Room</b>
+                    <em>invite only</em>
                   </span>
                   <span>
-                    <b>Quiet Hours</b> TIER II
+                    <i className="dot on" aria-hidden="true" />
+                    <b>Quiet Hours</b>
+                    <em>TIER II</em>
                   </span>
                   <span>
-                    <b>Third Chair</b> TIER I
+                    <i className="dot" aria-hidden="true" />
+                    <b>Third Chair</b>
+                    <em>TIER I</em>
                   </span>
                 </div>
               </div>
@@ -269,10 +259,20 @@ export default function Home() {
             <h3>The game</h3>
             <div className={locked ? "veil-locked" : undefined}>
               <div className={locked ? "veiled" : undefined} aria-hidden={locked}>
-                <div className="mini-board">
-                  {["×", "○", "", "○", "×", "", "", "×", "○"].map((c, i) => (
-                    <span key={i} className={c === "○" ? "o" : undefined}>
-                      {c}
+                <div className="mini-board" aria-hidden="true">
+                  {["x", "o", "", "o", "x", "", "", "x", "o"].map((c, i) => (
+                    <span key={i} className={`mini-cell${c === "o" ? " mark-o" : ""}`}>
+                      {c === "x" && (
+                        <svg viewBox="0 0 24 24">
+                          <path d="M5 5 L19 19" />
+                          <path d="M19 5 L5 19" />
+                        </svg>
+                      )}
+                      {c === "o" && (
+                        <svg viewBox="0 0 24 24">
+                          <circle cx="12" cy="12" r="7.5" />
+                        </svg>
+                      )}
                     </span>
                   ))}
                 </div>

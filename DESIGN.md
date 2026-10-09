@@ -246,3 +246,27 @@ Re-expressed in The Table (logic kept, presentation rebuilt):
   The callout speaks as a plaque now (Space Mono with its kicker) instead
   of oversized body text — the only remaining change from the original is
   the font fix that was actually asked for.
+
+## Round five: one seat, name-first rooms, numbered deal, arriving door
+
+- The hero diorama needed three explanations, so it is gone. One member
+  card under the lamp: your chop, you, when verified, a RESERVED plaque —
+  dealt onto the felt on load (GSAP settle into its lean, still under
+  reduced motion). Instantly legible: it is your seat. "Your seat is
+  waiting."
+- Room cards led with a busy scene and a tiny name on the felt. Now the
+  name comes first and large, the scene is a slim atmospheric band, the
+  occupancy meter is gone (it duplicated the count), and cards lift on
+  hover like the rest of the house.
+- The deal lines keep their exact words, set as three numbered display
+  rows with hairline rules — numerals align, brass passes AA in both
+  themes (light needed a darker cut, #6f511f, verified 5.15:1).
+- The door announces itself: display titles ("Sign in", "Proof of bags",
+  "Recover with a wallet", "Add/Connect a wallet") replace the whisper
+  labels, and every dialog breathes deeper (2rem padding, 1.25rem gaps,
+  roomier options).
+- The Inside previews were toy glyphs (×/○ text, seal-red O) floating in
+  mismatched boxes. The game is now a real hairline board with drawn
+  marks (ink X, brass O); the floor list has presence dots and
+  right-aligned access; both previews share one centered height. A plate
+  override was swallowing the green presence dot — fixed.

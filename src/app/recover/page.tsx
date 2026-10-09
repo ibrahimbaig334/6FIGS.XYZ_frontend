@@ -189,7 +189,7 @@ function ForgotFlow() {
             role="dialog"
             aria-label="Recover with a wallet"
           >
-            <p className="label" style={{ margin: 0 }}>
+            <p className="door-title" style={{ margin: 0 }}>
               Recover with a wallet
             </p>
             <TeeProve

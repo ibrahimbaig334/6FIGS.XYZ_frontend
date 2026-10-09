@@ -277,23 +277,21 @@ export default function RoomsPage() {
       ) : rooms.length > 0 ? (
         <div className="floor">
           {rooms.map((r) => {
-            const onlinePct = Math.min(100, (r.onlineCount / 2) * 100);
             return (
               <article key={r.id} className="table-card">
-                <div className="table-scene" aria-hidden="true">
+                <div className="table-scene slim" aria-hidden="true">
                   <span
                     className={`table-seat seat-l${r.memberCount >= 1 ? " on" : ""}${r.onlineCount >= 1 ? " live" : ""}`}
                   />
-                  <div className="table-top">
-                    <span className="table-name" title={r.name}>
-                      {r.name}
-                    </span>
-                  </div>
+                  <div className="table-top" />
                   <span
                     className={`table-seat seat-r${r.memberCount >= 2 ? " on" : ""}${r.onlineCount >= 2 ? " live" : ""}`}
                   />
                 </div>
                 <div className="table-info">
+                  <h3 className="table-name-big" title={r.name}>
+                    {r.name}
+                  </h3>
                   <div className="dir-topline">
                     {r.accessType === "invite" ? (
                       <span className="tier-tag">
@@ -336,16 +334,6 @@ export default function RoomsPage() {
                         Delete
                       </button>
                     )}
-                  </div>
-                  <div
-                    className="meter"
-                    role="progressbar"
-                    aria-valuenow={r.onlineCount}
-                    aria-valuemin={0}
-                    aria-valuemax={2}
-                    aria-label={`${r.onlineCount} of 2 in the room`}
-                  >
-                    <i style={{ width: `${onlinePct}%` }} />
                   </div>
                 </div>
               </article>

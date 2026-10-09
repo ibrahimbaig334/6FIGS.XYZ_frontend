@@ -527,7 +527,7 @@ function ProfileView({
             className="dialog"
             style={{ alignItems: "center", textAlign: "center" }}
           >
-            <p className="label" style={{ margin: 0 }}>
+            <p className="door-title">
               {proveMode === "add" ? "Add a wallet" : "Connect a wallet"}
             </p>
             <ol className="ceremony-steps">

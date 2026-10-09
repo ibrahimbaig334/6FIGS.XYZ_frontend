@@ -61,20 +61,35 @@ export default function DocsIndex() {
 
       <div className="docs-card">
         <p className="label">THE DEAL, IN THREE LINES</p>
-        <ul className="docs-list">
+        <ol className="deal-list">
           <li>
-            <strong>Prove you hold.</strong> Connect your wallets, sign one
-            message per wallet. No transaction, no gas.
+            <span className="deal-num" aria-hidden="true">
+              01
+            </span>
+            <p>
+              <strong>Prove you hold.</strong> Connect your wallets, sign one
+              message per wallet. No transaction, no gas.
+            </p>
           </li>
           <li>
-            <strong>A sealed enclave reads your balances</strong> and prices
-            them, computes your tier, then forgets your addresses.
+            <span className="deal-num" aria-hidden="true">
+              02
+            </span>
+            <p>
+              <strong>A sealed enclave reads your balances</strong> and prices
+              them, computes your tier, then forgets your addresses.
+            </p>
           </li>
           <li>
-            <strong>Only your tier survives.</strong> What 6figs keeps is a
-            badge. Never a number, never a wallet.
+            <span className="deal-num" aria-hidden="true">
+              03
+            </span>
+            <p>
+              <strong>Only your tier survives.</strong> What 6figs keeps is a
+              badge. Never a number, never a wallet.
+            </p>
           </li>
-        </ul>
+        </ol>
       </div>
 
       <FlowDiagram />

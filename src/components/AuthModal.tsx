@@ -53,7 +53,7 @@ export default function AuthModal({
           role="dialog"
           aria-label="Connect a wallet"
         >
-          <p className="label" style={{ margin: 0 }}>
+          <p className="door-title" style={{ margin: 0 }}>
             Proof of bags
           </p>
           <TeeProve
@@ -82,7 +82,7 @@ export default function AuthModal({
         role="dialog"
         aria-label="Sign in"
       >
-        <h1 className="label" style={{ margin: 0, textAlign: "center" }}>
+        <h1 className="door-title" style={{ margin: 0, textAlign: "center" }}>
           Sign in
         </h1>
 

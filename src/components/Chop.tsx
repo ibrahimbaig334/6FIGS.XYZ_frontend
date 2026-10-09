@@ -78,8 +78,9 @@ export default function Chop({
   );
 }
 
-/* The brand's own chop: a 6 drawn in two chop strokes — the tail, hooking
-   left off the bowl's upper edge the way a written 6 does, and the bowl. */
+/* The brand's own chop: a 6 drawn as one flowing stroke — the arc descends
+   the left side of the circle and loops the bowl. A stick on a closed
+   circle reads as "d"; the 6 is a single gesture. */
 export function BrandChop({ size = "md" }: { size?: "sm" | "md" | "lg" }) {
   return (
     <span className={`chop chop-${size}`} aria-hidden="true">
@@ -89,8 +90,7 @@ export function BrandChop({ size = "md" }: { size?: "sm" | "md" | "lg" }) {
           stroke="currentColor"
           style={{ strokeWidth: 2.2, strokeLinecap: "round" }}
         >
-          <path d="M13.9 9 C14.3 5.5, 12.2 2.7, 8.9 2.7" />
-          <circle cx="11" cy="14.5" r="6" />
+          <path d="M10.5 3 C8 3.5, 6 5.5, 5.3 8.5 C4.4 12.5, 5.5 17.5, 9.2 19.6 C12.5 21.3, 16.2 19.6, 16.5 16.2 C16.7 13.5, 14.2 11.5, 11 11.5 C9 11.5, 7.2 12.3, 6.2 13.5" />
         </g>
       </svg>
     </span>

@@ -2071,11 +2071,11 @@ html:not(.dark) .board-cell .mark circle {
   border: 1px solid var(--line);
   border-radius: 12px;
   box-shadow: var(--shadow-table);
-  padding: 1.5rem;
+  padding: 1.75rem;
   width: min(440px, 100%);
   display: flex;
   flex-direction: column;
-  gap: 0.7rem;
+  gap: 1rem;
   animation: dialog-in 240ms var(--ease-out);
   transform-origin: center;
 }
@@ -2271,51 +2271,21 @@ html:not(.dark) .board-cell .mark circle {
   stroke-linecap: round;
 }
 
-.chop-draw .draw-tail {
-  stroke-dasharray: 9;
-  stroke-dashoffset: 9;
-  animation: chop-tail 2.6s ease-in-out infinite;
+.chop-draw .draw-mark {
+  stroke-dasharray: 43;
+  stroke-dashoffset: 43;
+  animation: chop-mark 2.6s ease-in-out infinite;
 }
 
-.chop-draw .draw-bowl {
-  stroke-dasharray: 38;
-  stroke-dashoffset: 38;
-  animation: chop-bowl 2.6s ease-in-out infinite;
-}
-
-@keyframes chop-tail {
+@keyframes chop-mark {
   0% {
-    stroke-dashoffset: 9;
+    stroke-dashoffset: 43;
     opacity: 0;
   }
   8% {
     opacity: 1;
   }
-  30% {
-    stroke-dashoffset: 0;
-    opacity: 1;
-  }
-  72% {
-    stroke-dashoffset: 0;
-    opacity: 1;
-  }
-  88%,
-  100% {
-    stroke-dashoffset: 0;
-    opacity: 0;
-  }
-}
-
-@keyframes chop-bowl {
-  0%,
-  20% {
-    stroke-dashoffset: 38;
-    opacity: 0;
-  }
-  26% {
-    opacity: 1;
-  }
-  52% {
+  38% {
     stroke-dashoffset: 0;
     opacity: 1;
   }
@@ -2331,8 +2301,7 @@ html:not(.dark) .board-cell .mark circle {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .chop-draw .draw-tail,
-  .chop-draw .draw-bowl {
+  .chop-draw .draw-mark {
     animation: none;
     stroke-dashoffset: 0;
     opacity: 1;
@@ -2985,7 +2954,7 @@ html:not(.dark) .board-cell .mark circle {
   margin: 0.5rem 0 0;
   font-size: 0.92rem;
   line-height: 1.75;
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
   max-width: 76ch;
 }
 
@@ -2994,6 +2963,20 @@ html:not(.dark) .board-cell .mark circle {
   border-radius: 10px;
   background: var(--felt-2);
   padding: 1.2rem 1.4rem;
+}
+
+/* The deal card: three identical rows, every edge aligned — kicker, then
+   body. No ragged lead-ins. */
+.deal-row + .deal-row {
+  margin-top: 0.9rem;
+}
+
+.deal-row .docs-body-text {
+  margin-top: 0.3rem;
+}
+
+.docs-card > .label {
+  margin-bottom: 0.2rem;
 }
 
 .docs-callout {
@@ -3005,6 +2988,19 @@ html:not(.dark) .board-cell .mark circle {
 
 .docs-callout > .label {
   margin-bottom: 0.5rem;
+}
+
+/* Callout bodies keep the article register — never larger than body text.
+   The kicker keeps the label register (scoped out here). */
+.docs-callout p:not(.label) {
+  margin: 0;
+  font-size: 0.92rem;
+  line-height: 1.75;
+  max-width: 76ch;
+}
+
+.docs-callout p:not(.label) + p:not(.label) {
+  margin-top: 0.5rem;
 }
 
 .docs-callout.danger {
@@ -3186,13 +3182,18 @@ html:not(.dark) .board-cell .mark circle {
   line-height: 1;
 }
 
-.doc-diagram .doc-note {
-  flex-basis: 100%;
+/* The margin note: one voice everywhere, in a figure or standing alone. */
+.doc-note {
   margin: 0.5rem 0 0;
   font-family: var(--font-space), monospace;
   font-size: 0.68rem;
   line-height: 1.5;
   color: var(--tx-page-dim);
+  max-width: 76ch;
+}
+
+.doc-diagram .doc-note {
+  flex-basis: 100%;
   text-align: center;
 }
 
@@ -3609,10 +3610,10 @@ body .wallet-adapter-collapse {
 .door-option {
   display: flex;
   flex-direction: column;
-  gap: 0.35rem;
+  gap: 0.45rem;
   align-items: flex-start;
   width: 100%;
-  padding: 0.9rem 1rem;
+  padding: 1.05rem 1.15rem;
   border: 1px solid var(--line);
   border-radius: 8px;
   background: var(--card-2);

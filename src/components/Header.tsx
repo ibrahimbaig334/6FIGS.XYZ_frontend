@@ -148,13 +148,7 @@ export default function Header() {
         {profile ? (
           <div ref={menuRef} style={{ position: "relative" }}>
             <button
-              className="btn-ghost"
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: "0.4rem",
-                fontSize: "0.7rem",
-              }}
+              className="btn"
               onClick={() => setMenu(!menu)}
               aria-haspopup="menu"
               aria-expanded={menu}

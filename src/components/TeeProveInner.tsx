@@ -80,7 +80,7 @@ function AccountConfirm({
       style={{
         display: "flex",
         flexDirection: "column",
-        gap: "0.5rem",
+        gap: "0.75rem",
         alignItems: "center",
       }}
     >
@@ -431,7 +431,7 @@ function TeeProveFlow({
       style={{
         display: "flex",
         flexDirection: "column",
-        gap: "0.5rem",
+        gap: "0.75rem",
         alignItems: "center",
       }}
     >

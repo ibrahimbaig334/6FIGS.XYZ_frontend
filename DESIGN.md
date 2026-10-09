@@ -206,3 +206,30 @@ Re-expressed in The Table (logic kept, presentation rebuilt):
   latin cuts): builds no longer depend on the Google Fonts CDN, and the page
   makes zero third-party font requests — a privacy product should not phone
   Google. Same families, weights, variables; the design is unchanged.
+
+## Round three: the 6 as one gesture, header weight, docs honesty, door air
+
+- The tail-on-a-circle kept reading as "d" no matter which side it stood
+  on — a stick on a closed bowl is a "d". The mark is now a single flowing
+  stroke: the arc descends the left and loops the bowl, the way a hand
+  writes 6. One gesture, no closed circle, in Chop, the loader mark, and
+  the favicon.
+- The signed-in header showed a small ghost pill where a solid Sign in
+  button stood. The account button is now the same `.btn` box — same
+  height, same row as the theme toggle; only the label changes (tier menu).
+- Docs start page: the deal card's ragged bold lead-ins are now three
+  identical kicker/body rows, every edge aligned. The one-sentence callout
+  stays one flowing paragraph, at the body register (it rendered larger
+  than body text — a `.docs-callout p` rule was outranking `.label`, also
+  fixed) — no verse. The standalone margin note had no base style and
+  rendered as plain 16px text; `.doc-note` now speaks one mono voice in
+  figures and alone. Body text wraps whole words (`break-word`).
+- The door breathed: dialog padding 1.5 to 1.75rem, gap 0.7 to 1rem,
+  options roomier, confirm and busy stacks aired to match. Verified on a
+  clean production build: door 440x387, options 116px, modal opens,
+  dismiss returns, zero errors.
+- Environment note: the dev server on this box intermittently serves pages
+  without hydrating (clicks dispatch, React never attaches, no errors)
+  after repeated kill/restart cycles; a clean production build of the same
+  tree verifies fully. Suspect stale dev cache/HMR ghost state, not the
+  code — the tree typechecks, lints, builds, and passes every flow.

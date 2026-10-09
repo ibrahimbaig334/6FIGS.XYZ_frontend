@@ -28,7 +28,7 @@ const STEPS: {
     sees: "Visible to others: nothing",
   },
   {
-    title: "YOUR BROWSER VETS THE ENCLAVE FIRST",
+    title: "Your browser vets the enclave first",
     body: (
       <>
         Before anything is sent, the enclave must prove what it is. Google
@@ -57,7 +57,7 @@ const STEPS: {
     some: true,
   },
   {
-    title: "TIER COMPUTED, ADDRESSES FORGOTTEN",
+    title: "Tier computed, addresses forgotten",
     body: (
       <>
         The enclave totals your portfolio, assigns the highest tier you
@@ -71,7 +71,7 @@ const STEPS: {
     sees: "Visible to others: nothing (signed, not sent yet)",
   },
   {
-    title: "SERVER VERIFIES, STORES ALMOST NOTHING",
+    title: "Server verifies, stores almost nothing",
     body: (
       <>
         Your browser checks the signed result first, then forwards it. The

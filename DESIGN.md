@@ -156,3 +156,53 @@ Re-expressed in The Table (logic kept, presentation rebuilt):
   (dim table names, dense chops, an unroled hero image, non-optimistic
   reveal) — all fixed; the second found one (docs pager arrows) — fixed;
   the third pass produced nothing new.
+
+## Round two: the hero legibility fix, the 6, speed, and the waits
+
+- The hero scene rendered as a scramble: `.seat-card` was defined twice in
+  globals.css with conflicting layouts, and the "table" was a rounded
+  rectangle with no table cues. Rebuilt as a table seen from above: walnut
+  rim, felt, two chairs, your portrait place card face-up ("you / when
+  verified"), a face-down lattice card across, a chalk-marked mid-game board,
+  a brass RESERVED plaque, captioned "A table, kept private." The search and
+  countdown veils use the same oval language. The copy no longer promises
+  "two" anywhere (hero caption, landing feature line, create ticket stub,
+  footer): what carries "private" is the RESERVED plaque, not the seat count,
+  so a future group table grows by dealing more place cards around the same
+  oval.
+- The brand 6 read as a balloon: its stem stood straight on the bowl's right.
+  The tail now hooks left off the bowl's upper edge the way a written 6
+  does (Chop.tsx, icon.svg/favicon).
+- Speed, measured. The wallet stack (AppKit, both adapters, wagmi, viem —
+  tens of megabytes of source) rode the initial bundle of every page because
+  Web3Providers wrapped the root layout. It now loads on demand: a light
+  shell holds the same exports, the stack downloads when the door opens, and
+  TeeProve renders its heavy half inside the provider scope once ready. The
+  landing's First Load JS is 144 kB; the ~360 kB wallet stack arrives only
+  when a wallet flow starts (verified: modal opens, phases narrate, dismiss
+  returns to the door, zero errors). Prod landing: DOMContentLoaded ~0.5s,
+  fully loaded ~1.5s. Nothing re-wraps, so loading the stack never remounts
+  the page or resets its state.
+- Submit, measured. "Submitting…" was slow for one honest reason and two
+  fixable ones. The honest one: the enclave's /registration does the real
+  work (signature checks, balance discovery across chains, CoinGecko
+  pricing) — that is the floor and lives inside the enclave, untouched. The
+  fixable ones: the /hello attestation round trip (~1.3s to the remote
+  enclave) fired inside submit, and the Google JWKS fetch fired inside
+  prepare. Now the JWKS warms when the door opens (prewarmTee), the hello
+  warms the moment prepare resolves while the user confirms and signs, and
+  the independent awaits in the sessioned prepares run as one Promise.all.
+  All additive with identical fallbacks: a slow signer just refetches, the
+  same as before. The backend adds no round trips (local Ed25519 verify plus
+  Postgres writes).
+- The waits, redesigned. The Loader's spinner is gone: the house now signs
+  its mark (the 6 drawing itself, tail then bowl, looping) under the page's
+  own line, or under a rotating house whisper when the page has none
+  ("Lighting the lamp.", "Warming your seat.", "Shuffling the deck.",
+  "Checking the door."). The prove button narrates its true phase beside a
+  drawing mini-chop: connecting, writing the challenge, sign in your wallet,
+  sealing it. Static under reduced motion.
+- Fonts are self-hosted (src/app/fonts, next/font/local, byte-identical
+  latin cuts): builds no longer depend on the Google Fonts CDN, and the page
+  makes zero third-party font requests — a privacy product should not phone
+  Google. Same families, weights, variables; the design is unchanged.

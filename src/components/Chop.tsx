@@ -78,7 +78,8 @@ export default function Chop({
   );
 }
 
-/* The brand's own chop: a 6 drawn in two chop strokes (the stem, the bowl). */
+/* The brand's own chop: a 6 drawn in two chop strokes — the tail, hooking
+   left off the bowl's upper edge the way a written 6 does, and the bowl. */
 export function BrandChop({ size = "md" }: { size?: "sm" | "md" | "lg" }) {
   return (
     <span className={`chop chop-${size}`} aria-hidden="true">
@@ -88,7 +89,7 @@ export function BrandChop({ size = "md" }: { size?: "sm" | "md" | "lg" }) {
           stroke="currentColor"
           style={{ strokeWidth: 2.2, strokeLinecap: "round" }}
         >
-          <path d="M13.5 2.5 L13.5 9" />
+          <path d="M13.9 9 C14.3 5.5, 12.2 2.7, 8.9 2.7" />
           <circle cx="11" cy="14.5" r="6" />
         </g>
       </svg>

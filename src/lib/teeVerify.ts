@@ -114,6 +114,17 @@ export interface TeeWalletInput {
 }
 
 /**
+ * Warm the attestation trust anchor ahead of a prove flow. The Google JWKS
+ * fetch is the only network hop in client construction; firing it while the
+ * user reads the door keeps it off the prepare critical path. Cached
+ * module-wide and safe to call often; silent on failure, since prepare
+ * retries the same fetch anyway.
+ */
+export function prewarmTee(): void {
+  void loadGoogleJwks().catch(() => {});
+}
+
+/**
  * Wallets proven in this browser session (by address key). Lets the add
  * flow warn "already connected" BEFORE any popup when the user re-picks a
  * wallet they just proved — the backend still rejects cross-session
@@ -170,8 +181,8 @@ async function newClient(): Promise<RegistrationClient> {
 export async function prepareSet(input: {
   wallets: TeeWalletInput[];
 }): Promise<{ client: RegistrationClient; prepared: PreparedRegistration }> {
-  const client = await newClient();
-  const { nonce } = await teeNonce();
+  // Independent hops, one wait: the trust anchor and the session nonce.
+  const [client, { nonce }] = await Promise.all([newClient(), teeNonce()]);
   const prepared = client.prepare({
     wallets: input.wallets.map(toDescriptor),
     disclosure: "hidden",
@@ -267,8 +278,8 @@ export async function submitSignedOnly(input: {
 export async function prepareWalletAddition(input: {
   added: TeeWalletInput[];
 }): Promise<{ client: RegistrationClient; prepared: PreparedAddition }> {
-  const client = await newClient();
-  const prep = await teeNonce();
+  // Independent hops, one wait: the trust anchor and the session nonce.
+  const [client, prep] = await Promise.all([newClient(), teeNonce()]);
   if (!prep.add) {
     throw new Error("This account has no verified wallet set to extend yet");
   }
@@ -302,8 +313,8 @@ export async function prepareWalletRemoval(input: {
   kept: TeeWalletInput[];
   remove: TeeWalletInput[];
 }): Promise<{ client: RegistrationClient; prepared: PreparedRemoval }> {
-  const client = await newClient();
-  const prep = await teeNonce();
+  // Independent hops, one wait: the trust anchor and the session nonce.
+  const [client, prep] = await Promise.all([newClient(), teeNonce()]);
   if (!prep.add) {
     throw new Error("This account has no verified wallet set to remove from yet");
   }

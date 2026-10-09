@@ -1,144 +1,108 @@
 "use client";
 
-import type { ReactNode } from "react";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { createAppKit } from "@reown/appkit/react";
-import { WagmiAdapter } from "@reown/appkit-adapter-wagmi";
-import { SolanaAdapter } from "@reown/appkit-adapter-solana/react";
-import {
-  arbitrum,
-  base,
-  mainnet,
-  optimism,
-  polygon,
-  solana,
-  solanaDevnet,
-  type AppKitNetwork,
-} from "@reown/appkit/networks";
-import { WagmiProvider } from "wagmi";
-import PickerScrim from "./PickerScrim";
+import { useEffect, useState, type ReactNode } from "react";
 
 /**
- * One wallet stack for both families (Reown AppKit: wagmi + Solana adapters).
- * Used only to select a wallet and sign messages — the product never sends a
- * chain transaction and secret material never leaves the wallet.
+ * The light wallet shell. The AppKit/wagmi/Solana stack is megabytes of
+ * parse-and-execute that used to ride the initial bundle of every page; now
+ * it lives in WalletStack and loads on demand, the first time a wallet flow
+ * starts. Pages paint before any of it downloads.
  *
- * The Reown project ID is required for the connect modal. Without it the app
- * still renders; wallet actions fail closed with a clear message.
+ * Same exports, same behavior — every action ensures the stack first, so
+ * callers (Header, profile, game pages) change nothing. Nothing here may
+ * statically import @reown, wagmi, or WalletStack, or the split is undone.
  */
 const projectId = (process.env.NEXT_PUBLIC_REOWN_PROJECT_ID ?? "").trim();
 
-const evmNetworks: AppKitNetwork[] = [
-  mainnet,
-  base,
-  arbitrum,
-  optimism,
-  polygon,
-];
-/**
- * Both Solana clusters are always offered. The wallet stays on whichever it
- * is already on — forcing a switch (devnet-only builds did) loops on some
- * wallets because the adapter never settles. The proof is
- * cluster-independent: the address format is identical and the enclave reads
- * the balance from its configured RPC.
- */
-const networks: [AppKitNetwork, ...AppKitNetwork[]] = [
-  mainnet,
-  base,
-  arbitrum,
-  optimism,
-  polygon,
-  solana,
-  solanaDevnet,
-];
+/** The env is configured. The stack itself may still be loading. */
+export function isWalletConfigured(): boolean {
+  return projectId.length > 0;
+}
+
+type HeavyModule = typeof import("./WalletStack");
+
+let heavyPromise: Promise<HeavyModule> | null = null;
+let heavyModule: HeavyModule | null = null;
+const listeners = new Set<(m: HeavyModule | null) => void>();
 
 /**
- * The origin WalletConnect validates against the Reown project. It must be
- * the origin the page is actually served from, or the handshake is refused:
- * hardcoding the production domain makes every localhost run fail to connect.
- * NEXT_PUBLIC_SITE_URL pins it for production; dev falls back to the real host.
+ * Load the wallet chunk. Cached and single-flight: concurrent callers join
+ * one import, and a failure clears so the next attempt retries fresh.
  */
-function siteUrl(): string {
-  const configured = (process.env.NEXT_PUBLIC_SITE_URL ?? "").trim();
-  if (configured) return configured;
-  if (typeof window !== "undefined" && window.location) {
-    return window.location.origin;
+export function ensureWalletStack(): Promise<HeavyModule | null> {
+  if (!isWalletConfigured()) return Promise.resolve(null);
+  if (heavyModule) return Promise.resolve(heavyModule);
+  if (!heavyPromise) {
+    heavyPromise = import("./WalletStack")
+      .then((m) => {
+        heavyModule = m;
+        listeners.forEach((fn) => fn(m));
+        return m;
+      })
+      .catch((e) => {
+        heavyPromise = null;
+        throw e;
+      });
   }
-  return "http://localhost:3000";
+  return heavyPromise;
 }
 
-const metadata = {
-  name: "6FIGS.XYZ",
-  description: "Proof of bags. Room for holders.",
-  url: siteUrl(),
-  icons: ["https://6figs.xyz/favicon.ico"],
-};
-
-let appKit: ReturnType<typeof createAppKit> | undefined;
-let wagmiAdapter: WagmiAdapter | undefined;
-
-if (projectId) {
-  wagmiAdapter = new WagmiAdapter({
-    projectId,
-    ssr: true,
-    networks: evmNetworks,
-  });
-  appKit = createAppKit({
-    adapters: [wagmiAdapter, new SolanaAdapter()],
-    networks,
-    projectId,
-    metadata,
-    // Match the app's default surface: midnight unless daylight was chosen.
-    themeMode:
-      typeof window !== "undefined" &&
-      localStorage.getItem("sixfigs-theme") === "light"
-        ? "light"
-        : "dark",
-    enableCoinbase: false,
-    features: { email: false, socials: false, analytics: false },
-  });
+function useWalletStack(): HeavyModule | null {
+  const [mod, setMod] = useState<HeavyModule | null>(heavyModule);
+  useEffect(() => {
+    listeners.add(setMod);
+    return () => {
+      listeners.delete(setMod);
+    };
+  }, []);
+  return mod;
 }
 
-/** False until a Reown project ID is configured; wallet actions must check. */
+async function heavy(): Promise<HeavyModule> {
+  const m = await ensureWalletStack();
+  if (!m) {
+    throw new Error(
+      "Wallet connect is not configured. Set NEXT_PUBLIC_REOWN_PROJECT_ID.",
+    );
+  }
+  return m;
+}
+
+/** True once the chunk is loaded and AppKit exists. */
 export function isAppKitReady(): boolean {
-  return Boolean(appKit);
+  try {
+    return Boolean(heavyModule?.isAppKitReady());
+  } catch {
+    return false;
+  }
 }
 
 export async function openWalletModal(): Promise<void> {
-  await appKit?.open();
+  await (await heavy()).openWalletModal();
 }
 
-/**
- * True when AppKit's modal element is present, painted, and has rendered its
- * shadow content. AppKit can create the element but leave it empty/transparent
- * when `open()` races its first render, so callers verify instead of trusting
- * the promise.
- */
 export function isWalletModalVisible(): boolean {
-  if (typeof document === "undefined") return false;
-  const el = document.querySelector("w3m-modal");
-  if (!el) return false;
-  const cs = getComputedStyle(el);
-  const rendered =
-    el.shadowRoot != null && el.shadowRoot.children.length > 0;
-  return rendered && cs.display !== "none" && cs.opacity !== "0";
+  try {
+    return heavyModule?.isWalletModalVisible() ?? false;
+  } catch {
+    return false;
+  }
 }
 
 /** Open the picker, retrying once if the modal renders empty. */
 export async function openWalletModalVerified(): Promise<boolean> {
-  for (let attempt = 0; attempt < 3; attempt++) {
-    await openWalletModal();
-    await new Promise((r) => setTimeout(r, 800));
-    if (isWalletModalVisible()) return true;
-    // Empty shell: dismiss and try again rather than leaving it invisible.
-    await appKit?.close().catch(() => {});
-    await new Promise((r) => setTimeout(r, 300));
-  }
-  return false;
+  return (await heavy()).openWalletModalVerified();
 }
 
 export async function disconnectWallets(): Promise<void> {
-  await appKit?.disconnect();
+  // Never-loaded means never-connected: nothing to disconnect, and no
+  // reason to download the stack just to learn that.
+  const m =
+    heavyModule ??
+    (isWalletConfigured()
+      ? await ensureWalletStack().catch(() => null)
+      : null);
+  await m?.disconnectWallets();
 }
 
 /**
@@ -146,43 +110,19 @@ export async function disconnectWallets(): Promise<void> {
  * facts instead of a bare spinner. Non-production only.
  */
 export async function walletModalDiagnostics(): Promise<string> {
-  if (typeof document === "undefined") return "ssr";
-  await new Promise((r) => setTimeout(r, 400));
-  const el = document.querySelector("w3m-modal");
-  if (!el) {
-    return "w3m-modal NOT in DOM — AppKit never mounted its modal element";
-  }
-  const cs = getComputedStyle(el);
-  const rect = el.getBoundingClientRect();
-  const shadow = el.shadowRoot;
-  const kids = shadow
-    ? Array.from(shadow.children)
-        .map((c) => `${c.tagName.toLowerCase()}${c.className ? "." + String(c.className).split(" ")[0] : ""}`)
-        .slice(0, 6)
-        .join(",")
-    : "none";
-  return [
-    `ua=${typeof navigator !== "undefined" ? navigator.userAgent.slice(0, 60) : "?"}`,
-    `origin=${typeof location !== "undefined" ? location.origin : "?"}`,
-    `display=${cs.display}`,
-    `visibility=${cs.visibility}`,
-    `opacity=${cs.opacity}`,
-    `z=${cs.zIndex}`,
-    `size=${Math.round(rect.width)}x${Math.round(rect.height)}`,
-    `shadow=${kids || "(empty)"}`,
-  ].join(" ·");
+  const m = await ensureWalletStack().catch(() => null);
+  return m ? m.walletModalDiagnostics() : "wallet stack not loaded";
 }
 
-const queryClient = new QueryClient();
-
 export default function Web3Providers({ children }: { children: ReactNode }) {
-  if (!wagmiAdapter) return <>{children}</>;
+  const stack = useWalletStack();
+  const ScrimHost = stack?.WalletScrimHost;
+  // Deliberately flat: children never re-wrap, so loading the stack later
+  // cannot remount the page or reset its state. The scrim host only adds.
   return (
-    <WagmiProvider config={wagmiAdapter.wagmiConfig}>
-      <QueryClientProvider client={queryClient}>
-        {children}
-        <PickerScrim />
-      </QueryClientProvider>
-    </WagmiProvider>
+    <>
+      {children}
+      {ScrimHost ? <ScrimHost /> : null}
+    </>
   );
 }

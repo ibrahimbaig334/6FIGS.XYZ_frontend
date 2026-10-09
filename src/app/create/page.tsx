@@ -328,7 +328,7 @@ export default function CreateRoomPage() {
             </p>
             <div className="ticket-stub">
               <span>by {username || "you"}</span>
-              <span>set for two</span>
+              <span>private table</span>
             </div>
           </div>
         </div>

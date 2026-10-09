@@ -4,7 +4,10 @@ import { useState } from "react";
 import { errMsg, usernameLogin, usernameReset } from "../../lib/api";
 import { notifyError } from "../../lib/notify";
 import TeeProve, { type IdentifiedAccount } from "../../components/TeeProve";
-import { isAppKitReady } from "../../components/Web3Providers";
+import {
+  ensureWalletStack,
+  isWalletConfigured,
+} from "../../components/Web3Providers";
 
 /**
  * Device-free sign-in hub. Two modes: username + password sign-in, or
@@ -208,12 +211,14 @@ function ForgotFlow() {
         <button
           className="btn btn-primary"
           onClick={() => {
-            if (!isAppKitReady()) {
+            if (!isWalletConfigured()) {
               notifyError(
                 "Wallet connect is not configured. Set NEXT_PUBLIC_REOWN_PROJECT_ID.",
               );
               return;
             }
+            void ensureWalletStack().catch(() => {});
+            void import("../../lib/teeVerify").then((m) => m.prewarmTee());
             setActive(true);
           }}
         >

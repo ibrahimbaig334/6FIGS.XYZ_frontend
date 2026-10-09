@@ -429,9 +429,7 @@ export default function GamePage() {
       {returnLeft !== null && (
         <div className="search-veil" role="alert">
           <div className="search-scene">
-            <div className="table-wood" aria-hidden="true">
-              <div className="table-felt" style={{ minHeight: "190px" }} />
-            </div>
+            <div className="hero-table-top search-table" aria-hidden="true" />
           </div>
           <p className="label num">
             {wasSeen ? "Your stranger left the table" : "Waiting for your stranger"}

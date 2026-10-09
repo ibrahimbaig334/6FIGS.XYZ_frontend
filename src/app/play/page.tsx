@@ -608,11 +608,9 @@ export default function PlayPage() {
       {(searching || joining) && (
         <div className="search-veil" role="alertdialog" aria-label="Matchmaking">
           <div className="search-scene">
-            <div className="table-wood" aria-hidden="true">
-              <div className="table-felt" style={{ minHeight: "190px" }} />
-            </div>
+            <div className="hero-table-top search-table" aria-hidden="true" />
             <div className="search-card">
-              <div className="seat-card">
+              <div className="place-card">
                 <Chop id={profile?.id ?? "you"} size="md" />
                 <span className="who">{profile?.handle ?? "you"}</span>
                 <span className="what">waiting</span>

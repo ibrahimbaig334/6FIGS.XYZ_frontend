@@ -1,22 +1,28 @@
 import type { Metadata } from "next";
 import Script from "next/script";
-import { Bricolage_Grotesque, Space_Mono } from "next/font/google";
+import localFont from "next/font/local";
 import "./globals.css";
 import Header from "../components/Header";
 import ChallengeToast from "../components/ChallengeToast";
 import ErrorToast from "../components/ErrorToast";
 import Web3Providers from "../components/Web3Providers";
 
-const bricolage = Bricolage_Grotesque({
-  subsets: ["latin"],
-  weight: ["300", "400", "500", "600", "700"],
+/* Self-hosted (see src/app/fonts/): byte-identical files to the Google Fonts
+   API's latin cuts, so the design is unchanged — but builds and first paint
+   no longer depend on the Google Fonts CDN, and the page makes zero
+   third-party font requests. A privacy product should not phone Google. */
+const bricolage = localFont({
+  src: "./fonts/bricolage-grotesque-latin.woff2",
+  weight: "300 700",
   variable: "--font-bricolage",
   display: "swap",
 });
 
-const space = Space_Mono({
-  subsets: ["latin"],
-  weight: ["400", "700"],
+const space = localFont({
+  src: [
+    { path: "./fonts/space-mono-latin-400.woff2", weight: "400" },
+    { path: "./fonts/space-mono-latin-700.woff2", weight: "700" },
+  ],
   variable: "--font-space",
   display: "swap",
 });
@@ -51,7 +57,7 @@ export default function RootLayout({
           <ErrorToast />
           <main id="main">{children}</main>
           <footer className="site-footer">
-            <p>6figs.xyz. Set for two. Fair game.</p>
+            <p>6figs.xyz. Kept private. Fair game.</p>
             <nav aria-label="Footer">
               <a href="/docs">Handbook</a>
               <a href="/docs/privacy">Privacy</a>

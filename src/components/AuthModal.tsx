@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import type { Profile } from "../lib/api";
 import { notifyError } from "../lib/notify";
 import TeeProve from "./TeeProve";
-import { isAppKitReady } from "./Web3Providers";
+import { ensureWalletStack, isWalletConfigured } from "./Web3Providers";
 
 /**
  * One auth entry point, two ways in. Wallet proof is the default because it is
@@ -27,6 +27,14 @@ export default function AuthModal({
   onDone: (p?: Profile) => void;
 }) {
   const [wallet, setWallet] = useState(false);
+
+  // The door opening means a wallet is likely: warm the attestation trust
+  // anchor (Google JWKS) and start the wallet chunk downloading while the
+  // user reads, so neither waits on the critical path later.
+  useEffect(() => {
+    void import("../lib/teeVerify").then((m) => m.prewarmTee());
+    void ensureWalletStack().catch(() => {});
+  }, []);
 
   useEffect(() => {
     const esc = (e: KeyboardEvent) => {
@@ -81,12 +89,13 @@ export default function AuthModal({
         <button
           className="door-option"
           onClick={() => {
-            if (!isAppKitReady()) {
+            if (!isWalletConfigured()) {
               notifyError(
                 "Wallet connect is not configured. Set NEXT_PUBLIC_REOWN_PROJECT_ID.",
               );
               return;
             }
+            void ensureWalletStack().catch(() => {});
             setWallet(true);
           }}
         >

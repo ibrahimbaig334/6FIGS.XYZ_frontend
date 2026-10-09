@@ -98,34 +98,48 @@ export default function Home() {
               </a>
             </div>
           </div>
-          <div className="hero-table-wrap" role="img" aria-label="A card table set for two, the board between two place cards">
+          <div
+            className="hero-table-wrap"
+            role="img"
+            aria-label="A reserved card table seen from above: your place card on the left, a face-down card across, and a tic-tac-toe board between them"
+          >
             <div className="hero-table">
-              <div className="table-wood">
-                <div className="table-felt">
-                  <div className="hero-seat">
-                    <div className="seat-card">
-                      <BrandChop size="md" />
-                      <span className="who">you</span>
-                      <span className="what">when verified</span>
-                    </div>
-                  </div>
-                  <div className="hero-board" aria-hidden="true">
-                    {["×", "×", "", "○", "○", "", "×", "", ""].map((c, i) => (
-                      <span key={i}>{c}</span>
-                    ))}
-                  </div>
-                  <div className="hero-seat">
-                    <div className="seat-card">
-                      <div
-                        className="card-back"
-                        style={{ width: "100%", aspectRatio: "5 / 3" }}
-                        aria-hidden="true"
-                      />
-                    </div>
+              <div className="hero-table-top">
+                <span className="hero-chair hero-chair-l" aria-hidden="true" />
+                <span className="hero-chair hero-chair-r" aria-hidden="true" />
+                <div className="hero-seat hero-seat-l">
+                  <div className="place-card">
+                    <BrandChop size="md" />
+                    <span className="who">you</span>
+                    <span className="what">when verified</span>
                   </div>
                 </div>
+                <div className="hero-board" aria-hidden="true">
+                  {["x", "x", "", "o", "o", "", "x", "", ""].map((c, i) => (
+                    <span key={i} className={`hero-cell${c === "o" ? " mark-o" : ""}`}>
+                      {c === "x" && (
+                        <svg viewBox="0 0 24 24">
+                          <path d="M5 5 L19 19" />
+                          <path d="M19 5 L5 19" />
+                        </svg>
+                      )}
+                      {c === "o" && (
+                        <svg viewBox="0 0 24 24">
+                          <circle cx="12" cy="12" r="7.5" />
+                        </svg>
+                      )}
+                    </span>
+                  ))}
+                </div>
+                <div className="hero-seat hero-seat-r">
+                  <div className="place-card back" aria-hidden="true">
+                    <BrandChop size="md" />
+                  </div>
+                </div>
+                <span className="hero-plate">Reserved</span>
               </div>
             </div>
+            <p className="fine hero-table-caption">A table, kept private.</p>
           </div>
         </div>
       </section>
@@ -244,7 +258,7 @@ export default function Home() {
               )}
             </div>
             <p className="fine">
-              Round tables, set for two. Tier-gated or invite-only. The game
+              Private round tables. Tier-gated or invite-only. The game
               opens into the same table talk.
             </p>
             <a href="/rooms" className="btn btn-primary">

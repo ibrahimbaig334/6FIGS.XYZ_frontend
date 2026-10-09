@@ -31,7 +31,7 @@ import {
   openWalletModalVerified,
   walletModalDiagnostics,
 } from "./WalletStack";
-import BusyPhase from "./BusyPhase";
+import BusyPhase, { PhaseWhisper } from "./BusyPhase";
 
 export type ProveMode = "establish" | "add" | "identify";
 
@@ -436,6 +436,15 @@ function TeeProveFlow({
       }}
     >
       <BusyPhase label={phase} />
+      {sig && (
+        <PhaseWhisper
+          lines={[
+            "Reading balances inside the sealed box.",
+            "Pricing holdings, forgetting addresses.",
+            "Sealing nothing but the tier.",
+          ]}
+        />
+      )}
       {diag && !stalled && (
         <p
           className="fine"

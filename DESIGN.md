@@ -270,3 +270,22 @@ Re-expressed in The Table (logic kept, presentation rebuilt):
   marks (ink X, brass O); the floor list has presence dots and
   right-aligned access; both previews share one centered height. A plate
   override was swallowing the green presence dot — fixed.
+
+## Round six: night mode honestly dark, a constructed 6, living waits
+
+- Night mode kept cream cards — correct by thesis, wrong by expectation.
+  The card stock is now dark walnut after hours (light theme untouched):
+  every card, dialog, input, tag, toast, and menu flips coherently through
+  the tokens, with a full dark-ink-on-walnut override set for text on wood
+  (chips, bubbles, nav, callouts, QA markers, legacy adapter buttons).
+  Felt scenes get lamplit rims and taken seats glow brass so nothing melts
+  together. Contrast re-audited clean in both themes.
+- The 6 is compass geometry now: a true circular bowl opened where the
+  tail lands, a true circular tail arc up the left — root on the edge
+  centered in its gap, verified numerically. No freehand cubics.
+- Waits narrate true work: the loader cycles eight house lines including
+  the operation voice (reading balances, forgetting addresses, sealing
+  nothing but the tier), and the submit phase whispers the same under its
+  phase label.
+- Deal rows tightened to the article register (0.92rem, 0.55rem rows);
+  all three gates share one flex rhythm so button-to-text gaps hold.

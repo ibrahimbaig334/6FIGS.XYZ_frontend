@@ -187,7 +187,6 @@ export default function RoomsPage() {
           <h1 className="label">The door</h1>
           <div
             style={{
-              marginTop: "1.2rem",
               display: "flex",
               justifyContent: "center",
             }}

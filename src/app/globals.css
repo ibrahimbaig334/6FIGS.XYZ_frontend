@@ -45,20 +45,22 @@
 }
 
 html.dark {
-  /* Midnight: the room after hours. */
+  /* Midnight: the room after hours. The card stock turns to dark walnut —
+     the same paper under lamplight — so night mode darkens every surface,
+     not just the page. Light theme values above are untouched. */
   --page: #0c130f;
   --felt-2: #101813;
   --table-felt: #132016;
   --wood: #241a12;
   --wood-2: #2e2218;
-  --card: #efe8d6;
-  --card-2: #f6f0e1;
-  --tx: #221b10;
-  --tx-dim: #645c4b;
+  --card: #2b2115;
+  --card-2: #332818;
+  --tx: #ece3cd;
+  --tx-dim: #ab9f85;
   --tx-page: #e4dcc8;
   --tx-page-dim: #a8a088;
-  --line: rgba(34, 27, 16, 0.26);
-  --line-soft: rgba(34, 27, 16, 0.14);
+  --line: rgba(236, 227, 205, 0.22);
+  --line-soft: rgba(236, 227, 205, 0.11);
   --line-page: rgba(228, 220, 200, 0.17);
   --line-page-soft: rgba(228, 220, 200, 0.09);
   --brass: #b29254;
@@ -70,6 +72,22 @@ html.dark {
   --focus: #c9a445;
   --shadow-card: 0 1px 0 rgba(0, 0, 0, 0.35), 0 16px 40px rgba(0, 0, 0, 0.38);
   --shadow-table: 0 2px 0 rgba(0, 0, 0, 0.4), 0 24px 56px rgba(0, 0, 0, 0.45);
+}
+
+/* Midnight: anything set in card-ink on a walnut surface would vanish now
+   that the card stock is dark — cream ink takes over on wood. */
+html.dark .veil-note span,
+html.dark .chip.on,
+html.dark .plate .chip.on,
+html.dark .msg.me,
+html.dark .docs-nav a.active,
+html.dark .docs-callout.ink,
+html.dark .docs-callout.ink > .label,
+html.dark .docs-callout.ink p,
+html.dark .docs-table-row.head,
+html.dark .docs-qa[open] .docs-q::before,
+html.dark body .wallet-adapter-modal-middle-button {
+  color: var(--tx);
 }
 
 /* ---------- base ---------- */
@@ -967,6 +985,10 @@ html:not(.dark) .hero-plate {
   color: var(--card);
 }
 
+html.dark .hero-plate {
+  color: #221b10;
+}
+
 .hero-table-caption {
   text-align: center;
 }
@@ -1345,6 +1367,29 @@ html:not(.dark) .mini-cell.mark-o svg circle {
 
 .table-card:hover .table-scene {
   border-color: var(--wood-2);
+}
+
+/* Midnight: the felt and walnut would melt into the dark card, so the rim
+   carries lamplight and taken seats glow brass. */
+html.dark .table-scene {
+  border-color: color-mix(in srgb, var(--brass) 38%, var(--wood));
+}
+
+html.dark .table-card:hover .table-scene {
+  border-color: color-mix(in srgb, var(--brass) 60%, var(--wood));
+}
+
+html.dark .table-seat {
+  border-color: #6b5a36;
+}
+
+html.dark .table-seat.on {
+  background: var(--brass);
+  border-color: var(--brass);
+}
+
+html.dark .hero-table-top {
+  border-color: color-mix(in srgb, var(--brass) 30%, var(--wood));
 }
 
 .table-top {
@@ -2255,32 +2300,31 @@ html:not(.dark) .board-cell .mark circle {
 .chop-draw svg path {
   fill: none;
   stroke: currentColor;
-  stroke-width: 1.6;
+  stroke-width: 2.2;
   stroke-linecap: round;
-  stroke-linejoin: round;
 }
 
-.chop-draw .draw-outer {
-  stroke-dasharray: 87;
-  stroke-dashoffset: 87;
-  animation: chop-outer 2.8s ease-in-out infinite;
+.chop-draw .draw-tail {
+  stroke-dasharray: 10;
+  stroke-dashoffset: 10;
+  animation: chop-tail 2.8s ease-in-out infinite;
 }
 
-.chop-draw .draw-inner {
-  stroke-dasharray: 21;
-  stroke-dashoffset: 21;
-  animation: chop-inner 2.8s ease-in-out infinite;
+.chop-draw .draw-bowl {
+  stroke-dasharray: 32;
+  stroke-dashoffset: 32;
+  animation: chop-bowl 2.8s ease-in-out infinite;
 }
 
-@keyframes chop-outer {
+@keyframes chop-tail {
   0% {
-    stroke-dashoffset: 87;
+    stroke-dashoffset: 10;
     opacity: 0;
   }
   6% {
     opacity: 1;
   }
-  45% {
+  32% {
     stroke-dashoffset: 0;
     opacity: 1;
   }
@@ -2295,16 +2339,16 @@ html:not(.dark) .board-cell .mark circle {
   }
 }
 
-@keyframes chop-inner {
+@keyframes chop-bowl {
   0%,
-  28% {
-    stroke-dashoffset: 21;
+  24% {
+    stroke-dashoffset: 32;
     opacity: 0;
   }
-  34% {
+  30% {
     opacity: 1;
   }
-  60% {
+  62% {
     stroke-dashoffset: 0;
     opacity: 1;
   }
@@ -2320,12 +2364,8 @@ html:not(.dark) .board-cell .mark circle {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .chop-draw svg path {
-    fill: currentColor;
-    stroke: none;
-  }
-  .chop-draw .draw-outer,
-  .chop-draw .draw-inner {
+  .chop-draw .draw-tail,
+  .chop-draw .draw-bowl {
     animation: none;
     stroke-dashoffset: 0;
     opacity: 1;
@@ -2394,6 +2434,15 @@ html:not(.dark) .board-cell .mark circle {
   max-width: 520px;
   text-align: center;
   padding: 2.4rem 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.1rem;
+  align-items: stretch;
+}
+
+.auth-card > * {
+  margin-top: 0;
+  margin-bottom: 0;
 }
 
 .page-enter {
@@ -2999,10 +3048,10 @@ html:not(.dark) .board-cell .mark circle {
 
 .deal-list li {
   display: grid;
-  grid-template-columns: 2.2rem minmax(0, 1fr);
-  gap: 1rem;
+  grid-template-columns: 2rem minmax(0, 1fr);
+  gap: 0.85rem;
   align-items: start;
-  padding: 0.85rem 0;
+  padding: 0.55rem 0;
 }
 
 .deal-list li + li {
@@ -3010,7 +3059,7 @@ html:not(.dark) .board-cell .mark circle {
 }
 
 .deal-list li:first-child {
-  padding-top: 0.4rem;
+  padding-top: 0.25rem;
 }
 
 .deal-list li:last-child {
@@ -3019,7 +3068,7 @@ html:not(.dark) .board-cell .mark circle {
 
 .deal-num {
   font-family: var(--font-space), monospace;
-  font-size: 0.8rem;
+  font-size: 0.72rem;
   letter-spacing: 0.1em;
   color: var(--brass);
   padding-top: 0.3rem;
@@ -3031,8 +3080,8 @@ html:not(.dark) .deal-num {
 
 .deal-list p {
   margin: 0;
-  font-size: 1.02rem;
-  line-height: 1.65;
+  font-size: 0.92rem;
+  line-height: 1.75;
   max-width: 68ch;
 }
 

@@ -165,12 +165,11 @@ export default function CreateRoomPage() {
       >
         <div className="plate auth-card">
           <h1 className="label">The door</h1>
-          <p className="fine" style={{ marginTop: "0.6rem" }}>
+          <p className="fine" style={{ margin: 0 }}>
             Log in to set a table of your own.
           </p>
           <div
             style={{
-              marginTop: "1.2rem",
               display: "flex",
               justifyContent: "center",
             }}

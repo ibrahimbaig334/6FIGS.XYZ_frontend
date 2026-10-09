@@ -9,8 +9,12 @@ import ChopDraw from "./ChopDraw";
 const WHISPERS = [
   "Lighting the lamp.",
   "Warming your seat.",
+  "Reading balances inside the sealed box.",
   "Shuffling the deck.",
+  "Forgetting addresses as it goes.",
   "Checking the door.",
+  "Signing nothing but the tier.",
+  "Dealing you in.",
 ];
 
 export default function Loader({ label }: { label?: string }) {

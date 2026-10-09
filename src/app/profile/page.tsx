@@ -190,7 +190,6 @@ export default function ProfilePage() {
       >
         <div
           className="plate auth-card"
-          style={{ display: "flex", flexDirection: "column", gap: "1rem" }}
         >
           <h1 className="label">The door</h1>
           <div style={{ display: "flex", justifyContent: "center" }}>

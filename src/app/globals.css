@@ -2263,37 +2263,67 @@ html:not(.dark) .board-cell .mark circle {
   overflow: visible;
 }
 
-.chop-draw svg path,
-.chop-draw svg circle {
+.chop-draw svg path {
   fill: none;
   stroke: currentColor;
-  stroke-width: 2.2;
+  stroke-width: 1.6;
   stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
-.chop-draw .draw-mark {
-  stroke-dasharray: 43;
-  stroke-dashoffset: 43;
-  animation: chop-mark 2.6s ease-in-out infinite;
+.chop-draw .draw-outer {
+  stroke-dasharray: 87;
+  stroke-dashoffset: 87;
+  animation: chop-outer 2.8s ease-in-out infinite;
 }
 
-@keyframes chop-mark {
+.chop-draw .draw-inner {
+  stroke-dasharray: 21;
+  stroke-dashoffset: 21;
+  animation: chop-inner 2.8s ease-in-out infinite;
+}
+
+@keyframes chop-outer {
   0% {
-    stroke-dashoffset: 43;
+    stroke-dashoffset: 87;
     opacity: 0;
   }
-  8% {
+  6% {
     opacity: 1;
   }
-  38% {
+  45% {
     stroke-dashoffset: 0;
     opacity: 1;
   }
-  72% {
+  80% {
     stroke-dashoffset: 0;
     opacity: 1;
   }
-  88%,
+  92%,
+  100% {
+    stroke-dashoffset: 0;
+    opacity: 0;
+  }
+}
+
+@keyframes chop-inner {
+  0%,
+  28% {
+    stroke-dashoffset: 21;
+    opacity: 0;
+  }
+  34% {
+    opacity: 1;
+  }
+  60% {
+    stroke-dashoffset: 0;
+    opacity: 1;
+  }
+  80% {
+    stroke-dashoffset: 0;
+    opacity: 1;
+  }
+  92%,
   100% {
     stroke-dashoffset: 0;
     opacity: 0;
@@ -2301,7 +2331,12 @@ html:not(.dark) .board-cell .mark circle {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .chop-draw .draw-mark {
+  .chop-draw svg path {
+    fill: currentColor;
+    stroke: none;
+  }
+  .chop-draw .draw-outer,
+  .chop-draw .draw-inner {
     animation: none;
     stroke-dashoffset: 0;
     opacity: 1;
@@ -2965,20 +3000,6 @@ html:not(.dark) .board-cell .mark circle {
   padding: 1.2rem 1.4rem;
 }
 
-/* The deal card: three identical rows, every edge aligned — kicker, then
-   body. No ragged lead-ins. */
-.deal-row + .deal-row {
-  margin-top: 0.9rem;
-}
-
-.deal-row .docs-body-text {
-  margin-top: 0.3rem;
-}
-
-.docs-card > .label {
-  margin-bottom: 0.2rem;
-}
-
 .docs-callout {
   border: 1px solid var(--line-page);
   border-radius: 10px;
@@ -3001,6 +3022,15 @@ html:not(.dark) .board-cell .mark circle {
 
 .docs-callout p:not(.label) + p:not(.label) {
   margin-top: 0.5rem;
+}
+
+/* The plaque: a short inscription set in mono with its kicker, not the
+   article voice. For single-claim callouts only; paragraph callouts keep
+   the body register. */
+.docs-callout.plaque p:not(.label) {
+  font-family: var(--font-space), monospace;
+  font-size: 0.8rem;
+  line-height: 1.7;
 }
 
 .docs-callout.danger {

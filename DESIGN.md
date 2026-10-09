@@ -233,3 +233,16 @@ Re-expressed in The Table (logic kept, presentation rebuilt):
   after repeated kill/restart cycles; a clean production build of the same
   tree verifies fully. Suspect stale dev cache/HMR ghost state, not the
   code — the tree typechecks, lints, builds, and passes every flow.
+
+## Round four: the true 6, docs reverted, plaque voice
+
+- Hand-drawn 6s kept failing: any stick on a circle reads as "d", and blind
+  Bézier tuning could not land the letterform. The mark is now cut straight
+  from the house typeface (Bricolage Grotesque 650, extracted as outlines):
+  the wordmark, the loader (which inks the two contours in sequence), and
+  the favicon all use the professional glyph. The house signs its name in
+  its own voice; members keep their generative stroke chops.
+- Docs start page restored to its original list and single flowing callout.
+  The callout speaks as a plaque now (Space Mono with its kicker) instead
+  of oversized body text — the only remaining change from the original is
+  the font fix that was actually asked for.

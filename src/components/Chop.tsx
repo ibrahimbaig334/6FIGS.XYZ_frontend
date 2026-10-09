@@ -78,20 +78,18 @@ export default function Chop({
   );
 }
 
-/* The brand's own chop: a 6 drawn as one flowing stroke — the arc descends
-   the left side of the circle and loops the bowl. A stick on a closed
-   circle reads as "d"; the 6 is a single gesture. */
+/* The brand's own chop: the numeral 6 cut straight from the house typeface
+   (Bricolage Grotesque 650), so the letterform is professional artwork, not
+   a hand-drawn guess. A stick on a circle reads as "d"; this is simply 6. */
 export function BrandChop({ size = "md" }: { size?: "sm" | "md" | "lg" }) {
   return (
     <span className={`chop chop-${size}`} aria-hidden="true">
       <svg viewBox="0 0 22 22" role="img" aria-hidden="true">
-        <g
-          fill="none"
-          stroke="currentColor"
-          style={{ strokeWidth: 2.2, strokeLinecap: "round" }}
-        >
-          <path d="M10.5 3 C8 3.5, 6 5.5, 5.3 8.5 C4.4 12.5, 5.5 17.5, 9.2 19.6 C12.5 21.3, 16.2 19.6, 16.5 16.2 C16.7 13.5, 14.2 11.5, 11 11.5 C9 11.5, 7.2 12.3, 6.2 13.5" />
-        </g>
+        <path
+          fill="currentColor"
+          fillRule="evenodd"
+          d="M11.60 20.50Q7.59 20.50 5.49 18.11Q3.40 15.73 3.40 11.16Q3.40 8.05 4.36 5.89Q5.33 3.73 7.13 2.62Q8.93 1.50 11.46 1.50Q12.78 1.50 13.89 1.81Q15.00 2.13 15.86 2.76Q16.72 3.39 17.28 4.37Q17.84 5.35 18.05 6.64L14.57 7.53Q14.43 6.44 13.91 5.81Q13.39 5.17 12.69 4.90Q11.98 4.63 11.25 4.63Q10.14 4.63 9.33 5.16Q8.53 5.68 8.03 6.60Q7.52 7.52 7.28 8.71Q7.04 9.89 7.04 11.21Q7.04 11.87 7.13 12.69Q7.21 13.51 7.37 14.26H7.64Q7.57 12.73 8.04 11.69Q8.51 10.65 9.31 10.02Q10.11 9.39 11.08 9.11Q12.05 8.83 12.99 8.83Q14.49 8.83 15.76 9.45Q17.04 10.07 17.82 11.31Q18.60 12.55 18.60 14.37Q18.60 15.50 18.24 16.59Q17.88 17.68 17.06 18.57Q16.23 19.46 14.89 19.98Q13.56 20.50 11.60 20.50ZM11.43 17.50Q12.28 17.50 12.91 17.26Q13.54 17.03 13.98 16.61Q14.43 16.19 14.65 15.64Q14.87 15.09 14.87 14.44Q14.87 13.49 14.43 12.82Q14.00 12.15 13.29 11.80Q12.59 11.45 11.71 11.45Q10.75 11.45 9.97 11.87Q9.19 12.29 8.73 13.04Q8.28 13.78 8.28 14.78Q8.28 15.57 8.55 16.09Q8.82 16.61 9.28 16.92Q9.74 17.24 10.31 17.37Q10.87 17.50 11.43 17.50Z"
+        />
       </svg>
     </span>
   );

@@ -289,3 +289,10 @@ Re-expressed in The Table (logic kept, presentation rebuilt):
   phase label.
 - Deal rows tightened to the article register (0.92rem, 0.55rem rows);
   all three gates share one flex rhythm so button-to-text gaps hold.
+
+## Round seven: the card earns its rows
+
+- The room card's felt band was a 64px empty forehead and the byline sat
+  alone as a micro-row. The band is a 30px trim now, and the host credit
+  moved into the tags row (right-aligned) — name, tags plus host, desc,
+  one action row. 253px down to 217px, nothing removed but air.

@@ -301,13 +301,15 @@ export default function RoomsPage() {
                       <TierTag tier={r.minTier} />
                     )}
                     {r.isOwner && <span className="tier-tag">Yours</span>}
+                    <span className="fine dir-by" title={r.creatorHandle}>
+                      by {r.creatorHandle}
+                    </span>
                   </div>
                   {r.description && (
                     <p className="fine dir-desc" title={r.description}>
                       {r.description}
                     </p>
                   )}
-                  <p className="fine dir-meta">by {r.creatorHandle}</p>
                   <div className="table-actions">
                     <span
                       className="fine num"

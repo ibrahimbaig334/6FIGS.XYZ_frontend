@@ -1,5 +1,12 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Dev and prod must never share a dist dir: dev's cache activity deletes
+  // the hashed assets prod serves (unstyled pages, 500s on CSS). Production
+  // builds and serves from .next; dev compiles into .next-dev.
+  // NEXT_DIST_DIR overrides either when set.
+  distDir:
+    process.env.NEXT_DIST_DIR ??
+    (process.env.NODE_ENV === "production" ? ".next" : ".next-dev"),
   webpack: (config) => {
     // WalletConnect/AppKit pull optional Node-only deps into the browser
     // bundle; mark them external instead of polyfilling.

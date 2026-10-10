@@ -124,8 +124,7 @@ export function isWalletModalVisible(): boolean {
   const el = document.querySelector("w3m-modal");
   if (!el) return false;
   const cs = getComputedStyle(el);
-  const rendered =
-    el.shadowRoot != null && el.shadowRoot.children.length > 0;
+  const rendered = el.shadowRoot != null && el.shadowRoot.children.length > 0;
   return rendered && cs.display !== "none" && cs.opacity !== "0";
 }
 
@@ -162,7 +161,10 @@ export async function walletModalDiagnostics(): Promise<string> {
   const shadow = el.shadowRoot;
   const kids = shadow
     ? Array.from(shadow.children)
-        .map((c) => `${c.tagName.toLowerCase()}${c.className ? "." + String(c.className).split(" ")[0] : ""}`)
+        .map(
+          (c) =>
+            `${c.tagName.toLowerCase()}${c.className ? "." + String(c.className).split(" ")[0] : ""}`,
+        )
         .slice(0, 6)
         .join(",")
     : "none";

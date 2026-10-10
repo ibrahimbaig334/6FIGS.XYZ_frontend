@@ -99,9 +99,7 @@ export async function disconnectWallets(): Promise<void> {
   // reason to download the stack just to learn that.
   const m =
     heavyModule ??
-    (isWalletConfigured()
-      ? await ensureWalletStack().catch(() => null)
-      : null);
+    (isWalletConfigured() ? await ensureWalletStack().catch(() => null) : null);
   await m?.disconnectWallets();
 }
 

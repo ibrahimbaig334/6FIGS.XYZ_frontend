@@ -18,7 +18,14 @@ export function Pager({ current }: { current: string }) {
     <div className="docs-pager">
       {prev ? (
         <Link href={prev.href} className="docs-pager-link">
-          <span className="kicker" style={{ display: "inline-flex", alignItems: "center", gap: "0.35rem" }}>
+          <span
+            className="kicker"
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "0.35rem",
+            }}
+          >
             <CaretLeft size={11} aria-hidden="true" />
             Prev
           </span>
@@ -29,7 +36,14 @@ export function Pager({ current }: { current: string }) {
       )}
       {next ? (
         <Link href={next.href} className="docs-pager-link next">
-          <span className="kicker" style={{ display: "inline-flex", alignItems: "center", gap: "0.35rem" }}>
+          <span
+            className="kicker"
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "0.35rem",
+            }}
+          >
             Next
             <CaretRight size={11} aria-hidden="true" />
           </span>

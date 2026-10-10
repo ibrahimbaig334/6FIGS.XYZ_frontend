@@ -36,9 +36,7 @@ export default function ProfilePage() {
   const [loading, setLoading] = useState(true);
   const [checking, setChecking] = useState(false);
   const [savingHandle, setSavingHandle] = useState(false);
-  const [proveMode, setProveMode] = useState<"establish" | "add" | null>(
-    null,
-  );
+  const [proveMode, setProveMode] = useState<"establish" | "add" | null>(null);
   const [confirmOne, setConfirmOne] = useState<Wallet | null>(null);
   const [confirmAll, setConfirmAll] = useState(false);
   const [banner, setBanner] = useState("");
@@ -137,12 +135,16 @@ export default function ProfilePage() {
     if (!confirmOne) return;
     if ((profile?.wallets.length ?? 0) <= 1) {
       setConfirmOne(null);
-      notifyError("You cannot remove your only wallet. Use Disconnect all to start over.");
+      notifyError(
+        "You cannot remove your only wallet. Use Disconnect all to start over.",
+      );
       return;
     }
     try {
       applyProfile(await removeTeeWallet(confirmOne.id));
-      setBanner("Wallet removed. Your tier now reflects the remaining wallets.");
+      setBanner(
+        "Wallet removed. Your tier now reflects the remaining wallets.",
+      );
       setConfirmOne(null);
       clearProvedWallets();
       window.dispatchEvent(new Event("sixfigs-auth"));
@@ -188,16 +190,14 @@ export default function ProfilePage() {
           placeItems: "center",
         }}
       >
-        <div
-          className="plate auth-card"
-        >
+        <div className="plate auth-card">
           <h1 className="label">The door</h1>
           <div style={{ display: "flex", justifyContent: "center" }}>
             <SignInButton onDone={() => void load()} label="Sign in" />
           </div>
           <p className="fine" style={{ margin: 0 }}>
-            New here? Connecting a wallet creates your account and proves
-            your tier.
+            New here? Connecting a wallet creates your account and proves your
+            tier.
           </p>
         </div>
       </section>
@@ -343,7 +343,10 @@ function ProfileView({
         </div>
 
         {tee && tee.tier !== null && tee.topAssets.length > 0 ? (
-          <p className="fine num" style={{ marginTop: "0.8rem", fontSize: "0.95rem" }}>
+          <p
+            className="fine num"
+            style={{ marginTop: "0.8rem", fontSize: "0.95rem" }}
+          >
             {tee.topAssets.join(", ")}
           </p>
         ) : null}
@@ -402,7 +405,11 @@ function ProfileView({
                 className={`reveal-card${visMode === v ? " on" : ""}`}
                 onClick={() => onSaveVis(v)}
                 aria-pressed={visMode === v}
-                aria-label={v === "HIDDEN" ? "Hidden: show nothing" : "Tier visible: show your tier"}
+                aria-label={
+                  v === "HIDDEN"
+                    ? "Hidden: show nothing"
+                    : "Tier visible: show your tier"
+                }
               >
                 <div className="card-inner">
                   <div className="card-face">
@@ -449,10 +456,13 @@ function ProfileView({
             style={{ marginTop: "0.7rem", justifyContent: "space-between" }}
           >
             <span>
-              Your tier reflects the one wallet connected so far. Add your
-              other wallets. It can only go up.
+              Your tier reflects the one wallet connected so far. Add your other
+              wallets. It can only go up.
             </span>
-            <button className="chip" onClick={() => setWalletSetDismissed(true)}>
+            <button
+              className="chip"
+              onClick={() => setWalletSetDismissed(true)}
+            >
               Got it
             </button>
           </div>
@@ -493,7 +503,10 @@ function ProfileView({
         )}
         <div className="wallet-actions">
           {!addOnly || !tierActive ? (
-            <button className="btn btn-primary" onClick={() => onProve("establish")}>
+            <button
+              className="btn btn-primary"
+              onClick={() => onProve("establish")}
+            >
               Connect wallet
             </button>
           ) : (
@@ -501,11 +514,7 @@ function ProfileView({
               Add wallet
             </button>
           )}
-          <button
-            className="btn-ghost"
-            disabled={checking}
-            onClick={onRecheck}
-          >
+          <button className="btn-ghost" disabled={checking} onClick={onRecheck}>
             {checking ? "Refreshing" : "Refresh tier"}
           </button>
           <button className="btn-ghost" onClick={onDisconnectAll}>
@@ -537,8 +546,8 @@ function ProfileView({
               </li>
               <li>
                 <span className="step-dot" aria-hidden="true" />
-                Your browser checks the enclave against the pinned
-                fingerprint, then sends the request encrypted.
+                Your browser checks the enclave against the pinned fingerprint,
+                then sends the request encrypted.
               </li>
               <li>
                 <span className="step-dot" aria-hidden="true" />
@@ -553,10 +562,7 @@ function ProfileView({
               onDone={onProveDone}
               onDismiss={onDismissFlow}
             />
-            <button
-              className="btn-ghost btn-sm"
-              onClick={onDismissFlow}
-            >
+            <button className="btn-ghost btn-sm" onClick={onDismissFlow}>
               Cancel
             </button>
           </div>
@@ -650,10 +656,7 @@ function CredentialsCard({
         <p className="label" style={{ margin: 0 }}>
           Device-free sign-in
         </p>
-        <span
-          className="tier-tag"
-          style={{ marginLeft: "auto" }}
-        >
+        <span className="tier-tag" style={{ marginLeft: "auto" }}>
           {isSet ? `@${profile.username}` : "not set"}
         </span>
       </div>
@@ -747,7 +750,11 @@ function CredentialsCard({
           </p>
         </>
       )}
-      {msg && <p className="fine" style={{ margin: 0 }}>{msg}</p>}
+      {msg && (
+        <p className="fine" style={{ margin: 0 }}>
+          {msg}
+        </p>
+      )}
     </div>
   );
 }

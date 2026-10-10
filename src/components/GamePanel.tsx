@@ -117,7 +117,11 @@ export default function GamePanel({
   // may return and resume) but the VIEW resets to waiting. No ghost turns,
   // no active highlights, frozen board. Finished games still show the result.
   const oppAway = !!game && game.status === "open" && !oppOnline;
-  const fresh = !!game && game.status === "open" && !game.board.includes("X") && !game.board.includes("O");
+  const fresh =
+    !!game &&
+    game.status === "open" &&
+    !game.board.includes("X") &&
+    !game.board.includes("O");
 
   // The handshake: a fresh board assembles the table once. Mid-game loads
   // and settled games render the state as-is - no ceremony.
@@ -203,9 +207,7 @@ export default function GamePanel({
                       Stranger
                     </span>
                     <span className="seat-name">
-                      {oppAway
-                        ? "away"
-                        : (game.opponent?.handle ?? "waiting")}
+                      {oppAway ? "away" : (game.opponent?.handle ?? "waiting")}
                     </span>
                   </span>
                 </span>
@@ -274,7 +276,9 @@ export default function GamePanel({
                         key={i}
                         className={`board-cell${won.has(i) ? " win" : ""}${cell === "O" ? " mark-o" : ""}`}
                         onClick={() => onMove(i)}
-                        disabled={cell !== "." || game.status !== "open" || oppAway}
+                        disabled={
+                          cell !== "." || game.status !== "open" || oppAway
+                        }
                         aria-label={`square ${i + 1}`}
                       >
                         <Mark cell={cell} index={i} />

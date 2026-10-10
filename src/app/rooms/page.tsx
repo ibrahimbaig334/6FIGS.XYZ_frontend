@@ -195,8 +195,8 @@ export default function RoomsPage() {
             <SignInButton onDone={load} label="Sign in" />
           </div>
           <p className="fine" style={{ margin: 0 }}>
-            New here? Connecting a wallet creates your account and proves
-            your tier.
+            New here? Connecting a wallet creates your account and proves your
+            tier.
           </p>
         </div>
       </section>
@@ -310,7 +310,11 @@ export default function RoomsPage() {
                   <div className="table-actions">
                     <span
                       className="fine num"
-                      style={{ display: "inline-flex", alignItems: "center", gap: "0.4rem" }}
+                      style={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: "0.4rem",
+                      }}
                     >
                       <span className={r.onlineCount > 0 ? "dot on" : "dot"} />
                       {r.onlineCount}/2 in the room

@@ -18,11 +18,10 @@ const STEPS: {
     title: "You sign. Nothing moves.",
     body: (
       <>
-        Connect the wallets you want to enroll and sign
-        one plain message per wallet. It says &ldquo;I control this
-        address&rdquo; and nothing else. It is a signature, not a
-        transaction: no gas, no spending, no approvals. The signing request
-        can never touch your funds.
+        Connect the wallets you want to enroll and sign one plain message per
+        wallet. It says &ldquo;I control this address&rdquo; and nothing else.
+        It is a signature, not a transaction: no gas, no spending, no approvals.
+        The signing request can never touch your funds.
       </>
     ),
     sees: "Visible to others: nothing",
@@ -35,8 +34,8 @@ const STEPS: {
         issues a signed certificate (an attestation) stating the exact
         sealed-enclave code image that is running, that it runs on real
         memory-encrypted hardware, and that debugging is off. Your browser
-        checks that certificate against the image fingerprint 6figs
-        publishes, before releasing anything.
+        checks that certificate against the image fingerprint 6figs publishes,
+        before releasing anything.
       </>
     ),
     sees: "Visible to others: nothing yet",
@@ -46,11 +45,11 @@ const STEPS: {
     title: "Addresses travel encrypted, to the enclave only",
     body: (
       <>
-        Your signatures and addresses are encrypted to the enclave&apos;s
-        key before they leave your browser. Even a network attacker or a
-        hostile proxy sees ciphertext. The enclave decrypts, verifies your
-        signatures, then reads balances from public blockchains and prices
-        from market APIs, all inside the sealed box.
+        Your signatures and addresses are encrypted to the enclave&apos;s key
+        before they leave your browser. Even a network attacker or a hostile
+        proxy sees ciphertext. The enclave decrypts, verifies your signatures,
+        then reads balances from public blockchains and prices from market APIs,
+        all inside the sealed box.
       </>
     ),
     sees: "Visible to others: only that a request happened",
@@ -60,12 +59,12 @@ const STEPS: {
     title: "Tier computed, addresses forgotten",
     body: (
       <>
-        The enclave totals your portfolio, assigns the highest tier you
-        qualify for, and replaces your wallets with one-way pseudonyms
-        (nullifiers), a kind of hash that can&apos;t be turned back into
-        an address. It signs the result with its key and issues a fresh
-        attestation bound to the exact result bytes. Then the plaintext
-        addresses exist nowhere. Not in memory, not in storage.
+        The enclave totals your portfolio, assigns the highest tier you qualify
+        for, and replaces your wallets with one-way pseudonyms (nullifiers), a
+        kind of hash that can&apos;t be turned back into an address. It signs
+        the result with its key and issues a fresh attestation bound to the
+        exact result bytes. Then the plaintext addresses exist nowhere. Not in
+        memory, not in storage.
       </>
     ),
     sees: "Visible to others: nothing (signed, not sent yet)",
@@ -74,13 +73,12 @@ const STEPS: {
     title: "Server verifies, stores almost nothing",
     body: (
       <>
-        Your browser checks the signed result first, then forwards it. The
-        6figs server independently verifies the signature and the
-        attestation (same image fingerprint, fresh nonce, no debug mode),
-        and stores: your tier, a coarse band, your top three token
-        symbols (disclosed automatically, symbols only, never amounts),
-        and the wallet pseudonyms. There is no column
-        anywhere for an address or an amount; the database schema makes
+        Your browser checks the signed result first, then forwards it. The 6figs
+        server independently verifies the signature and the attestation (same
+        image fingerprint, fresh nonce, no debug mode), and stores: your tier, a
+        coarse band, your top three token symbols (disclosed automatically,
+        symbols only, never amounts), and the wallet pseudonyms. There is no
+        column anywhere for an address or an amount; the database schema makes
         storing one impossible.
       </>
     ),
@@ -100,8 +98,8 @@ export default function HowItWorks() {
         }
         lede={
           <>
-            From &ldquo;connect wallet&rdquo; to badge. Each step notes
-            exactly who can see what.
+            From &ldquo;connect wallet&rdquo; to badge. Each step notes exactly
+            who can see what.
           </>
         }
       />
@@ -126,10 +124,10 @@ export default function HowItWorks() {
         <p className="label">STAYING FRESH</p>
         <p>
           Markets move, so verification isn&apos;t frozen in time. The server
-          holds your wallet list as a sealed envelope it cannot open. Only
-          the enclave can. On a schedule (and when you press
-          &ldquo;refresh&rdquo;), the envelope is replayed to the enclave,
-          which re-reads balances and re-signs a fresh tier. You sign nothing.
+          holds your wallet list as a sealed envelope it cannot open. Only the
+          enclave can. On a schedule (and when you press &ldquo;refresh&rdquo;),
+          the envelope is replayed to the enclave, which re-reads balances and
+          re-signs a fresh tier. You sign nothing.
         </p>
       </div>
 

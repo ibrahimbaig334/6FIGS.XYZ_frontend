@@ -457,8 +457,8 @@ export default function RoomPage() {
             <SignInButton onDone={load} label="Sign in" />
           </div>
           <p className="fine" style={{ margin: 0 }}>
-            New here? Connecting a wallet creates your account and proves
-            your tier.
+            New here? Connecting a wallet creates your account and proves your
+            tier.
           </p>
         </div>
       </section>
@@ -488,7 +488,14 @@ export default function RoomPage() {
         }}
       >
         <div className="plate gate-card">
-          <p className="label" style={{ display: "inline-flex", alignItems: "center", gap: "0.4rem" }}>
+          <p
+            className="label"
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "0.4rem",
+            }}
+          >
             {invite && <LockSimple size={13} aria-hidden="true" />}
             {invite ? "Invite only" : `${meta.minTier} table`}
           </p>
@@ -502,7 +509,10 @@ export default function RoomPage() {
                 Back to the floor
               </a>
             ) : (
-              <button className="btn btn-primary" onClick={() => setNeedCode(true)}>
+              <button
+                className="btn btn-primary"
+                onClick={() => setNeedCode(true)}
+              >
                 Enter invite code
               </button>
             )
@@ -532,7 +542,9 @@ export default function RoomPage() {
       <section className="loader-page">
         <div className="plate gate-card">
           <p className="label">
-            {roomGone === "deleted" ? "Table cleared" : "Removed from the table"}
+            {roomGone === "deleted"
+              ? "Table cleared"
+              : "Removed from the table"}
           </p>
           <p className="fine">
             {roomGone === "deleted"
@@ -594,7 +606,9 @@ export default function RoomPage() {
         <div className="room-head">
           <div className="room-head-info">
             <div className="room-head-row">
-              <p className="label num">{meta?.onlineCount ?? 0}/2 in the room</p>
+              <p className="label num">
+                {meta?.onlineCount ?? 0}/2 in the room
+              </p>
               {meta?.accessType === "invite" ? (
                 <span className="tier-tag">
                   <LockSimple size={11} aria-hidden="true" />
@@ -635,7 +649,11 @@ export default function RoomPage() {
           <div className="room-head-side">
             <div className="room-head-row">
               {members.map((m) => (
-                <span key={m.id} className="tier-tag" title={m.online ? "At this table" : "Not here right now"}>
+                <span
+                  key={m.id}
+                  className="tier-tag"
+                  title={m.online ? "At this table" : "Not here right now"}
+                >
                   <Chop id={m.id} size="sm" />
                   {m.handle}
                 </span>

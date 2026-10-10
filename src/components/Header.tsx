@@ -131,7 +131,11 @@ export default function Header() {
       </a>
       <nav className="site-nav" aria-label="Primary">
         {NAV.map((n) => (
-          <a key={n.href} href={n.href} className={isActive(n.href) ? "active" : ""}>
+          <a
+            key={n.href}
+            href={n.href}
+            className={isActive(n.href) ? "active" : ""}
+          >
             {n.label}
           </a>
         ))}

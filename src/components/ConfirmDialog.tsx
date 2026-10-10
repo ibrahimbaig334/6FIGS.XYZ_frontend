@@ -44,7 +44,15 @@ export default function ConfirmDialog({
         role="dialog"
         aria-label={title}
       >
-        <p className="label" style={{ display: "inline-flex", alignItems: "center", gap: "0.4rem", color: "var(--seal-bright)" }}>
+        <p
+          className="label"
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: "0.4rem",
+            color: "var(--seal-bright)",
+          }}
+        >
           <Warning size={14} aria-hidden="true" />
           {title}
         </p>
@@ -66,11 +74,7 @@ export default function ConfirmDialog({
             >
               {busy ? "Working" : confirmLabel}
             </button>
-            <button
-              className="btn-ghost"
-              type="button"
-              onClick={onClose}
-            >
+            <button className="btn-ghost" type="button" onClick={onClose}>
               Cancel
             </button>
           </div>

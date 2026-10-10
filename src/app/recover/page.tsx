@@ -43,7 +43,9 @@ export default function RecoverPage() {
         }}
       >
         <h1 className="label">Sign in without a wallet</h1>
-        <div style={{ display: "flex", gap: "0.5rem", justifyContent: "center" }}>
+        <div
+          style={{ display: "flex", gap: "0.5rem", justifyContent: "center" }}
+        >
           {(["signin", "forgot"] as const).map((m) => (
             <button
               key={m}
@@ -106,7 +108,11 @@ function SigninForm() {
           if (e.key === "Enter") void submit();
         }}
       />
-      <button className="btn btn-primary" disabled={busy} onClick={() => void submit()}>
+      <button
+        className="btn btn-primary"
+        disabled={busy}
+        onClick={() => void submit()}
+      >
         {busy ? "Working" : "Sign in"}
       </button>
       <p className="fine" style={{ margin: 0 }}>
@@ -168,7 +174,11 @@ function ForgotFlow() {
           value={newPassword}
           onChange={(e) => setNewPassword(e.target.value)}
         />
-        <button className="btn btn-primary" disabled={saving} onClick={() => void finish()}>
+        <button
+          className="btn btn-primary"
+          disabled={saving}
+          onClick={() => void finish()}
+        >
           {saving ? "Saving" : "Save and sign in"}
         </button>
       </div>
@@ -202,7 +212,10 @@ function ForgotFlow() {
               }}
               onDismiss={() => setActive(false)}
             />
-            <button className="btn-ghost btn-sm" onClick={() => setActive(false)}>
+            <button
+              className="btn-ghost btn-sm"
+              onClick={() => setActive(false)}
+            >
               Cancel
             </button>
           </div>

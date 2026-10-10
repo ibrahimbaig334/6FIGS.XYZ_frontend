@@ -6,7 +6,11 @@ import BusyPhase from "./BusyPhase";
 import { ensureWalletStack, isWalletConfigured } from "./Web3Providers";
 
 // Type-only: erased at build, so this shell never pulls the wallet chunk.
-export type { IdentifiedAccount, ProveMode, TeeProveProps } from "./TeeProveInner";
+export type {
+  IdentifiedAccount,
+  ProveMode,
+  TeeProveProps,
+} from "./TeeProveInner";
 
 import type { TeeProveProps } from "./TeeProveInner";
 
@@ -44,8 +48,11 @@ export default function TeeProve(props: TeeProveProps) {
       live = false;
     };
   }, []);
-  if (!isWalletConfigured()) return <NotConfigured onDismiss={props.onDismiss} />;
-  const fallback = <BusyPhase label={props.busyLabel ?? "Opening your wallet…"} />;
+  if (!isWalletConfigured())
+    return <NotConfigured onDismiss={props.onDismiss} />;
+  const fallback = (
+    <BusyPhase label={props.busyLabel ?? "Opening your wallet…"} />
+  );
   if (!ready) return fallback;
   return (
     <Suspense fallback={fallback}>

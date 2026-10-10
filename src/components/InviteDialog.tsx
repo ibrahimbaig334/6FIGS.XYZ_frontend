@@ -34,12 +34,27 @@ export default function InviteDialog({
         role="dialog"
         aria-label="Enter invite code"
       >
-        <p className="label" style={{ display: "inline-flex", alignItems: "center", gap: "0.4rem" }}>
+        <p
+          className="label"
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: "0.4rem",
+          }}
+        >
           <LockSimple size={13} aria-hidden="true" />
           Invite only
         </p>
         <h3>{roomName}</h3>
-        <form onSubmit={submit} style={{ display: "flex", gap: "0.5rem", flexDirection: "row", alignItems: "center" }}>
+        <form
+          onSubmit={submit}
+          style={{
+            display: "flex",
+            gap: "0.5rem",
+            flexDirection: "row",
+            alignItems: "center",
+          }}
+        >
           <input
             className="field"
             value={code}

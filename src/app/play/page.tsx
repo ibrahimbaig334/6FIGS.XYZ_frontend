@@ -394,8 +394,8 @@ export default function PlayPage() {
             <SignInButton onDone={load} label="Sign in" />
           </div>
           <p className="fine" style={{ margin: 0 }}>
-            New here? Connecting a wallet creates your account and proves
-            your tier.
+            New here? Connecting a wallet creates your account and proves your
+            tier.
           </p>
         </div>
       </section>
@@ -419,16 +419,19 @@ export default function PlayPage() {
 
       <div className="plate" style={{ textAlign: "center" }}>
         <p className="fine" style={{ marginBottom: "0.9rem" }}>
-          Random seats you at a table with another searching member. One
-          message each way makes you connections.
+          Random seats you at a table with another searching member. One message
+          each way makes you connections.
         </p>
-        <button className="btn btn-primary" onClick={quickplay} disabled={!tier || searching}>
+        <button
+          className="btn btn-primary"
+          onClick={quickplay}
+          disabled={!tier || searching}
+        >
           Take a seat
         </button>
         {!tier && (
           <p className="fine" style={{ marginTop: "0.8rem" }}>
-            The tables are gated by tier. Verify your holdings in Profile
-            first.
+            The tables are gated by tier. Verify your holdings in Profile first.
           </p>
         )}
       </div>
@@ -487,7 +490,9 @@ export default function PlayPage() {
                       className={p.online ? "dot on" : "dot"}
                       title={p.online ? "Online" : "Offline"}
                     />{" "}
-                    {p.online ? "at the tables" : `away, ${timeAgo(p.lastSeenAt)}`}
+                    {p.online
+                      ? "at the tables"
+                      : `away, ${timeAgo(p.lastSeenAt)}`}
                   </p>
                 </div>
                 <div className="friend-side">
@@ -503,7 +508,9 @@ export default function PlayPage() {
                     <button
                       className="btn btn-primary btn-sm"
                       disabled={!tier || !p.online}
-                      title={!tier ? "Verify your tier first" : "Invite to a table"}
+                      title={
+                        !tier ? "Verify your tier first" : "Invite to a table"
+                      }
                       onClick={() => sendRequest(p)}
                     >
                       {p.online ? "Invite" : "Away"}
@@ -606,7 +613,11 @@ export default function PlayPage() {
       </div>
 
       {(searching || joining) && (
-        <div className="search-veil" role="alertdialog" aria-label="Matchmaking">
+        <div
+          className="search-veil"
+          role="alertdialog"
+          aria-label="Matchmaking"
+        >
           <div className="search-scene">
             <div className="hero-table-top search-table" aria-hidden="true" />
             <div className="search-card">

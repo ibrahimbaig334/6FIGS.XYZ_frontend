@@ -38,7 +38,15 @@ export default function DeleteRoomDialog({
         role="dialog"
         aria-label="Delete room"
       >
-        <p className="label" style={{ display: "inline-flex", alignItems: "center", gap: "0.4rem", color: "var(--seal-bright)" }}>
+        <p
+          className="label"
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: "0.4rem",
+            color: "var(--seal-bright)",
+          }}
+        >
           <Warning size={14} aria-hidden="true" />
           Delete room
         </p>
@@ -64,11 +72,7 @@ export default function DeleteRoomDialog({
             >
               {busy ? "Deleting" : "Delete room"}
             </button>
-            <button
-              className="btn-ghost"
-              type="button"
-              onClick={onClose}
-            >
+            <button className="btn-ghost" type="button" onClick={onClose}>
               Cancel
             </button>
           </div>

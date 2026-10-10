@@ -44,7 +44,9 @@ function descriptorKey(wallet: TeeWalletInput): string {
   return `${wallet.family}:${wallet.address.toLowerCase()}`;
 }
 
-function familyFromCaip(caipAddress: string | undefined): "evm" | "solana" | null {
+function familyFromCaip(
+  caipAddress: string | undefined,
+): "evm" | "solana" | null {
   const namespace = caipAddress?.split(":")[0];
   if (namespace === "eip155") return "evm";
   if (namespace === "solana") return "solana";
@@ -101,9 +103,9 @@ function AccountConfirm({
 }
 
 type RegistrationPrep = Awaited<ReturnType<typeof prepareSet>>["prepared"];
-type AdditionPrep = Awaited<ReturnType<
-  typeof prepareWalletAddition
->>["prepared"];
+type AdditionPrep = Awaited<
+  ReturnType<typeof prepareWalletAddition>
+>["prepared"];
 type Prepared =
   | {
       kind: "establish" | "identify";
@@ -244,7 +246,8 @@ function TeeProveFlow({
       onDismiss();
       return;
     }
-    if (staged && staged.address.toLowerCase() === address.toLowerCase()) return;
+    if (staged && staged.address.toLowerCase() === address.toLowerCase())
+      return;
     const entry: TeeWalletInput = {
       family,
       chainId: 0,
@@ -313,7 +316,7 @@ function TeeProveFlow({
     if (address.toLowerCase() !== staged.address.toLowerCase()) return;
     const message =
       prepared.kind === "add"
-        ? prepared.value.addMessages[descriptorKey(staged)] ?? null
+        ? (prepared.value.addMessages[descriptorKey(staged)] ?? null)
         : prepared.value.message;
     if (!message) {
       notifyError("No message for that wallet — try again");
@@ -355,7 +358,7 @@ function TeeProveFlow({
     submittedRef.current = true;
     const message =
       prepared.kind === "add"
-        ? prepared.value.addMessages[descriptorKey(staged)] ?? ""
+        ? (prepared.value.addMessages[descriptorKey(staged)] ?? "")
         : prepared.value.message;
     void onceByKey(`submit:${message}`, async () => {
       if (prepared.kind === "add") {

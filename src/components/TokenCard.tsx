@@ -46,8 +46,7 @@ export default function TokenCard({ symbol }: { symbol: string }) {
     };
   }, [symbol]);
 
-  if (!card)
-    return <div className="token-loading">Looking up ${symbol}</div>;
+  if (!card) return <div className="token-loading">Looking up ${symbol}</div>;
 
   // Unpriceable / failed lookups render nothing, and per-message fetch
   // failures never touch the error toast.
@@ -69,9 +68,7 @@ export default function TokenCard({ symbol }: { symbol: string }) {
         )}
         <strong>${symbol}</strong>
         <span className="fine">{card.name ?? symbol}</span>
-        <span
-          className={`token-chg${chg != null && chg >= 0 ? " up" : ""}`}
-        >
+        <span className={`token-chg${chg != null && chg >= 0 ? " up" : ""}`}>
           {chg === null || chg === undefined
             ? "—"
             : `${chg >= 0 ? "+" : ""}${chg.toFixed(2)}% 24h`}

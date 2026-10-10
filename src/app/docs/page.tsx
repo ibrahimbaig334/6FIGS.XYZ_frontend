@@ -51,10 +51,10 @@ export default function DocsIndex() {
         }
         lede={
           <>
-            6figs proves you hold six figures or more in crypto, without
-            ever seeing your address or your balance. Not &ldquo;we promise
-            not to look.&rdquo; Provable: the code that would see your data
-            is sealed, attested, and public.
+            6figs proves you hold six figures or more in crypto, without ever
+            seeing your address or your balance. Not &ldquo;we promise not to
+            look.&rdquo; Provable: the code that would see your data is sealed,
+            attested, and public.
           </>
         }
       />
@@ -112,8 +112,8 @@ export default function DocsIndex() {
         <p>
           Your wallet set is your identity; an attested enclave computes your
           tier inside a sealed box and signs the answer; the 6figs server can
-          verify that answer cryptographically without ever learning
-          anything it wasn&apos;t already told.
+          verify that answer cryptographically without ever learning anything it
+          wasn&apos;t already told.
         </p>
       </div>
 

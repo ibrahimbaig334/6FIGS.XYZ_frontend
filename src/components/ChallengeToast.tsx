@@ -122,7 +122,10 @@ export default function ChallengeToast() {
             <strong>{r.fromHandle}</strong> invites you to a table
           </span>
           <span className="toast-actions">
-            <button className="btn btn-primary btn-sm" onClick={() => accept(r)}>
+            <button
+              className="btn btn-primary btn-sm"
+              onClick={() => accept(r)}
+            >
               Accept
             </button>
             <button className="btn-ghost btn-sm" onClick={() => decline(r)}>

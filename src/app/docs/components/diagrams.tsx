@@ -56,7 +56,11 @@ export function FlowDiagram() {
           title="Your browser"
           lines={["wallet signs one message", "verifies the enclave itself"]}
         />
-        <Arrow label="encrypted proof request" glyph="⇄" labelBelow="signed tier back" />
+        <Arrow
+          label="encrypted proof request"
+          glyph="⇄"
+          labelBelow="signed tier back"
+        />
         <Node
           title="Sealed enclave"
           variant="brass"
@@ -75,8 +79,8 @@ export function FlowDiagram() {
         />
       </div>
       <figcaption className="fine">
-        The only thing that ever crosses from the enclave to 6figs is your
-        tier and a pseudonym.
+        The only thing that ever crosses from the enclave to 6figs is your tier
+        and a pseudonym.
       </figcaption>
     </figure>
   );
@@ -116,8 +120,8 @@ export function AttestationDiagram() {
         </p>
       </div>
       <figcaption className="fine">
-        You don&apos;t take our word for it. The enclave proves what it is before
-        you prove anything.
+        You don&apos;t take our word for it. The enclave proves what it is
+        before you prove anything.
       </figcaption>
     </figure>
   );
@@ -180,10 +184,7 @@ export function RecheckDiagram() {
         <Node
           title="Enclave"
           variant="brass"
-          lines={[
-            "opens the envelope inside,",
-            "re-reads balances, re-signs",
-          ]}
+          lines={["opens the envelope inside,", "re-reads balances, re-signs"]}
         />
         <Arrow label="fresh tier" />
         <Node

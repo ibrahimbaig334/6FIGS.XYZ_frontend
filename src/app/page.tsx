@@ -173,8 +173,8 @@ export default function Home() {
           ))}
         </div>
         <p className="fine" style={{ marginTop: "1rem", maxWidth: "62ch" }}>
-          Tiers are lower bounds. The tier is a card you carry; the number
-          never leaves the enclave.
+          Tiers are lower bounds. The tier is a card you carry; the number never
+          leaves the enclave.
         </p>
       </section>
 
@@ -188,8 +188,8 @@ export default function Home() {
                 <h3>You present your proof.</h3>
                 <p className="fine">
                   Your wallet opens a signature request: one plain message per
-                  wallet. No transaction, no gas, no approvals. The request
-                  can never touch your funds.
+                  wallet. No transaction, no gas, no approvals. The request can
+                  never touch your funds.
                 </p>
               </div>
             </div>
@@ -210,9 +210,9 @@ export default function Home() {
               <div>
                 <h3>Your place is set.</h3>
                 <p className="fine">
-                  The enclave prices your holdings, signs the tier, and
-                  forgets your addresses. The server seats the tier. No
-                  address, no amount, anywhere.
+                  The enclave prices your holdings, signs the tier, and forgets
+                  your addresses. The server seats the tier. No address, no
+                  amount, anywhere.
                 </p>
               </div>
             </div>
@@ -250,7 +250,10 @@ export default function Home() {
           <div className="plate feature-plate">
             <h3>The floor</h3>
             <div className={locked ? "veil-locked" : undefined}>
-              <div className={locked ? "veiled" : undefined} aria-hidden={locked}>
+              <div
+                className={locked ? "veiled" : undefined}
+                aria-hidden={locked}
+              >
                 <div className="mini-dir">
                   <span>
                     <i className="dot on" aria-hidden="true" />
@@ -276,8 +279,8 @@ export default function Home() {
               )}
             </div>
             <p className="fine">
-              Private round tables. Tier-gated or invite-only. The game
-              opens into the same table talk.
+              Private round tables. Tier-gated or invite-only. The game opens
+              into the same table talk.
             </p>
             <a href="/rooms" className="btn btn-primary">
               Walk the floor
@@ -286,10 +289,16 @@ export default function Home() {
           <div className="plate feature-plate">
             <h3>The game</h3>
             <div className={locked ? "veil-locked" : undefined}>
-              <div className={locked ? "veiled" : undefined} aria-hidden={locked}>
+              <div
+                className={locked ? "veiled" : undefined}
+                aria-hidden={locked}
+              >
                 <div className="mini-board" aria-hidden="true">
                   {["x", "o", "", "o", "x", "", "", "x", "o"].map((c, i) => (
-                    <span key={i} className={`mini-cell${c === "o" ? " mark-o" : ""}`}>
+                    <span
+                      key={i}
+                      className={`mini-cell${c === "o" ? " mark-o" : ""}`}
+                    >
                       {c === "x" && (
                         <svg viewBox="0 0 24 24">
                           <path d="M5 5 L19 19" />
@@ -312,8 +321,8 @@ export default function Home() {
               )}
             </div>
             <p className="fine">
-              Tic-tac-toe against a verified stranger or an existing
-              connection. Fair game, no stakes. The game opens into chat.
+              Tic-tac-toe against a verified stranger or an existing connection.
+              Fair game, no stakes. The game opens into chat.
             </p>
             <a href="/play" className="btn btn-primary">
               Take a seat

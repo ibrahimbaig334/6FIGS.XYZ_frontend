@@ -64,7 +64,11 @@ export default function Chop({
       aria-hidden="true"
     >
       <svg viewBox="0 0 22 22" role="img" aria-hidden="true">
-        <g fill="none" stroke="currentColor" style={{ ...CAP, strokeWidth: 1.6 }}>
+        <g
+          fill="none"
+          stroke="currentColor"
+          style={{ ...CAP, strokeWidth: 1.6 }}
+        >
           {cells.map((kind, i) =>
             kind === 0 ? null : (
               <g

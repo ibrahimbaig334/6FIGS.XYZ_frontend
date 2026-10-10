@@ -27,7 +27,8 @@ export default function Tiers() {
         lede={
           <>
             Verification answers one question (which tier?) and deliberately
-            nothing else. Here is the full map of what exists and who can see it.
+            nothing else. Here is the full map of what exists and who can see
+            it.
           </>
         }
       />
@@ -40,7 +41,9 @@ export default function Tiers() {
         </div>
         {RUNGS.map((r) => (
           <div className={`docs-rung ${tierEdgeClass(r.tier)}`} key={r.tier}>
-            <span className="label" style={{ color: "var(--tx-page)" }}>{r.tier}</span>
+            <span className="label" style={{ color: "var(--tx-page)" }}>
+              {r.tier}
+            </span>
             <span className="docs-rung-range">{r.range}</span>
           </div>
         ))}
@@ -82,30 +85,31 @@ export default function Tiers() {
       </div>
 
       <div className="docs-callout danger">
-        <p className="label" style={{ color: "var(--seal-bright)" }}>Never stored, never sent, never asked</p>
+        <p className="label" style={{ color: "var(--seal-bright)" }}>
+          Never stored, never sent, never asked
+        </p>
         <p>
           Your exact total. Any token amount. Any allocation percentage. Any
-          address. Not in the database, not in logs, not in a backup. The
-          schema has no place to put them. The strongest kind of promise.
+          address. Not in the database, not in logs, not in a backup. The schema
+          has no place to put them. The strongest kind of promise.
         </p>
       </div>
 
       <h2 className="docs-h2">Why a band instead of a number</h2>
       <p className="docs-body-text">
-        A number is a fingerprint: your exact portfolio value is unique
-        enough to track you across the app and over time. A band is coarse
-        enough to share a room with thousands of other holders while still
-        proving you cleared the bar. The width of each tier is the privacy
-        margin. Inside a band, a lower balance and a higher one are
-        indistinguishable.
+        A number is a fingerprint: your exact portfolio value is unique enough
+        to track you across the app and over time. A band is coarse enough to
+        share a room with thousands of other holders while still proving you
+        cleared the bar. The width of each tier is the privacy margin. Inside a
+        band, a lower balance and a higher one are indistinguishable.
       </p>
 
       <h2 className="docs-h2">Keeping it honest over time</h2>
       <p className="docs-body-text">
         A tier proved once would go stale: sold yesterday, badged today. So
-        verification quietly re-runs on a schedule against the sealed
-        envelope, and your badge reflects a recent check, not a historic
-        one. You can force a refresh any time from your profile.
+        verification quietly re-runs on a schedule against the sealed envelope,
+        and your badge reflects a recent check, not a historic one. You can
+        force a refresh any time from your profile.
       </p>
 
       <RecheckDiagram />

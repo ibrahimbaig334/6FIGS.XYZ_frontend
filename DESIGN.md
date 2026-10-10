@@ -8,6 +8,7 @@ this file is the record of the decisions.
 ## The thesis, and the one it replaced
 
 ### First attempt (dead): "The House Ledger"
+
 Cream card stock on midnight felt, engraved rules, roman-numeral roundels,
 wax seals, Cormorant Garamond. It shipped, then died honestly: it is the
 trained default for this brief — the first idea any model has for "private
@@ -21,6 +22,7 @@ holds nothing), **The Diplomatic Pouch** (fights the real-time surface),
 **The Speakeasy** (the predictable reading of the vibe keywords).
 
 ### Winner: "The Table"
+
 The product is a card room, not a dashboard. A room you move through:
 a floor of tables, two seats to a table, a board between them. Materials
 come from the room's own world — green-black baize, walnut, brass fittings,
@@ -28,6 +30,7 @@ cream place cards. Nothing from crypto: no neon, no chips, no card suits,
 no stakes. The difference between a casino and a club is restraint.
 
 The thesis decides everything:
+
 - **Layout** — the floor is a field of table scenes (the table seen from
   above, seats on the rim, the name on the felt); the room is one table:
   board center, place cards at the seats, talk at the side.
@@ -55,6 +58,7 @@ The thesis decides everything:
   Lenis on the landing only.
 
 ### Graveyard of round two (each materially different, each killed)
+
 1. **The Assay Office** — 6figs as a hallmarking office: punched marks,
    fineness stamps, cold-struck metal. Died: an office is not a room, cold
    for a social product, and the punch shares the "struck mark" grammar with
@@ -101,6 +105,7 @@ main's docs terminology. Email auth, its components, verify-email,
 reset-password, and walletAddresses are deleted, matching main.
 
 Re-expressed in The Table (logic kept, presentation rebuilt):
+
 - **TeeProve** — its visible pieces restyled (account confirm, busy state,
   stall fallback) to house classes and copy; all flow logic untouched.
 - **AuthModal** — the door: two hairline option cards on the dialog stock.

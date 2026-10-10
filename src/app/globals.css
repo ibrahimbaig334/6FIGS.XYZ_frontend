@@ -35,8 +35,10 @@
   --seal-bright: #8e2f26;
   --online: #3f6b3f;
   --focus: #8e2f26;
-  --shadow-card: 0 1px 2px rgba(88, 70, 34, 0.1), 0 14px 36px rgba(88, 70, 34, 0.12);
-  --shadow-table: 0 2px 0 rgba(88, 70, 34, 0.15), 0 20px 44px rgba(88, 70, 34, 0.15);
+  --shadow-card:
+    0 1px 2px rgba(88, 70, 34, 0.1), 0 14px 36px rgba(88, 70, 34, 0.12);
+  --shadow-table:
+    0 2px 0 rgba(88, 70, 34, 0.15), 0 20px 44px rgba(88, 70, 34, 0.15);
   --radius-card: 10px;
   --radius-ctl: 6px;
   --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
@@ -111,7 +113,9 @@ body {
   display: flex;
   flex-direction: column;
   min-height: 100dvh;
-  transition: background 0.25s ease, color 0.25s ease;
+  transition:
+    background 0.25s ease,
+    color 0.25s ease;
   -webkit-font-smoothing: antialiased;
 }
 
@@ -294,7 +298,9 @@ h3 {
   text-transform: uppercase;
   text-decoration: none;
   color: var(--tx-page-dim);
-  transition: color 160ms var(--ease-out), background 160ms var(--ease-out);
+  transition:
+    color 160ms var(--ease-out),
+    background 160ms var(--ease-out);
 }
 
 .site-nav a:hover {
@@ -1899,7 +1905,9 @@ html.dark .hero-table-top {
   border: 0;
   cursor: pointer;
   padding: 0;
-  transition: background 150ms var(--ease-out), transform 150ms var(--ease-out);
+  transition:
+    background 150ms var(--ease-out),
+    transform 150ms var(--ease-out);
 }
 
 .board-cell:not(:disabled):hover {
@@ -1929,7 +1937,7 @@ html.dark .hero-table-top {
   stroke: var(--tx-page);
   stroke-width: 2.6;
   stroke-linecap: round;
-  pathLength: 1;
+  pathlength: 1;
 }
 
 html:not(.dark) .board-cell .mark path,
@@ -3753,9 +3761,7 @@ body .wallet-adapter-modal-list .wallet-adapter-button {
   transition: background 150ms var(--ease-out);
 }
 
-body
-  .wallet-adapter-modal-list
-  .wallet-adapter-button:not([disabled]):hover {
+body .wallet-adapter-modal-list .wallet-adapter-button:not([disabled]):hover {
   background: var(--card-2);
 }
 
@@ -3780,8 +3786,7 @@ body .wallet-adapter-modal-middle-button {
   font-size: 0.88rem;
 }
 
-body
-  .wallet-adapter-modal-middle-button:not([disabled]):hover {
+body .wallet-adapter-modal-middle-button:not([disabled]):hover {
   background: var(--seal);
 }
 
@@ -3808,7 +3813,6 @@ body .wallet-adapter-modal-button-close:focus-visible {
 body .wallet-adapter-collapse {
   width: 100%;
 }
-
 
 /* the door: two ways in, as hairline cards on the dialog's stock */
 .door-option {

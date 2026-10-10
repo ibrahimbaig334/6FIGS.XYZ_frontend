@@ -5,8 +5,18 @@ import { BandDiagram } from "../docs/components/diagrams";
 
 export default function CaptureTiers() {
   return (
-    <div style={{ padding: "28px 32px", display: "flex", flexDirection: "column", gap: "18px", background: "var(--paper)" }}>
-      <h2 className="docs-h2" style={{ margin: 0 }}>The four tiers</h2>
+    <div
+      style={{
+        padding: "28px 32px",
+        display: "flex",
+        flexDirection: "column",
+        gap: "18px",
+        background: "var(--paper)",
+      }}
+    >
+      <h2 className="docs-h2" style={{ margin: 0 }}>
+        The four tiers
+      </h2>
       <div className="docs-tier-table">
         <div className="docs-tier-row">
           <span className="tier-badge">TIER I</span>
@@ -26,7 +36,8 @@ export default function CaptureTiers() {
         </div>
       </div>
       <p className="fine" style={{ margin: 0 }}>
-        Tiers are lower bounds — a Tier II badge means &ldquo;at least $300K.&rdquo;
+        Tiers are lower bounds — a Tier II badge means &ldquo;at least
+        $300K.&rdquo;
       </p>
       <BandDiagram />
     </div>

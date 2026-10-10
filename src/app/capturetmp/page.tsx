@@ -42,9 +42,33 @@ const me = {
 } as unknown as Profile;
 
 const msgs: ChatMessage[] = [
-  { id: "1", scope: "dm", scopeId: "m", senderId: "u2", senderHandle: "SatoshiJnr", body: "gg!", createdAt: "" },
-  { id: "2", scope: "dm", scopeId: "m", senderId: "u1", senderHandle: "0xWhale", body: "what are you holding?", createdAt: "" },
-  { id: "3", scope: "dm", scopeId: "m", senderId: "u2", senderHandle: "SatoshiJnr", body: "HYPE, SOL, and a long BTC", createdAt: "" },
+  {
+    id: "1",
+    scope: "dm",
+    scopeId: "m",
+    senderId: "u2",
+    senderHandle: "SatoshiJnr",
+    body: "gg!",
+    createdAt: "",
+  },
+  {
+    id: "2",
+    scope: "dm",
+    scopeId: "m",
+    senderId: "u1",
+    senderHandle: "0xWhale",
+    body: "what are you holding?",
+    createdAt: "",
+  },
+  {
+    id: "3",
+    scope: "dm",
+    scopeId: "m",
+    senderId: "u2",
+    senderHandle: "SatoshiJnr",
+    body: "HYPE, SOL, and a long BTC",
+    createdAt: "",
+  },
 ];
 
 export default function Capture() {

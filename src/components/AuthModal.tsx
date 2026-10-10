@@ -101,16 +101,16 @@ export default function AuthModal({
         >
           <span className="door-option-title">Connect a wallet</span>
           <span className="door-option-sub">
-            New here? This creates your account and proves your tier.
-            Returning? Any enrolled wallet signs you in.
+            New here? This creates your account and proves your tier. Returning?
+            Any enrolled wallet signs you in.
           </span>
         </button>
 
         <a className="door-option" href="/recover">
           <span className="door-option-title">Username and password</span>
           <span className="door-option-sub">
-            Set one up in your profile to skip wallets on other devices.
-            Forgot it? Recover with any enrolled wallet.
+            Set one up in your profile to skip wallets on other devices. Forgot
+            it? Recover with any enrolled wallet.
           </span>
         </a>
 

@@ -62,7 +62,8 @@ export function enclaveConfig(): EnclaveConfig {
 const GOOGLE_CS_JWKS_URL =
   "https://www.googleapis.com/service_accounts/v1/metadata/jwk/signer@confidentialspace-sign.iam.gserviceaccount.com";
 
-let jwksPromise: Promise<{ keys: Array<Record<string, unknown>> }> | null = null;
+let jwksPromise: Promise<{ keys: Array<Record<string, unknown>> }> | null =
+  null;
 
 /**
  * Module-level run-once: concurrent twins (StrictMode double-mount, rapid
@@ -316,7 +317,9 @@ export async function prepareWalletRemoval(input: {
   // Independent hops, one wait: the trust anchor and the session nonce.
   const [client, prep] = await Promise.all([newClient(), teeNonce()]);
   if (!prep.add) {
-    throw new Error("This account has no verified wallet set to remove from yet");
+    throw new Error(
+      "This account has no verified wallet set to remove from yet",
+    );
   }
   const prepared = client.prepareRemoval({
     kept: input.kept.map(toDescriptor),

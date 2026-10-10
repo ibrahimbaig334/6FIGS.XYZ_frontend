@@ -296,7 +296,11 @@ export default function CreateRoomPage() {
             </>
           )}
           <div>
-            <button className="btn btn-primary" type="submit" disabled={busy || roomsFull}>
+            <button
+              className="btn btn-primary"
+              type="submit"
+              disabled={busy || roomsFull}
+            >
               {busy ? "Setting" : "Set the table"}
             </button>
             {roomsFull && <p className="err">{roomsFullMsg}</p>}

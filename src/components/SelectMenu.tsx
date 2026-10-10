@@ -78,7 +78,9 @@ export default function SelectMenu({
                 gap: "0.4rem",
               }}
             >
-              <span style={{ width: "1rem", flex: "none", display: "inline-grid" }}>
+              <span
+                style={{ width: "1rem", flex: "none", display: "inline-grid" }}
+              >
                 {o.value === value && <Check size={12} aria-hidden="true" />}
               </span>
               {o.label}

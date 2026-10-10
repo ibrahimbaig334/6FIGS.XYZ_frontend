@@ -26,7 +26,11 @@ export function PhaseWhisper({ lines }: { lines: string[] }) {
     return () => clearInterval(t);
   }, [lines.length]);
   return (
-    <p className="fine" style={{ margin: 0, textAlign: "center" }} aria-live="off">
+    <p
+      className="fine"
+      style={{ margin: 0, textAlign: "center" }}
+      aria-live="off"
+    >
       {lines[i % lines.length]}
     </p>
   );

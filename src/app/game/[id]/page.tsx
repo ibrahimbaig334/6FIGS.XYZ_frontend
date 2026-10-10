@@ -354,8 +354,8 @@ export default function GamePage() {
             <SignInButton onDone={load} label="Sign in" />
           </div>
           <p className="fine" style={{ margin: 0 }}>
-            New here? Connecting a wallet creates your account and proves
-            your tier.
+            New here? Connecting a wallet creates your account and proves your
+            tier.
           </p>
         </div>
       </section>
@@ -432,7 +432,9 @@ export default function GamePage() {
             <div className="hero-table-top search-table" aria-hidden="true" />
           </div>
           <p className="label num">
-            {wasSeen ? "Your stranger left the table" : "Waiting for your stranger"}
+            {wasSeen
+              ? "Your stranger left the table"
+              : "Waiting for your stranger"}
           </p>
           <p className="fine num">
             Clearing the table in {returnLeft}s if they don&apos;t return.

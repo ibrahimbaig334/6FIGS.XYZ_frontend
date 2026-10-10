@@ -26,9 +26,7 @@ export default function SignInButton({
       <button className="btn btn-primary" onClick={() => setOpen(true)}>
         {label}
       </button>
-      {open && (
-        <AuthModal onClose={() => setOpen(false)} onDone={onDone} />
-      )}
+      {open && <AuthModal onClose={() => setOpen(false)} onDone={onDone} />}
     </>
   );
 }

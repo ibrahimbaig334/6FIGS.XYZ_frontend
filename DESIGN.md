@@ -296,3 +296,32 @@ Re-expressed in The Table (logic kept, presentation rebuilt):
   alone as a micro-row. The band is a 30px trim now, and the host credit
   moved into the tags row (right-aligned) — name, tags plus host, desc,
   one action row. 253px down to 217px, nothing removed but air.
+
+## Round eight: the seat, staged — no input
+
+- The hero card's chop was a bad hand: `Chop id="you"` hashed to a dash, a
+  bar, a dot and a backslash crowded into the left column — at 52px, the
+  largest element on the card read as a broken image, not an identity.
+  The resting chop is now the blank lattice: an empty 3x3 of dashed
+  hairlines (BlankChop), the board before the marks land. It pairs with
+  "when verified" honestly, and it rhymes with the house game's board.
+- A typed handle preview was built and killed on sight: an input in the
+  hero splits the hero's one job (value prop plus one primary action),
+  adds a second task with no intent behind it, opens the mobile keyboard
+  over the landing, and read in screenshots as a white button competing
+  with the card. The hero stays a still-life. Interactivity, if it comes,
+  belongs in a section below with its own intent — never in the hero.
+- The still-life was staged. The plaque tucks up under the card's base
+  (0.55rem overlap) with a 1.2° counter-lean — hand-placed, never
+  machine-level. A ground shadow (theme-aware: ink pool in daylight, brass
+  pool at night) and a stronger lamp (26% brass daylight, 18% night) give
+  card and plaque one shared ground plane. Card grew 172px to 190px, chop
+  52px to 56px.
+- The caption is gone ("Your seat is waiting."): the plaque already says
+  Reserved and the card says you/when verified. The scene's aria-label
+  carries the description for screen readers instead.
+- One tactile tell: hovering the still-life straightens the card toward
+  level (-4° to -1.5°) and lifts it — pick me up. The entrance tween ends
+  with clearProps so CSS owns the settled state (GSAP inline transforms
+  would override the hover rule otherwise). Transitions collapse under
+  reduced motion.

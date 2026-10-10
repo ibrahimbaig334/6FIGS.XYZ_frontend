@@ -894,39 +894,100 @@ select.field option {
 }
 
 /* the room's table, set for two */
-/* your seat: one member card under the lamp, dealt on load */
+/* your seat: one member card under the lamp, dealt on load, waiting */
 .hero-seat {
   position: relative;
   display: grid;
   place-items: center;
   align-content: center;
-  gap: 1.1rem;
+  gap: 1.4rem;
   padding: 2.5rem 0;
-  min-height: 420px;
+  min-height: 440px;
 }
 
+/* the lamp pool: warm light with something to fall on */
 .hero-lamp {
   position: absolute;
   inset: 0;
   pointer-events: none;
   background: radial-gradient(
     ellipse 62% 52% at 50% 40%,
-    color-mix(in srgb, var(--brass) 17%, transparent),
+    color-mix(in srgb, var(--brass) 26%, transparent),
     transparent 70%
   );
 }
 
+html.dark .hero-lamp {
+  background: radial-gradient(
+    ellipse 62% 52% at 50% 40%,
+    color-mix(in srgb, var(--brass) 18%, transparent),
+    transparent 70%
+  );
+}
+
+/* one still-life: the card resting over its plaque, both on the table */
+.hero-still {
+  position: relative;
+  display: grid;
+  justify-items: center;
+}
+
+/* the light pool and contact shadow the still-life rests on: ink in
+   daylight, the lamp's pool on the felt at night */
+.hero-ground {
+  position: absolute;
+  left: 50%;
+  bottom: -1.2rem;
+  transform: translateX(-50%);
+  width: 132%;
+  height: 46px;
+  background: radial-gradient(
+    ellipse 50% 50% at 50% 50%,
+    color-mix(in srgb, var(--tx-page) 18%, transparent),
+    transparent 72%
+  );
+  pointer-events: none;
+}
+
+html.dark .hero-ground {
+  background: radial-gradient(
+    ellipse 50% 50% at 50% 50%,
+    color-mix(in srgb, var(--brass) 14%, transparent),
+    transparent 72%
+  );
+}
+
 .place-card.hero-card {
-  width: 172px;
+  width: 190px;
   border-radius: 10px;
   transform: rotate(-4deg);
   box-shadow: var(--shadow-table);
   gap: 0.55rem;
-  padding: 1rem 0.8rem;
+  padding: 1.1rem 0.9rem;
+  transition:
+    transform 420ms var(--ease-out),
+    box-shadow 420ms var(--ease-out);
+}
+
+/* the pick-me-up tell: the card straightens toward level and lifts */
+.hero-still:hover .place-card.hero-card {
+  transform: rotate(-1.5deg) translateY(-3px);
+}
+
+html:not(.dark) .hero-still:hover .place-card.hero-card {
+  box-shadow:
+    0 3px 0 rgba(88, 70, 34, 0.16),
+    0 28px 56px rgba(88, 70, 34, 0.2);
+}
+
+html.dark .hero-still:hover .place-card.hero-card {
+  box-shadow:
+    0 3px 0 rgba(0, 0, 0, 0.4),
+    0 30px 62px rgba(0, 0, 0, 0.5);
 }
 
 .place-card.hero-card .who {
-  font-size: 1.55rem;
+  font-size: 1.7rem;
 }
 
 .place-card.hero-card .what {
@@ -934,8 +995,8 @@ select.field option {
 }
 
 .place-card.hero-card .chop-lg {
-  width: 52px;
-  height: 52px;
+  width: 56px;
+  height: 56px;
 }
 
 /* a table seen from above: the walnut rim, the felt, the lamp */
@@ -965,13 +1026,15 @@ select.field option {
   padding: 1.6rem;
 }
 
-/* the brass plaque leaning under your card */
+/* the brass plaque tucked under your card, hand-placed, never machine-level */
 .hero-plate {
   background: var(--brass);
   color: var(--tx);
   border: 1px solid color-mix(in srgb, black 30%, transparent);
   border-radius: 3px;
   padding: 0.22rem 0.85rem;
+  margin-top: -0.55rem;
+  transform: rotate(1.2deg);
   font-family: var(--font-space), monospace;
   font-size: 0.58rem;
   letter-spacing: 0.24em;
@@ -987,10 +1050,6 @@ html:not(.dark) .hero-plate {
 
 html.dark .hero-plate {
   color: #221b10;
-}
-
-.hero-table-caption {
-  text-align: center;
 }
 
 .table-wood {
@@ -4073,6 +4132,7 @@ body .wallet-adapter-collapse {
   .table-card,
   .table-card::before,
   .table-card:hover,
+  .place-card.hero-card,
   .dir-row,
   .friend-row,
   .friend-row:hover,

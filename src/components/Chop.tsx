@@ -78,6 +78,34 @@ export default function Chop({
   );
 }
 
+/* The blank chop: the empty 3x3 lattice, the board before the marks land.
+   What an unverified member holds — strokes to come, not strokes missing. */
+export function BlankChop({
+  size = "md",
+}: {
+  size?: "sm" | "md" | "lg" | "xl";
+}) {
+  return (
+    <span className={`chop chop-${size}`} aria-hidden="true">
+      <svg viewBox="0 0 22 22" role="img" aria-hidden="true">
+        <g
+          fill="none"
+          stroke="currentColor"
+          strokeWidth={1.1}
+          strokeDasharray="1.6 2.8"
+          strokeLinecap="round"
+          opacity={0.45}
+        >
+          <path d="M8 1 V21" />
+          <path d="M15 1 V21" />
+          <path d="M1 8 H21" />
+          <path d="M1 15 H21" />
+        </g>
+      </svg>
+    </span>
+  );
+}
+
 /* The brand's own chop: a 6 drawn in two chop strokes (the stem, the bowl) —
    one construction unified with the favicon, carried everywhere. */
 export function BrandChop({ size = "md" }: { size?: "sm" | "md" | "lg" }) {

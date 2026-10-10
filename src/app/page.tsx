@@ -6,7 +6,7 @@ import { ScrollTrigger } from "gsap/ScrollTrigger";
 import Lenis from "lenis";
 import { api, getToken, getTiers, Profile, TierInfo } from "../lib/api";
 import { tierEdgeClass } from "../lib/tierEdge";
-import Chop from "../components/Chop";
+import { BlankChop } from "../components/Chop";
 
 const DIGEST = (process.env.NEXT_PUBLIC_IMAGE_DIGEST ?? "").trim();
 
@@ -58,6 +58,8 @@ export default function Home() {
         { opacity: 1, y: 0, duration: 0.85, delay: 0.25, ease: "power3.out" },
       );
       // The deal: your card slides onto the felt and settles into its lean.
+      // clearProps hands the settled state back to CSS so the hover tell
+      // (straighten and lift) can take over after the entrance.
       gsap.fromTo(
         ".hero-card",
         { opacity: 0, y: 30, rotate: -11 },
@@ -68,6 +70,7 @@ export default function Home() {
           duration: 0.9,
           delay: 0.4,
           ease: "power3.out",
+          clearProps: "all",
         },
       );
       gsap.utils.toArray<HTMLElement>(".reveal").forEach((el) => {
@@ -111,19 +114,21 @@ export default function Home() {
               </a>
             </div>
           </div>
-          <div
-            className="hero-seat"
-            role="img"
-            aria-label="Your reserved seat: a member card bearing your chop, waiting under the lamp"
-          >
+          <div className="hero-seat">
             <div className="hero-lamp" aria-hidden="true" />
-            <div className="place-card hero-card">
-              <Chop id="you" size="lg" />
-              <span className="who">you</span>
-              <span className="what">when verified</span>
+            <div
+              className="hero-still"
+              role="img"
+              aria-label="Your reserved seat: a member card under the lamp, blank until you verify"
+            >
+              <div className="hero-ground" aria-hidden="true" />
+              <div className="place-card hero-card">
+                <BlankChop size="lg" />
+                <span className="who">you</span>
+                <span className="what">when verified</span>
+              </div>
+              <span className="hero-plate">Reserved</span>
             </div>
-            <span className="hero-plate">Reserved</span>
-            <p className="fine hero-table-caption">Your seat is waiting.</p>
           </div>
         </div>
       </section>

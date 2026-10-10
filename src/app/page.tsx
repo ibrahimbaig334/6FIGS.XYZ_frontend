@@ -6,7 +6,7 @@ import { ScrollTrigger } from "gsap/ScrollTrigger";
 import Lenis from "lenis";
 import { api, getToken, getTiers, Profile, TierInfo } from "../lib/api";
 import { tierEdgeClass } from "../lib/tierEdge";
-import { BlankChop } from "../components/Chop";
+import Chop, { BlankChop } from "../components/Chop";
 
 const DIGEST = (process.env.NEXT_PUBLIC_IMAGE_DIGEST ?? "").trim();
 
@@ -17,10 +17,16 @@ const EDGE_LABEL: Record<string, string> = {
   t4: "TIER IV",
 };
 
+/* Your seat number at the table: the one "you" derivation that deals a
+   balanced, composed hand (5 strokes, 4 kinds, every row and column inked,
+   symmetric). Plain "you" hashed to left-column scatter. */
+const HERO_CHOP_ID = "you-91";
+
 export default function Home() {
   const [tier, setTier] = useState<string | null>(null);
   const [ready, setReady] = useState(false);
   const [tiers, setTiers] = useState<TierInfo[]>([]);
+  const [dealt, setDealt] = useState(false);
   const root = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -35,6 +41,16 @@ export default function Home() {
   // The room's one choreographed moment: on load the lamp warms and the
   // set table fades in; sections reveal as you scroll. Reduced motion
   // collapses everything to still.
+  useEffect(() => {
+    // The chop inks itself once the card has landed. Still under reduced
+    // motion: the dealt hand renders immediately, no phases.
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      setDealt(true);
+      return;
+    }
+    const t = setTimeout(() => setDealt(true), 950);
+    return () => clearTimeout(t);
+  }, []);
   useEffect(() => {
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
     gsap.registerPlugin(ScrollTrigger);
@@ -119,13 +135,20 @@ export default function Home() {
             <div
               className="hero-still"
               role="img"
-              aria-label="Your reserved seat: a member card under the lamp, blank until you verify"
+              aria-label="Your reserved seat: a member card under the lamp, inking its chop"
             >
               <div className="hero-ground" aria-hidden="true" />
-              <div className="place-card hero-card">
-                <BlankChop size="lg" />
-                <span className="who">you</span>
-                <span className="what">when verified</span>
+              <div className="hero-card-stack">
+                <div className="hero-card-back card-back" aria-hidden="true" />
+                <div className="place-card hero-card">
+                  {dealt ? (
+                    <Chop id={HERO_CHOP_ID} size="lg" deal />
+                  ) : (
+                    <BlankChop size="lg" />
+                  )}
+                  <span className="who">you</span>
+                  <span className="what">when verified</span>
+                </div>
               </div>
               <span className="hero-plate">Reserved</span>
             </div>

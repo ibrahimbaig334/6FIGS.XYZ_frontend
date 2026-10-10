@@ -969,6 +969,33 @@ html.dark .hero-ground {
     box-shadow 420ms var(--ease-out);
 }
 
+/* the pair: the house's lattice back resting behind your face card, peeking
+   at the rim. Two cards, not one panel — the reveal language in miniature. */
+.hero-card-stack {
+  position: relative;
+}
+
+.hero-card-stack .place-card.hero-card {
+  position: relative;
+}
+
+/* the engraved frame: one inset hairline, like a printed place card */
+.hero-card-stack .place-card.hero-card::after {
+  content: "";
+  position: absolute;
+  inset: 6px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  pointer-events: none;
+}
+
+.hero-card-back {
+  position: absolute;
+  inset: 0;
+  transform: rotate(4deg) translate(12px, 10px);
+  box-shadow: var(--shadow-card);
+}
+
 /* the pick-me-up tell: the card straightens toward level and lifts */
 .hero-still:hover .place-card.hero-card {
   transform: rotate(-1.5deg) translateY(-3px);
@@ -1050,6 +1077,20 @@ html:not(.dark) .hero-plate {
 
 html.dark .hero-plate {
   color: #221b10;
+}
+
+/* the deal: the chop inks itself stroke by stroke once the card lands.
+   The animation only exists when motion is welcome. */
+@media (prefers-reduced-motion: no-preference) {
+  .chop-stroke {
+    animation: chop-in 240ms var(--ease-out) backwards;
+  }
+}
+
+@keyframes chop-in {
+  from {
+    opacity: 0;
+  }
 }
 
 .table-wood {
@@ -1179,20 +1220,26 @@ html.dark .hero-plate {
   background: var(--edge, transparent);
 }
 
-.tier-cell.e1 {
+/* the assay strip: each tier carries its metal — plain, brass, gilt, seal —
+   as the bottom rule, with a faint wash of the same metal rising behind it.
+   One class language (t1..t4) shared with the room cards' tier edge. */
+.tier-cell.t1 {
   --edge: transparent;
 }
 
-.tier-cell.e2 {
+.tier-cell.t2 {
   --edge: var(--brass);
+  background: color-mix(in srgb, var(--brass) 8%, transparent);
 }
 
-.tier-cell.e3 {
+.tier-cell.t3 {
   --edge: var(--gilt);
+  background: color-mix(in srgb, var(--gilt) 9%, transparent);
 }
 
-.tier-cell.e4 {
+.tier-cell.t4 {
   --edge: var(--seal);
+  background: color-mix(in srgb, var(--seal) 10%, transparent);
 }
 
 .tier-min {
@@ -4124,7 +4171,8 @@ body .wallet-adapter-collapse {
   }
 
   .board-cell .mark path,
-  .board-cell .mark circle {
+  .board-cell .mark circle,
+  .chop-stroke {
     animation: none !important;
   }
 

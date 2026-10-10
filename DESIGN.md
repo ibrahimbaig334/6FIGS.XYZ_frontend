@@ -325,3 +325,36 @@ Re-expressed in The Table (logic kept, presentation rebuilt):
   with clearProps so CSS owns the settled state (GSAP inline transforms
   would override the hover rule otherwise). Transitions collapse under
   reduced motion.
+
+## Round nine: the seat inks itself
+
+- The blank lattice read as loading, not intention — the card's largest
+  element was an absence. Now the lattice is only the opening frame: ~950ms
+  after load (once the card has landed) it swaps to a dealt hand that inks
+  itself stroke by stroke (55ms cascade, media-gated). The visitor watches
+  the identity system work with nothing asked of them. Reduced motion
+  renders the dealt hand immediately, no phases.
+- The hand is curated, not random: plain "you" hashed to left-column
+  scatter, so the hero deals "you-91" — the one "you" derivation found by
+  brute force with 5 strokes, 4 kinds, every row and column inked,
+  symmetric about the vertical axis. The name on the card stays "you".
+
+## Round ten: the pair, the frame, the assay strip
+
+- The hero card read as one flat UI panel. Now two cards: the house's
+  lattice back rests behind the face card, rotated the other way and
+  offset, peeking at the rim — the reveal language in miniature, and real
+  depth for free. The face keeps the entrance deal and the hover
+  straighten-and-lift; the back stays put.
+- The face carries an inset hairline frame (6px, card radius holds): the
+  engraved-place-card register instead of a bare panel.
+- No tier tag on the hero card, deliberately: the edge language means a
+  proven tier, and the visitor has proven nothing. The card's edgeless
+  state is the honest unverified state, same as invite rooms.
+- The tiers strip had a real bug: the landing emits t1..t4
+  (tierEdgeClass) but the CSS listened for e1..e4, so every metal rule
+  rendered transparent and all four cells looked identical. Unified on
+  t1..t4, shared with the room cards. Each cell now carries its metal as
+  the bottom rule with a faint wash of the same metal rising behind it
+  (8/9/10%) — an assay strip, ascending. No new colors; brass, gilt and
+  seal were already the system.

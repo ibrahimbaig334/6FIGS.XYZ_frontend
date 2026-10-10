@@ -8,6 +8,10 @@ import {
   ROOM_DESC_MAX,
   MAX_ROOMS_PER_USER,
   TIER_ORDER,
+  TOKEN_OPTIONS,
+  MEMBER_OPTIONS,
+  ROOM_MIN_MEMBERS,
+  ROOM_MAX_MEMBERS,
   tierRank,
 } from "../../lib/constants";
 import {
@@ -15,6 +19,8 @@ import {
   inviteCodeError,
   roomDescriptionError,
   roomNameError,
+  roomSeatsError,
+  roomTokenError,
 } from "../../lib/validate";
 import { notifyError } from "../../lib/notify";
 import SelectMenu from "../../components/SelectMenu";
@@ -29,12 +35,16 @@ export default function CreateRoomPage() {
     description: "",
     accessType: "tier",
     minTier: "TIER I",
+    minToken: "",
+    maxMembers: "2",
     inviteCode: "",
   });
   const [fieldErrs, setFieldErrs] = useState<{
     name?: string;
     description?: string;
     inviteCode?: string;
+    minToken?: string;
+    maxMembers?: string;
   }>({});
   const [busy, setBusy] = useState(false);
   const [ready, setReady] = useState(false);
@@ -84,6 +94,13 @@ export default function CreateRoomPage() {
         f.accessType === "invite"
           ? (inviteCodeError(f.inviteCode) ?? undefined)
           : undefined,
+      minToken:
+        f.accessType === "tier"
+          ? (roomTokenError(f.minToken, TOKEN_OPTIONS) ?? undefined)
+          : undefined,
+      maxMembers:
+        roomSeatsError(f.maxMembers, ROOM_MIN_MEMBERS, ROOM_MAX_MEMBERS) ??
+        undefined,
     };
   }
 
@@ -100,7 +117,14 @@ export default function CreateRoomPage() {
     setForm(next);
     // Live re-validate once errors are showing.
     setFieldErrs((prev) => {
-      if (!prev.name && !prev.description && !prev.inviteCode) return prev;
+      if (
+        !prev.name &&
+        !prev.description &&
+        !prev.inviteCode &&
+        !prev.minToken &&
+        !prev.maxMembers
+      )
+        return prev;
       return { ...prev, ...validate(next) };
     });
   }
@@ -125,7 +149,14 @@ export default function CreateRoomPage() {
     }
     const fe = validate(form);
     setFieldErrs(fe);
-    if (fe.name || fe.description || fe.inviteCode) return; // no backend call on invalid input
+    if (
+      fe.name ||
+      fe.description ||
+      fe.inviteCode ||
+      fe.minToken ||
+      fe.maxMembers
+    )
+      return; // no backend call on invalid input
     setBusy(true);
     try {
       const room = await api<{ id: string; inviteCode?: string }>("/rooms", {
@@ -295,6 +326,48 @@ export default function CreateRoomPage() {
               )}
             </>
           )}
+          {form.accessType === "tier" && (
+            <div>
+              <p className="label" style={{ marginBottom: "0.4rem" }}>
+                Required token
+              </p>
+              <SelectMenu
+                label="Required token"
+                value={form.minToken}
+                onChange={(v) => setField("minToken", v)}
+                options={[
+                  { value: "", label: "Any token" },
+                  ...TOKEN_OPTIONS.map((t) => ({ value: t, label: t })),
+                ]}
+              />
+              {fieldErrs.minToken && (
+                <p className="err">{fieldErrs.minToken}</p>
+              )}
+              <p className="fine" style={{ margin: "0.3rem 0 0" }}>
+                Joiners must hold it in their top assets.
+              </p>
+            </div>
+          )}
+          <div>
+            <p className="label" style={{ marginBottom: "0.4rem" }}>
+              Seats
+            </p>
+            <SelectMenu
+              label="Seats"
+              value={form.maxMembers}
+              onChange={(v) => setField("maxMembers", v)}
+              options={MEMBER_OPTIONS.map((n) => ({
+                value: String(n),
+                label: n === 2 ? "2 seats · duel" : `${n} seats`,
+              }))}
+            />
+            {fieldErrs.maxMembers && (
+              <p className="err">{fieldErrs.maxMembers}</p>
+            )}
+            <p className="fine" style={{ margin: "0.3rem 0 0" }}>
+              Tables above 2 seats are chat-only — no board.
+            </p>
+          </div>
           <div>
             <button
               className="btn btn-primary"
@@ -321,8 +394,11 @@ export default function CreateRoomPage() {
               <span className={`tier-tag ${tierEdgeClass(form.minTier)}`}>
                 {isInvite ? "Invite only" : form.minTier}
               </span>
+              {form.minToken && (
+                <span className="tier-tag">{form.minToken}</span>
+              )}
               <span className="fine num">
-                <span className="dot" /> 0/2 in the room
+                <span className="dot" /> 0/{form.maxMembers || 2} in the room
               </span>
             </div>
             <p className="ticket-name">{previewName}</p>

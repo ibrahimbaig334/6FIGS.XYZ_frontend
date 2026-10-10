@@ -77,6 +77,8 @@ function Mark({ cell, index }: { cell: string; index: number }) {
  * passes callbacks; the panel owns the board, chat input, suggestions and
  * emoji. `header` and `waiting` are mode-specific slots.
  *
+ * `chatOnly` drops the board entirely (group tables seat 3+: talk, no duel).
+ *
  * The handshake: when a fresh board arrives (a match just made), the table
  * assembles - the frame sets, the grid draws itself, the two place cards
  * slide in, the lamp turns to the move. A rematch re-runs it.
@@ -92,6 +94,7 @@ export default function GamePanel({
   header,
   waiting,
   rematchPending,
+  chatOnly,
 }: {
   game: GameState | null;
   me: Profile | null;
@@ -103,6 +106,7 @@ export default function GamePanel({
   header?: React.ReactNode;
   waiting?: React.ReactNode;
   rematchPending?: boolean;
+  chatOnly?: boolean;
 }) {
   const [draft, setDraft] = useState("");
   const chatRef = useChatScroll(msgs.length);
@@ -173,129 +177,133 @@ export default function GamePanel({
   }
 
   return (
-    <div className="game-grid" ref={boardRef}>
-      <div className="plate game-main">
-        {header}
-        {game ? (
-          <>
-            <div className="arena-head">
-              <div
-                className={`seat-card${game.turn === game.youAre && game.status === "open" && !oppAway ? " seat-on" : ""}`}
-              >
-                <span className="seat-id">
-                  {me && <Chop id={me.id} size="sm" />}
-                  <span>
-                    <span className="seat-role">You</span>
-                    <span className="seat-name">{me?.handle ?? "You"}</span>
-                  </span>
-                </span>
-                <span className="seat-mark" aria-hidden="true">
-                  {game.youAre}
-                </span>
-              </div>
-              <span className="arena-vs" aria-hidden="true">
-                vs
-              </span>
-              <div
-                className={`seat-card${game.turn !== game.youAre && game.status === "open" && !oppAway ? " seat-on" : ""}`}
-              >
-                <span className="seat-id">
-                  {game.opponent && <Chop id={game.opponent.id} size="sm" />}
-                  <span>
-                    <span className="seat-role">
-                      <span className={oppOnline ? "dot on" : "dot"} />
-                      Stranger
-                    </span>
-                    <span className="seat-name">
-                      {oppAway ? "away" : (game.opponent?.handle ?? "waiting")}
-                    </span>
-                  </span>
-                </span>
-                <span className="seat-mark" aria-hidden="true">
-                  {oppMark}
-                </span>
-              </div>
-            </div>
-
-            <div className="arena-status">
-              <p className="fine" style={{ margin: 0, fontSize: "0.84rem" }}>
-                {oppAway ? "Waiting for your stranger." : statusLine(game)}
-              </p>
-              {game.status !== "open" && (
-                <button
-                  className="btn btn-primary btn-sm"
-                  onClick={onRematch}
-                  disabled={!!rematchPending}
+    <div className={`game-grid${chatOnly ? " chat-only" : ""}`} ref={boardRef}>
+      {!chatOnly && (
+        <div className="plate game-main">
+          {header}
+          {game ? (
+            <>
+              <div className="arena-head">
+                <div
+                  className={`seat-card${game.turn === game.youAre && game.status === "open" && !oppAway ? " seat-on" : ""}`}
                 >
-                  {rematchPending ? "Offer sent" : "Rematch"}
-                </button>
-              )}
-            </div>
-
-            <div className="board-frame">
-              <div className="table-frame">
-                <div className="board-grid">
-                  <svg
-                    className="board-lines"
-                    viewBox="0 0 300 300"
-                    aria-hidden="true"
-                  >
-                    {[
-                      [100, 8, 100, 292],
-                      [200, 8, 200, 292],
-                      [8, 100, 292, 100],
-                      [8, 200, 292, 200],
-                    ].map(([x1, y1, x2, y2], i) => (
-                      <line
-                        key={i}
-                        className="grid"
-                        x1={x1}
-                        y1={y1}
-                        x2={x2}
-                        y2={y2}
-                        pathLength={1}
-                        strokeDasharray={1}
-                        strokeDashoffset={fresh ? 1 : 0}
-                      />
-                    ))}
-                    {line && (
-                      <line
-                        className="win-line"
-                        x1={line[0][0]}
-                        y1={line[0][1]}
-                        x2={line[1][0]}
-                        y2={line[1][1]}
-                        pathLength={1}
-                        strokeDasharray={1}
-                      />
-                    )}
-                  </svg>
-                  <div className="board-cells">
-                    {game.board.split("").map((cell, i) => (
-                      <button
-                        key={i}
-                        className={`board-cell${won.has(i) ? " win" : ""}${cell === "O" ? " mark-o" : ""}`}
-                        onClick={() => onMove(i)}
-                        disabled={
-                          cell !== "." || game.status !== "open" || oppAway
-                        }
-                        aria-label={`square ${i + 1}`}
-                      >
-                        <Mark cell={cell} index={i} />
-                      </button>
-                    ))}
-                  </div>
-                  <div className="lamp-pool" aria-hidden="true" />
+                  <span className="seat-id">
+                    {me && <Chop id={me.id} size="sm" />}
+                    <span>
+                      <span className="seat-role">You</span>
+                      <span className="seat-name">{me?.handle ?? "You"}</span>
+                    </span>
+                  </span>
+                  <span className="seat-mark" aria-hidden="true">
+                    {game.youAre}
+                  </span>
+                </div>
+                <span className="arena-vs" aria-hidden="true">
+                  vs
+                </span>
+                <div
+                  className={`seat-card${game.turn !== game.youAre && game.status === "open" && !oppAway ? " seat-on" : ""}`}
+                >
+                  <span className="seat-id">
+                    {game.opponent && <Chop id={game.opponent.id} size="sm" />}
+                    <span>
+                      <span className="seat-role">
+                        <span className={oppOnline ? "dot on" : "dot"} />
+                        Stranger
+                      </span>
+                      <span className="seat-name">
+                        {oppAway
+                          ? "away"
+                          : (game.opponent?.handle ?? "waiting")}
+                      </span>
+                    </span>
+                  </span>
+                  <span className="seat-mark" aria-hidden="true">
+                    {oppMark}
+                  </span>
                 </div>
               </div>
+
+              <div className="arena-status">
+                <p className="fine" style={{ margin: 0, fontSize: "0.84rem" }}>
+                  {oppAway ? "Waiting for your stranger." : statusLine(game)}
+                </p>
+                {game.status !== "open" && (
+                  <button
+                    className="btn btn-primary btn-sm"
+                    onClick={onRematch}
+                    disabled={!!rematchPending}
+                  >
+                    {rematchPending ? "Offer sent" : "Rematch"}
+                  </button>
+                )}
+              </div>
+
+              <div className="board-frame">
+                <div className="table-frame">
+                  <div className="board-grid">
+                    <svg
+                      className="board-lines"
+                      viewBox="0 0 300 300"
+                      aria-hidden="true"
+                    >
+                      {[
+                        [100, 8, 100, 292],
+                        [200, 8, 200, 292],
+                        [8, 100, 292, 100],
+                        [8, 200, 292, 200],
+                      ].map(([x1, y1, x2, y2], i) => (
+                        <line
+                          key={i}
+                          className="grid"
+                          x1={x1}
+                          y1={y1}
+                          x2={x2}
+                          y2={y2}
+                          pathLength={1}
+                          strokeDasharray={1}
+                          strokeDashoffset={fresh ? 1 : 0}
+                        />
+                      ))}
+                      {line && (
+                        <line
+                          className="win-line"
+                          x1={line[0][0]}
+                          y1={line[0][1]}
+                          x2={line[1][0]}
+                          y2={line[1][1]}
+                          pathLength={1}
+                          strokeDasharray={1}
+                        />
+                      )}
+                    </svg>
+                    <div className="board-cells">
+                      {game.board.split("").map((cell, i) => (
+                        <button
+                          key={i}
+                          className={`board-cell${won.has(i) ? " win" : ""}${cell === "O" ? " mark-o" : ""}`}
+                          onClick={() => onMove(i)}
+                          disabled={
+                            cell !== "." || game.status !== "open" || oppAway
+                          }
+                          aria-label={`square ${i + 1}`}
+                        >
+                          <Mark cell={cell} index={i} />
+                        </button>
+                      ))}
+                    </div>
+                    <div className="lamp-pool" aria-hidden="true" />
+                  </div>
+                </div>
+              </div>
+            </>
+          ) : (
+            <div className="board-idle">
+              {waiting ?? <p className="fine">Waiting for your stranger.</p>}
             </div>
-          </>
-        ) : (
-          <div className="board-idle">
-            {waiting ?? <p className="fine">Waiting for your stranger.</p>}
-          </div>
-        )}
-      </div>
+          )}
+        </div>
+      )}
 
       <aside className="plate game-chat">
         <p className="label">Table talk</p>
@@ -314,9 +322,11 @@ export default function GamePanel({
           ))}
         </ol>
         <ChatSuggestions
-          onPick={(t) =>
-            setDraft((d) => clampGraphemes(d ? `${d} ${t}` : t, MSG_MAX_LEN))
-          }
+          onPick={(t) => {
+            // Tap-to-send: suggestions go straight out, no drafting.
+            const body = t.trim();
+            if (body) onSend(clampGraphemes(body, MSG_MAX_LEN));
+          }}
         />
         <form onSubmit={send} className="chat-send">
           <input

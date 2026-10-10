@@ -1747,6 +1747,10 @@ html.dark .hero-table-top {
   align-items: start;
 }
 
+.game-grid.chat-only {
+  grid-template-columns: minmax(0, 1fr);
+}
+
 .game-main {
   display: flex;
   flex-direction: column;

@@ -10,7 +10,11 @@ import {
 } from "@phosphor-icons/react";
 import { api, errMsg, getToken, Room, RoomList, RoomMeta } from "../../lib/api";
 import { notifyError } from "../../lib/notify";
-import { ROOMS_PAGE_SIZE, MAX_ROOMS_PER_USER } from "../../lib/constants";
+import {
+  ROOMS_PAGE_SIZE,
+  MAX_ROOMS_PER_USER,
+  TOKEN_OPTIONS,
+} from "../../lib/constants";
 import { tierEdgeClass } from "../../lib/tierEdge";
 import SignInButton from "../../components/SignInButton";
 import SelectMenu from "../../components/SelectMenu";
@@ -46,6 +50,8 @@ export default function RoomsPage() {
   const [page, setPage] = useState(1);
   const [ready, setReady] = useState(false);
   const [accessFilter, setAccessFilter] = useState("");
+  const [tokenFilter, setTokenFilter] = useState("");
+  const [sizeFilter, setSizeFilter] = useState("");
   const [q, setQ] = useState("");
   const [sort, setSort] = useState("created");
   const [inviteFor, setInviteFor] = useState<Room | null>(null);
@@ -68,6 +74,9 @@ export default function RoomsPage() {
       });
       if (accessFilter) params.set("access", accessFilter);
       if (onlyTier && accessFilter !== "invite") params.set("tier", onlyTier);
+      if (accessFilter !== "invite" && tokenFilter)
+        params.set("token", tokenFilter);
+      if (sizeFilter) params.set("size", sizeFilter);
       if (q) params.set("q", q);
       const res = await api<RoomList>(`/rooms?${params.toString()}`);
       setRooms(res.items);
@@ -79,7 +88,7 @@ export default function RoomsPage() {
     } finally {
       setLoading(false);
     }
-  }, [page, accessFilter, q, sort]);
+  }, [page, accessFilter, tokenFilter, sizeFilter, q, sort]);
 
   useEffect(() => {
     setReady(true);
@@ -148,6 +157,8 @@ export default function RoomsPage() {
       (sort === "tier" || sort.startsWith(TIER_ONLY_PREFIX))
     )
       setSort("created");
+    // Token gates live on tier rooms only.
+    if (f === "invite") setTokenFilter("");
     setPage(1);
   }
 
@@ -262,6 +273,38 @@ export default function RoomsPage() {
             ]}
           />
         </div>
+        {accessFilter !== "invite" && (
+          <div className="sortmenu-wrap">
+            <SelectMenu
+              label="Token gate"
+              value={tokenFilter}
+              onChange={(v) => {
+                setTokenFilter(v);
+                setPage(1);
+              }}
+              options={[
+                { value: "", label: "Any token" },
+                ...TOKEN_OPTIONS.map((t) => ({ value: t, label: t })),
+              ]}
+            />
+          </div>
+        )}
+        <div className="sortmenu-wrap">
+          <SelectMenu
+            label="Table size"
+            value={sizeFilter}
+            onChange={(v) => {
+              setSizeFilter(v);
+              setPage(1);
+            }}
+            options={[
+              { value: "", label: "All sizes" },
+              { value: "duo", label: "Duel (2 seats)" },
+              { value: "small", label: "Small group (3–10)" },
+              { value: "large", label: "Large (11+)" },
+            ]}
+          />
+        </div>
         <span className="fine num rooms-count">
           {total === 1 ? "1 table" : `${total} tables`}, {owned}/
           {MAX_ROOMS_PER_USER} yours
@@ -298,6 +341,9 @@ export default function RoomsPage() {
                       <TierTag tier={r.minTier} />
                     )}
                     {r.isOwner && <span className="tier-tag">Yours</span>}
+                    {r.minToken && (
+                      <span className="tier-tag">{r.minToken}</span>
+                    )}
                     <span className="fine dir-by" title={r.creatorHandle}>
                       by {r.creatorHandle}
                     </span>
@@ -317,7 +363,7 @@ export default function RoomsPage() {
                       }}
                     >
                       <span className={r.onlineCount > 0 ? "dot on" : "dot"} />
-                      {r.onlineCount}/2 in the room
+                      {r.onlineCount}/{r.maxMembers ?? 2} in the room
                     </span>
                     <button
                       className="btn-primary btn btn-sm"

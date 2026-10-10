@@ -48,3 +48,34 @@ export function disconnectSocket() {
   socket?.disconnect();
   socket = null;
 }
+
+/**
+ * Join a chat scope with ack + bounded retry. The server validates the
+ * session asynchronously on connect, so a first-attempt join can land
+ * before auth completes and fail silently — without this, live chat never
+ * starts and new messages only appear on refresh. Returns a cancel fn for
+ * unmount (a late retry must never rejoin a room we already left).
+ */
+export function joinScopeWithRetry(
+  s: Socket,
+  scope: string,
+  scopeId: string,
+  tries = 5,
+): () => void {
+  let cancelled = false;
+  let timer: ReturnType<typeof setTimeout> | null = null;
+  let n = 0;
+  const attempt = () => {
+    if (cancelled) return;
+    n += 1;
+    s.emit("joinScope", { scope, scopeId }, (ack?: { error?: string }) => {
+      if (cancelled || !ack?.error) return;
+      if (n < tries) timer = setTimeout(attempt, 1200);
+    });
+  };
+  attempt();
+  return () => {
+    cancelled = true;
+    if (timer) clearTimeout(timer);
+  };
+}

@@ -24,6 +24,24 @@ export const MAX_WALLETS = 20;
 // Rooms one user may own (backend: MAX_ROOMS_PER_USER)
 export const MAX_ROOMS_PER_USER = 3;
 
+// Holdings-gate symbols (backend: ROOM_TOKEN_OPTIONS). Compared against the
+// joiner's disclosed top assets (uppercase).
+export const TOKEN_OPTIONS = [
+  "BTC",
+  "ETH",
+  "SOL",
+  "USDT",
+  "USDC",
+  "XRP",
+  "DOGE",
+  "HYPE",
+] as const;
+
+// Seat counts offered at create (backend: ROOM_MIN/MAX_MEMBERS 2–50).
+export const MEMBER_OPTIONS = [2, 3, 4, 5, 10, 20, 50];
+export const ROOM_MIN_MEMBERS = 2;
+export const ROOM_MAX_MEMBERS = 50;
+
 // Emoji set for room descriptions + chats (tap to insert). Curated for the
 // house register: no rocket ships, no moons, no money bags.
 export const CHAT_EMOJIS = [

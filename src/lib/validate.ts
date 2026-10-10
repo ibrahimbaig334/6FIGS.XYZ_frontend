@@ -62,6 +62,27 @@ export function inviteCodeError(v: string): string | null {
   return null;
 }
 
+export function roomTokenError(
+  v: string,
+  options: readonly string[],
+): string | null {
+  const t = v.trim().toUpperCase();
+  if (!t) return null; // optional — empty means no token gate
+  if (!options.includes(t)) return "Pick a listed token";
+  return null;
+}
+
+export function roomSeatsError(
+  v: string,
+  min: number,
+  max: number,
+): string | null {
+  const n = Number(v);
+  if (!Number.isInteger(n) || n < min || n > max)
+    return `Seats must be ${min}–${max}`;
+  return null;
+}
+
 export function handleError(v: string): string | null {
   const h = v.trim();
   if (!h) return null; // empty clears the handle (backend sets null)

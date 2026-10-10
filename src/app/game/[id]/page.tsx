@@ -10,7 +10,7 @@ import {
   getToken,
   Profile,
 } from "../../../lib/api";
-import { connectSocket } from "../../../lib/ws";
+import { connectSocket, joinScopeWithRetry } from "../../../lib/ws";
 import { notifyError } from "../../../lib/notify";
 import {
   OPP_JOIN_GRACE_MS,
@@ -200,6 +200,7 @@ export default function GamePage() {
     if (!game) return;
     const s = connectSocket();
     sock.current = s;
+    let cancelJoin: (() => void) | null = null;
     const joinAll = () => {
       // Membership intent is synchronous; a slow ack must never strand us
       // in the game room after unmount (leaveGame would never fire).
@@ -211,7 +212,8 @@ export default function GamePage() {
           if (ack?.state) setGame((g) => mergeState(g, ack.state as GameState));
         },
       );
-      s.emit("joinScope", { scope: "dm", scopeId: game.matchId });
+      cancelJoin?.();
+      cancelJoin = joinScopeWithRetry(s, "dm", game.matchId);
     };
     joinAll();
     const onState = (st: GameState) => {
@@ -249,6 +251,7 @@ export default function GamePage() {
     return () => {
       // Leaving the page = leaving the game (broadcasts stop, presence
       // drops), even though the socket itself stays connected elsewhere.
+      cancelJoin?.();
       if (joinedRef.current) {
         s.emit("leaveGame", { gameId: joinedRef.current });
         joinedRef.current = null;

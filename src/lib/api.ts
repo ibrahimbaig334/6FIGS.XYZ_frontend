@@ -358,6 +358,8 @@ export interface Room {
   imageUrl: string | null;
   accessType: string;
   minTier: string | null;
+  minToken: string | null;
+  maxMembers: number;
   memberCount: number;
   onlineCount: number;
   createdAt: string;
@@ -373,6 +375,8 @@ export interface RoomMeta {
   imageUrl: string | null;
   accessType: string;
   minTier: string | null;
+  minToken: string | null;
+  maxMembers: number;
   memberCount: number;
   onlineCount: number;
   isMember: boolean;

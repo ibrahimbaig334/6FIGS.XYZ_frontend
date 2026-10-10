@@ -15,7 +15,7 @@ import {
   RoomMember,
   RoomMeta,
 } from "../../../lib/api";
-import { connectSocket } from "../../../lib/ws";
+import { connectSocket, joinScopeWithRetry } from "../../../lib/ws";
 import { notifyError } from "../../../lib/notify";
 import GamePanel from "../../../components/GamePanel";
 import RematchToast from "../../../components/RematchToast";
@@ -129,15 +129,19 @@ export default function RoomPage() {
       setMsgs(h.items);
       // (re)join the socket room, covers first load and post-join refresh
       sock.current?.emit("joinScope", { scope: "room", scopeId: id });
-      try {
-        const g = await api<{ gameId: string }>(`/rooms/${id}/game`);
-        const full = await api<GameState>(`/games/${g.gameId}`);
-        setGame(full);
-      } catch (e) {
-        // 400 = normal "waiting for peer" (the slot already says it); real
-        // failures land in the top-right error box.
-        if (!(e instanceof ApiError && e.status === 400))
-          notifyError(errMsg(e, "Couldn't load the room game. Try again."));
+      // Group tables (3+ seats) are chat-only — never fetch a board.
+      if ((m.maxMembers ?? 2) > 2) setGame(null);
+      else {
+        try {
+          const g = await api<{ gameId: string }>(`/rooms/${id}/game`);
+          const full = await api<GameState>(`/games/${g.gameId}`);
+          setGame(full);
+        } catch (e) {
+          // 400 = normal "waiting for peer" (the slot already says it); real
+          // failures land in the top-right error box.
+          if (!(e instanceof ApiError && e.status === 400))
+            notifyError(errMsg(e, "Couldn't load the room game. Try again."));
+        }
       }
       try {
         setMe(await api<Profile>("/profile/user"));
@@ -217,7 +221,7 @@ export default function RoomPage() {
       } catch {
         /* meta is fresh, transient */
       }
-      if (!gameRef.current) {
+      if (!gameRef.current && (meta?.maxMembers ?? 2) <= 2) {
         try {
           const g = await api<{ gameId: string }>(`/rooms/${id}/game`);
           const full = await api<GameState>(`/games/${g.gameId}`);
@@ -233,13 +237,15 @@ export default function RoomPage() {
       }
     }, POLL_ROOM_MS);
     return () => clearInterval(t);
-  }, [ready, id, meta?.isMember, meta?.canEnter, roomGone]);
+  }, [ready, id, meta?.isMember, meta?.canEnter, meta?.maxMembers, roomGone]);
 
   useEffect(() => {
     const s = connectSocket();
     sock.current = s;
+    let cancelJoin: (() => void) | null = null;
     const joinAll = () => {
-      s.emit("joinScope", { scope: "room", scopeId: id });
+      cancelJoin?.();
+      cancelJoin = joinScopeWithRetry(s, "room", id);
       // Membership intent is synchronous, so turnover/unmount must always be
       // able to leave, even if the join ack is still in flight.
       if (gameRef.current) {
@@ -287,6 +293,7 @@ export default function RoomPage() {
     return () => {
       // Leaving the page (or rotating to a new pair's game) leaves the game
       // room: broadcasts stop and game presence drops, socket stays up.
+      cancelJoin?.();
       if (joinedRef.current) {
         s.emit("leaveGame", { gameId: joinedRef.current });
         joinedRef.current = null;
@@ -500,8 +507,17 @@ export default function RoomPage() {
             {invite ? "Invite only" : `${meta.minTier} table`}
           </p>
           <h1>{meta.name}</h1>
+          {(meta.minToken || (meta.maxMembers ?? 2) > 2) && (
+            <p className="fine" style={{ marginTop: "0.3rem" }}>
+              {meta.minToken ? `Holds ${meta.minToken} · ` : ""}
+              {(meta.maxMembers ?? 2) > 2
+                ? `Group table for ${meta.maxMembers} · chat only`
+                : "Duel table · 1v1 + board"}
+            </p>
+          )}
           <p className="fine num">
-            {meta.onlineCount}/2 in the room · {meta.memberCount}/2 seated
+            {meta.onlineCount}/{meta.maxMembers ?? 2} in the room ·{" "}
+            {meta.memberCount}/{meta.maxMembers ?? 2} seated
           </p>
           {invite ? (
             meta.isMember ? (
@@ -600,6 +616,9 @@ export default function RoomPage() {
     );
   }
 
+  // Group tables seat 3+: talk only, no duel, no board.
+  const chatOnly = (meta?.maxMembers ?? 2) > 2;
+
   return (
     <section className="page-enter shell" style={{ flex: 1, gap: "1rem" }}>
       <div className="plate">
@@ -607,7 +626,7 @@ export default function RoomPage() {
           <div className="room-head-info">
             <div className="room-head-row">
               <p className="label num">
-                {meta?.onlineCount ?? 0}/2 in the room
+                {meta?.onlineCount ?? 0}/{meta?.maxMembers ?? 2} in the room
               </p>
               {meta?.accessType === "invite" ? (
                 <span className="tier-tag">
@@ -616,6 +635,9 @@ export default function RoomPage() {
                 </span>
               ) : (
                 <TierTag tier={meta?.minTier ?? null} />
+              )}
+              {meta?.minToken && (
+                <span className="tier-tag">{meta.minToken}</span>
               )}
             </div>
             <h2>{meta?.name}</h2>
@@ -691,11 +713,18 @@ export default function RoomPage() {
         onRematch={rematch}
         onSend={send}
         rematchPending={rematchPending}
-        header={<p className="label">The table</p>}
+        chatOnly={chatOnly}
+        header={
+          <p className="label">{chatOnly ? "Group talk" : "The table"}</p>
+        }
         waiting={
-          <p className="fine">
-            Your card is on the table. The other seat is empty.
-          </p>
+          chatOnly ? (
+            <p className="fine">Pull up a chair. Say hello below.</p>
+          ) : (
+            <p className="fine">
+              Your card is on the table. The other seat is empty.
+            </p>
+          )
         }
       />
       {offer && game && offer.gameId === game.id && (

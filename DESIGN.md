@@ -363,3 +363,7 @@ Re-expressed in The Table (logic kept, presentation rebuilt):
   the bottom rule with a faint wash of the same metal rising behind it
   (8/9/10%) — an assay strip, ascending. No new colors; brass, gilt and
   seal were already the system.
+- Follow-up: TIER I carried a transparent rule in the strip but an ink
+  line on room cards. Unified: the strip's t1 is the same cut line of ink
+  (tx-page-dim 70%). Brass vs gilt stay close in daylight deliberately —
+  one ascending family, not casino tiers.

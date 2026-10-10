@@ -1230,7 +1230,7 @@ html.dark .hero-plate {
    as the bottom rule, with a faint wash of the same metal rising behind it.
    One class language (t1..t4) shared with the room cards' tier edge. */
 .tier-cell.t1 {
-  --edge: transparent;
+  --edge: color-mix(in srgb, var(--tx-page-dim) 70%, transparent);
 }
 
 .tier-cell.t2 {

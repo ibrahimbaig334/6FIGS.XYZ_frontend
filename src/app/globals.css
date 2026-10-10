@@ -2394,7 +2394,8 @@ html:not(.dark) .board-cell .mark circle {
   overflow: visible;
 }
 
-.chop-draw svg path {
+.chop-draw svg path,
+.chop-draw svg circle {
   fill: none;
   stroke: currentColor;
   stroke-width: 2.2;
@@ -2408,8 +2409,8 @@ html:not(.dark) .board-cell .mark circle {
 }
 
 .chop-draw .draw-bowl {
-  stroke-dasharray: 32;
-  stroke-dashoffset: 32;
+  stroke-dasharray: 38;
+  stroke-dashoffset: 38;
   animation: chop-bowl 2.8s ease-in-out infinite;
 }
 
@@ -2439,7 +2440,7 @@ html:not(.dark) .board-cell .mark circle {
 @keyframes chop-bowl {
   0%,
   24% {
-    stroke-dashoffset: 32;
+    stroke-dashoffset: 38;
     opacity: 0;
   }
   30% {

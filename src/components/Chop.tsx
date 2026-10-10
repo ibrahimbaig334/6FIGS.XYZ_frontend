@@ -78,11 +78,8 @@ export default function Chop({
   );
 }
 
-/* The brand's own chop: a 6 built like an instrument, not drawn like a
-   sketch — a true circular bowl (opened where the tail lands) and a true
-   circular tail arc sweeping up the left. Compass geometry reads
-   engineered; freehand cubics read childlike. Verified numerically: root
-   on the bowl edge centered in its gap, tangents clean, bounds exact. */
+/* The brand's own chop: a 6 drawn in two chop strokes (the stem, the bowl) —
+   one construction unified with the favicon, carried everywhere. */
 export function BrandChop({ size = "md" }: { size?: "sm" | "md" | "lg" }) {
   return (
     <span className={`chop chop-${size}`} aria-hidden="true">
@@ -92,8 +89,8 @@ export function BrandChop({ size = "md" }: { size?: "sm" | "md" | "lg" }) {
           stroke="currentColor"
           style={{ strokeWidth: 2.2, strokeLinecap: "round" }}
         >
-          <path d="M16.02 11.3 A5.8 5.8 0 1 1 12.01 8.49" />
-          <path d="M14.33 9.45 A5.7 5.7 0 0 0 8.7 2.9" />
+          <path d="M14.2 2.9 L7.4 9.7" />
+          <circle cx="11" cy="14.5" r="6" />
         </g>
       </svg>
     </span>

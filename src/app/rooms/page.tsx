@@ -11,6 +11,7 @@ import {
 import { api, errMsg, getToken, Room, RoomList, RoomMeta } from "../../lib/api";
 import { notifyError } from "../../lib/notify";
 import { ROOMS_PAGE_SIZE, MAX_ROOMS_PER_USER } from "../../lib/constants";
+import { tierEdgeClass } from "../../lib/tierEdge";
 import SignInButton from "../../components/SignInButton";
 import SelectMenu from "../../components/SelectMenu";
 import InviteDialog from "../../components/InviteDialog";
@@ -277,16 +278,12 @@ export default function RoomsPage() {
         <div className="floor">
           {rooms.map((r) => {
             return (
-              <article key={r.id} className="table-card">
-                <div className="table-scene slim" aria-hidden="true">
-                  <span
-                    className={`table-seat seat-l${r.memberCount >= 1 ? " on" : ""}${r.onlineCount >= 1 ? " live" : ""}`}
-                  />
-                  <div className="table-top" />
-                  <span
-                    className={`table-seat seat-r${r.memberCount >= 2 ? " on" : ""}${r.onlineCount >= 2 ? " live" : ""}`}
-                  />
-                </div>
+              <article
+                key={r.id}
+                className={`table-card ${
+                  r.accessType === "invite" ? "none" : tierEdgeClass(r.minTier)
+                }`}
+              >
                 <div className="table-info">
                   <h3 className="table-name-big" title={r.name}>
                     {r.name}

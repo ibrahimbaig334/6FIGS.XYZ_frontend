@@ -1337,6 +1337,8 @@ html:not(.dark) .mini-cell.mark-o svg circle {
 }
 
 .table-card {
+  position: relative;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
   background: var(--card);
@@ -1356,54 +1358,45 @@ html:not(.dark) .mini-cell.mark-o svg circle {
   transform: translateY(-2px);
 }
 
-/* one table, seen from above: the wood edge, the felt, the name, the seats */
-.table-scene {
-  position: relative;
-  border: 4px solid var(--wood);
-  border-radius: 999px;
-  background: var(--table-felt);
-  transition: border-color 200ms var(--ease-out);
+/* the tier is the card's edge: one rule of metal along the top — plain
+   (a cut line of ink), brass, gilt, the house's own. Invite rooms carry no
+   tier, so they carry no rule. The floor stays legible at any size because
+   the edge survives every scale. */
+.table-card::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 3px;
+  background: var(--edge, transparent);
+  transition: filter 200ms var(--ease-out);
 }
 
-.table-card:hover .table-scene {
-  border-color: var(--wood-2);
+.table-card.t1 {
+  --edge: color-mix(in srgb, var(--tx-page-dim) 70%, transparent);
 }
 
-/* Midnight: the felt and walnut would melt into the dark card, so the rim
-   carries lamplight and taken seats glow brass. */
-html.dark .table-scene {
-  border-color: color-mix(in srgb, var(--brass) 38%, var(--wood));
+.table-card.t2 {
+  --edge: var(--brass);
 }
 
-html.dark .table-card:hover .table-scene {
-  border-color: color-mix(in srgb, var(--brass) 60%, var(--wood));
+.table-card.t3 {
+  --edge: var(--gilt);
 }
 
-html.dark .table-seat {
-  border-color: #6b5a36;
+.table-card.t4 {
+  --edge: var(--seal);
 }
 
-html.dark .table-seat.on {
-  background: var(--brass);
-  border-color: var(--brass);
+.table-card.none {
+  --edge: transparent;
+}
+
+.table-card:hover::before {
+  filter: brightness(1.3);
 }
 
 html.dark .hero-table-top {
   border-color: color-mix(in srgb, var(--brass) 30%, var(--wood));
-}
-
-.table-top {
-  padding: 1rem 3.2rem;
-  display: grid;
-  place-items: center;
-  text-align: center;
-  min-height: 74px;
-}
-
-/* the slim band: atmosphere without the tiny unreadable name */
-.table-scene.slim .table-top {
-  min-height: 30px;
-  padding: 0.15rem 3rem;
 }
 
 /* the room's name, first and large — the card's whole job */
@@ -1418,47 +1411,20 @@ html.dark .hero-table-top {
   white-space: nowrap;
 }
 
-.table-seat {
-  position: absolute;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 22px;
-  height: 22px;
-  border-radius: 50%;
-  border: 2px solid color-mix(in srgb, var(--tx-page) 45%, transparent);
-  background: transparent;
-}
-
-.table-seat.seat-l {
-  left: -13px;
-}
-
-.table-seat.seat-r {
-  right: -13px;
-}
-
-.table-seat.on {
-  background: var(--card);
-  border-color: var(--card);
-}
-
-.table-seat.live {
-  outline: 2px solid var(--online);
-  outline-offset: 2px;
-}
-
 .table-info {
+  flex: 1 1 auto;
   display: flex;
   flex-direction: column;
   gap: 0.4rem;
-  padding: 0.8rem 0.2rem 0;
+  padding: 0.2rem 0.2rem 0;
 }
 
 .table-info .table-actions {
   display: flex;
   gap: 0.5rem;
   align-items: center;
-  margin-top: 0.3rem;
+  margin-top: auto;
+  padding-top: 0.3rem;
   flex-wrap: wrap;
 }
 
@@ -4105,6 +4071,7 @@ body .wallet-adapter-collapse {
 
   .hero-table,
   .table-card,
+  .table-card::before,
   .table-card:hover,
   .dir-row,
   .friend-row,

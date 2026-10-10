@@ -43,12 +43,15 @@ export default function Chop({
   id,
   size = "md",
   color,
+  deal = false,
 }: {
   /** Stable identity string (a member id, a handle, the brand). */
   id: string;
   size?: "sm" | "md" | "lg" | "xl";
   /** Override the stroke color; defaults to currentColor. */
   color?: string;
+  /** Ink the strokes in, one cascade per mount (the hero deal). */
+  deal?: boolean;
 }) {
   const cells = Array.from({ length: 9 }, (_, i) => {
     const bits = hash(`${id}#${i}`) % 10;
@@ -66,6 +69,8 @@ export default function Chop({
             kind === 0 ? null : (
               <g
                 key={i}
+                className={deal ? "chop-stroke" : undefined}
+                style={deal ? { animationDelay: `${i * 55}ms` } : undefined}
                 transform={`translate(${(i % 3) * 7 + 1}, ${Math.floor(i / 3) * 7 + 1})`}
               >
                 {strokePath(kind)}

@@ -631,6 +631,11 @@ export default function PlayPage() {
           <p className="label num">
             {joining ?? `Finding your table, ${elapsed}s`}
           </p>
+          {!joining && elapsed >= 20 && (
+            <p className="fine" style={{ margin: 0 }}>
+              The floor is quiet — the house sits down and bot added at 0:30.
+            </p>
+          )}
           {!joining && (
             <button className="btn-ghost" onClick={cancelSearch}>
               Leave the floor

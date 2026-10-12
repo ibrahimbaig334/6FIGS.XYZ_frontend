@@ -18,7 +18,7 @@
     "@reown/appkit": "1.8.24",
     "@reown/appkit-adapter-solana": "1.8.24",
     "@reown/appkit-adapter-wagmi": "1.8.24",
-    "@sixfigs/tee": "github:A-Mannan/6figs-tee#tee-2026-10-06",
+    "@sixfigs/tee": "github:A-Mannan/6figs-tee#tee-2026-10-12",
     "@tanstack/react-query": "5.104.1",
     "@wagmi/connectors": "6.2.0",
     "gsap": "^3.15.0",

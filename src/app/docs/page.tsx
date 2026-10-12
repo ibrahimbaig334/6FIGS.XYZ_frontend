@@ -18,7 +18,7 @@ const CHAPTERS = [
     href: "/docs/tiers",
     label: "TIERS & WHAT'S SHOWN",
     blurb:
-      "The four tiers, the bands behind them, and exactly which facts about your portfolio are visible.",
+      "The five tiers, the bands behind them, and exactly which facts about your portfolio are visible.",
   },
   {
     href: "/docs/wallets",

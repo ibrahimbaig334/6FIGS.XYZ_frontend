@@ -133,11 +133,11 @@ export function BandDiagram() {
       <div
         className="doc-bands"
         role="img"
-        aria-label="A number line from zero to over one million dollars divided into bands: under 100k, 100k to 300k, 300k to 500k, 500k to 1M, and 1M plus."
+        aria-label="A number line from zero to over one million dollars divided into bands: under 100k at tier 0, 100k to 300k, 300k to 500k, 500k to 1M, and 1M plus."
       >
         <div className="doc-band">
-          <b>Under $100K</b>
-          <span>not admitted</span>
+          <b>Tier 0</b>
+          <span>Under $100K</span>
         </div>
         <div className="doc-band brass">
           <b>Tier I</b>

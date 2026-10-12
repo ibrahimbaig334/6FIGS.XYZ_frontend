@@ -795,6 +795,10 @@ select.field option {
 }
 
 /* plain edge, brass edge, gilt edge, the house's own edge */
+.tier-tag.t0 {
+  --edge: color-mix(in srgb, var(--tx-dim) 55%, transparent);
+}
+
 .tier-tag.t1 {
   --edge: transparent;
 }
@@ -1196,7 +1200,7 @@ html.dark .hero-plate {
 
 .tier-strip {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   border: 1px solid var(--line-page);
   border-radius: 12px;
   overflow: hidden;
@@ -1228,7 +1232,11 @@ html.dark .hero-plate {
 
 /* the assay strip: each tier carries its metal — plain, brass, gilt, seal —
    as the bottom rule, with a faint wash of the same metal rising behind it.
-   One class language (t1..t4) shared with the room cards' tier edge. */
+   One class language (t0..t4) shared with the room cards' tier edge. */
+.tier-cell.t0 {
+  --edge: color-mix(in srgb, var(--tx-page-dim) 45%, transparent);
+}
+
 .tier-cell.t1 {
   --edge: color-mix(in srgb, var(--tx-page-dim) 70%, transparent);
 }
@@ -1470,6 +1478,11 @@ html:not(.dark) .mini-cell.mark-o svg circle {
   transform: translateY(-2px);
 }
 
+.table-card:focus-within {
+  border-color: color-mix(in srgb, var(--brass) 50%, var(--line));
+  box-shadow: var(--shadow-table);
+}
+
 /* the tier is the card's edge: one rule of metal along the top — plain
    (a cut line of ink), brass, gilt, the house's own. Invite rooms carry no
    tier, so they carry no rule. The floor stays legible at any size because
@@ -1614,11 +1627,6 @@ html.dark .hero-table-top {
   background: var(--online);
 }
 
-.plate .dot.on,
-.card .dot.on {
-  background: var(--online);
-}
-
 /* friend rows: the chop, the card, the edge */
 .friend-av {
   width: 44px;
@@ -1650,6 +1658,10 @@ html.dark .hero-table-top {
 }
 
 .friend-row:hover {
+  border-color: color-mix(in srgb, var(--brass) 45%, var(--line));
+}
+
+.friend-row:focus-within {
   border-color: color-mix(in srgb, var(--brass) 45%, var(--line));
 }
 
@@ -1693,6 +1705,10 @@ html.dark .hero-table-top {
   border-left: 1px solid var(--line-soft);
 }
 
+/* the toolbar is two designed rows: find on top (search + access
+   chips), refine below (sort + gates + count). Six controls can never
+   share one line — a ragged accidental wrap would read as a bug, so
+   the second row owns the full basis and never rides the first. */
 .filters {
   display: flex;
   gap: 0.5rem;
@@ -1701,7 +1717,17 @@ html.dark .hero-table-top {
 }
 
 .filters .rooms-q {
-  max-width: 280px;
+  flex: 1 1 260px;
+  min-width: 200px;
+  max-width: 420px;
+}
+
+.filters-sub {
+  flex-basis: 100%;
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  flex-wrap: wrap;
 }
 
 .filter-chips {
@@ -1713,7 +1739,7 @@ html.dark .hero-table-top {
 
 .sortmenu-wrap {
   flex: none;
-  min-width: 200px;
+  min-width: 160px;
 }
 
 .rooms-count {
@@ -1727,6 +1753,10 @@ html.dark .hero-table-top {
   display: flex;
   flex-direction: column;
   gap: 1rem;
+  width: 100%;
+  max-width: 1160px;
+  margin: 0 auto;
+  padding: 1.6rem 5vw;
 }
 
 .game-topbar {
@@ -1919,6 +1949,15 @@ html.dark .hero-table-top {
 }
 
 .board-cell:not(:disabled):hover .mark-draw {
+  opacity: 0.75;
+}
+
+/* keyboard players preview the mark too */
+.board-cell:not(:disabled):focus-visible {
+  background: color-mix(in srgb, var(--brass) 12%, transparent);
+}
+
+.board-cell:not(:disabled):focus-visible .mark-draw {
   opacity: 0.75;
 }
 
@@ -2116,8 +2155,13 @@ html:not(.dark) .board-cell .mark circle {
 }
 
 .token-chg.up {
-  color: var(--card);
+  color: var(--seal-ink);
   background: var(--online);
+}
+
+/* midnight greens run lighter: deep ink keeps the pill legible */
+html.dark .token-chg.up {
+  color: #15210f;
 }
 
 .token-grid {
@@ -2258,6 +2302,57 @@ html:not(.dark) .board-cell .mark circle {
   flex-wrap: wrap;
 }
 
+/* invite-code row: field and join side by side */
+.dialog-form-row {
+  display: flex;
+  gap: 0.5rem;
+  flex-direction: row;
+  align-items: center;
+}
+
+.dialog-form-row .field {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+/* emoji grid: the picker's six-across tray */
+.emoji-trigger {
+  padding: 0.55rem 0.7rem;
+  color: var(--tx);
+}
+
+.emoji-grid {
+  bottom: 110%;
+  right: 0;
+  padding: 0.5rem;
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 0.15rem;
+  width: max-content;
+  max-width: 90vw;
+}
+
+.emoji-cell {
+  border: 0;
+  background: none;
+  border-radius: 4px;
+  font-size: 1.25rem;
+  line-height: 1;
+  padding: 0.4rem;
+  cursor: pointer;
+  color: inherit;
+  transition: background 120ms var(--ease-out);
+}
+
+.emoji-cell:hover {
+  background: var(--card-2);
+}
+
+.emoji-cell:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: -1px;
+}
+
 /* notes from the house (challenges, errors, rematch) */
 .toast-stack {
   position: fixed;
@@ -2323,6 +2418,11 @@ html:not(.dark) .board-cell .mark circle {
   cursor: pointer;
   padding: 0;
   line-height: 1.4;
+  min-width: 32px;
+  min-height: 32px;
+  display: inline-grid;
+  place-items: center;
+  border-radius: 6px;
 }
 
 /* matchmaking: your card at an empty table, waiting */
@@ -2527,6 +2627,13 @@ html:not(.dark) .board-cell .mark circle {
   padding: 2.4rem 2rem;
 }
 
+.gate-card h1 {
+  margin: 0;
+  font-size: clamp(1.6rem, 3.5vw, 2.2rem);
+  line-height: 1.15;
+  letter-spacing: -0.01em;
+}
+
 .auth-card {
   width: 100%;
   max-width: 520px;
@@ -2536,6 +2643,30 @@ html:not(.dark) .board-cell .mark circle {
   flex-direction: column;
   gap: 1.1rem;
   align-items: stretch;
+}
+
+/* the panel is never wider than its parent: the section grids own the width */
+:is(.auth-card, .gate-card) {
+  box-sizing: border-box;
+  min-width: 0;
+}
+
+/* recover: the two modes sit side by side, wrapping before they clip */
+.mode-switch {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.mode-switch .chip {
+  max-width: 100%;
+}
+
+@media (max-width: 480px) {
+  .auth-card {
+    padding: 1.6rem 1.2rem;
+  }
 }
 
 .auth-card > * {
@@ -2565,9 +2696,212 @@ html:not(.dark) .board-cell .mark circle {
 }
 
 .profile-name {
-  margin: 0.4rem 0 0;
+  margin: 0.35rem 0 0;
   font-size: clamp(1.6rem, 4vw, 2.2rem);
+  line-height: 1.1;
+  letter-spacing: -0.02em;
   overflow-wrap: anywhere;
+}
+
+/* the member's seal: the chop seated in a ring, brass-lit once verified */
+.pf-id {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  min-width: 0;
+}
+
+.pf-chop {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 68px;
+  height: 68px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--card-2);
+  box-shadow: var(--shadow-card);
+  color: var(--tx);
+}
+
+.pf-chop.on {
+  border-color: color-mix(in srgb, var(--brass) 55%, var(--line));
+  box-shadow:
+    var(--shadow-card),
+    0 0 22px color-mix(in srgb, var(--brass) 20%, transparent);
+}
+
+.pf-id-text {
+  min-width: 0;
+}
+
+/* the standing: band, verification, recency — one line, dotted */
+.pf-status {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.45rem;
+}
+
+.pf-dot {
+  flex: none;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--tx-dim);
+}
+
+.pf-dot.ok {
+  background: var(--online);
+  opacity: 1;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--online) 20%, transparent);
+}
+
+.pf-dot.warn {
+  background: var(--brass);
+  opacity: 1;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--brass) 20%, transparent);
+}
+
+/* top holdings, one chip each — never an amount */
+.pf-assets {
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+  margin-top: 0.9rem;
+}
+
+.pf-asset {
+  font-family: var(--font-space), monospace;
+  font-size: 0.68rem;
+  letter-spacing: 0.1em;
+  border: 1px solid var(--line-soft);
+  border-radius: 999px;
+  background: var(--card-2);
+  color: var(--tx);
+  padding: 0.28rem 0.7rem;
+  white-space: nowrap;
+}
+
+/* the house note: wallet removed, tier moved, attention needed */
+.pf-banner {
+  margin: 1rem 0 0;
+  padding: 0.7rem 0.9rem;
+  border: 1px solid color-mix(in srgb, var(--brass) 40%, var(--line));
+  border-left: 3px solid var(--brass);
+  border-radius: 8px;
+  background: var(--card-2);
+  font-family: var(--font-space), monospace;
+  font-size: 0.78rem;
+  line-height: 1.6;
+  color: var(--tx);
+}
+
+/* identity plate sections: handle, visibility, sign-in — ruled apart */
+.pf-plate {
+  padding: clamp(1.25rem, 3vw, 1.9rem);
+}
+
+.pf-section {
+  margin-top: 1.3rem;
+  padding-top: 1.3rem;
+  border-top: 1px solid var(--line-soft);
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+}
+
+.pf-section-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 0.8rem;
+  flex-wrap: wrap;
+}
+
+.pf-handle-row {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.pf-handle-row .field {
+  flex: 1 1 200px;
+  max-width: 260px;
+}
+
+.pf-hint {
+  font-size: 0.74rem;
+}
+
+/* device-free sign-in: the same ceremony, quieter furniture */
+.pf-creds {
+  background: var(--card-2);
+  border: 1px solid var(--line-soft);
+  border-radius: 8px;
+  padding: 1.1rem 1.2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+}
+
+.pf-creds-head {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.pf-creds-head .label {
+  margin: 0;
+  color: var(--tx-dim);
+}
+
+.pf-username-tag {
+  margin-left: auto;
+  font-family: var(--font-space), monospace;
+  font-size: 0.7rem;
+  letter-spacing: 0.06em;
+  border: 1px solid var(--line-soft);
+  border-radius: 999px;
+  background: var(--card);
+  color: var(--tx);
+  padding: 0.25rem 0.7rem;
+  white-space: nowrap;
+}
+
+.pf-creds-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(200px, 100%), 1fr));
+  gap: 0.5rem;
+}
+
+.pf-creds-grid .field {
+  width: 100%;
+}
+
+/* the wallets ledger */
+.pf-count {
+  font-family: var(--font-space), monospace;
+  font-size: 0.72rem;
+  color: var(--tx-dim);
+  border: 1px solid var(--line-soft);
+  border-radius: 999px;
+  padding: 0.15rem 0.65rem;
+  white-space: nowrap;
+}
+
+.pf-nudge {
+  margin-top: 0.7rem;
+  justify-content: space-between;
+}
+
+.pf-ghost-group {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  align-items: center;
+  margin-left: auto;
 }
 
 .profile-facts {
@@ -2589,24 +2923,38 @@ html:not(.dark) .board-cell .mark circle {
   align-items: end;
 }
 
-/* your cards: choosing what friends see is turning your cards */
+/* your cards: choosing what friends see is turning your cards.
+   Each face owns its side of the turn — face at 0deg, back at 180deg —
+   so the chosen card rests text-up and the other lattice-up. The button
+   keeps preserve-3d so the hover lift never flattens the flip (flattened
+   ancestors mirror text and bleed the lattice through mid-turn). */
 .reveal-cards {
   display: flex;
   gap: 0.9rem;
+  justify-content: center;
   perspective: 700px;
+  background: var(--card-2);
+  border: 1px solid var(--line-soft);
+  border-radius: 14px;
+  padding: 1.1rem 1rem;
 }
 
 .reveal-card {
-  flex: 1;
+  flex: 1 1 0;
   min-width: 0;
+  max-width: 190px;
   background: none;
   border: 0;
   padding: 0;
+  color: inherit;
+  font: inherit;
   cursor: pointer;
   display: flex;
   flex-direction: column;
   gap: 0.45rem;
   align-items: center;
+  perspective: 900px;
+  transform-style: preserve-3d;
   transition: transform 200ms var(--ease-out);
 }
 
@@ -2618,13 +2966,20 @@ html:not(.dark) .board-cell .mark circle {
   transform: translateY(-1px) scale(0.99);
 }
 
+.reveal-card:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 4px;
+  border-radius: 10px;
+}
+
 .card-inner {
   position: relative;
   width: 100%;
-  max-width: 210px;
   aspect-ratio: 5 / 7;
   transform-style: preserve-3d;
+  -webkit-transform-style: preserve-3d;
   transition: transform 0.55s var(--ease-door);
+  will-change: transform;
 }
 
 /* the chosen card lies face-up on the felt; the other face-down */
@@ -2646,7 +3001,7 @@ html:not(.dark) .board-cell .mark circle {
   overflow: hidden;
 }
 
-.card-face {
+.reveal-card .card-face {
   background: var(--card);
   border: 1px solid var(--line);
   box-shadow: var(--shadow-card);
@@ -2657,6 +3012,56 @@ html:not(.dark) .board-cell .mark circle {
   gap: 0.5rem;
   padding: 0.8rem;
   color: var(--tx);
+  transform: rotateY(0deg) translateZ(1px);
+}
+
+/* the lattice owns the far side; the 2px split ends edge z-fighting.
+   Scoped to the reveal: the hero's resting back card shares .card-back
+   but never turns. */
+.reveal-card .card-back {
+  transform: rotateY(180deg) translateZ(1px);
+}
+
+/* belt and suspenders: the turned-away face is unpainted at rest, so a
+   hidden lattice can never bleed through the face during hovers,
+   repaints, or compositing quirks. The half-turn delay keeps both faces
+   alive mid-flip, then settles the correct one. */
+.reveal-card.on .card-face {
+  visibility: visible;
+  transition: visibility 0s linear 0.28s;
+}
+
+.reveal-card:not(.on) .card-face {
+  visibility: hidden;
+  transition: visibility 0s linear 0.28s;
+}
+
+.reveal-card.on .card-back {
+  visibility: hidden;
+  transition: visibility 0s linear 0.28s;
+}
+
+.reveal-card:not(.on) .card-back {
+  visibility: visible;
+  transition: visibility 0s linear 0.28s;
+}
+
+/* the engraved frame, front and back alike */
+.reveal-card .card-face::after,
+.reveal-card .card-back::after {
+  content: "";
+  position: absolute;
+  inset: 6px;
+  border-radius: 6px;
+  pointer-events: none;
+}
+
+.reveal-card .card-face::after {
+  border: 1px solid var(--line-soft);
+}
+
+.reveal-card .card-back::after {
+  border: 1px solid color-mix(in srgb, var(--seal-ink) 38%, transparent);
 }
 
 .reveal-card.on .card-face {
@@ -2666,14 +3071,19 @@ html:not(.dark) .board-cell .mark circle {
     0 0 28px color-mix(in srgb, var(--brass) 24%, transparent);
 }
 
-.card-face .who {
+/* the hidden card reads concealed even face-up: a dashed rule */
+.reveal-card[data-vis="HIDDEN"] .card-face {
+  border-style: dashed;
+}
+
+.reveal-card .card-face .who {
   font-family: var(--font-bricolage), sans-serif;
   font-weight: 600;
   font-size: 1rem;
   line-height: 1.2;
 }
 
-.card-face .what {
+.reveal-card .card-face .what {
   font-family: var(--font-space), monospace;
   font-size: 0.6rem;
   letter-spacing: 0.12em;
@@ -2682,6 +3092,9 @@ html:not(.dark) .board-cell .mark circle {
 }
 
 .reveal-caption {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
   font-family: var(--font-space), monospace;
   font-size: 0.64rem;
   letter-spacing: 0.12em;
@@ -2689,8 +3102,23 @@ html:not(.dark) .board-cell .mark circle {
   color: var(--tx-page-dim);
 }
 
+.reveal-caption::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  border: 1px solid currentColor;
+  opacity: 0.55;
+}
+
 .reveal-card.on .reveal-caption {
   color: var(--tx-page);
+}
+
+.reveal-card.on .reveal-caption::before {
+  background: var(--brass);
+  border-color: var(--brass);
+  opacity: 1;
 }
 
 /* the cards live on cream: captions take the card register there */
@@ -2719,6 +3147,13 @@ html:not(.dark) .board-cell .mark circle {
   border-radius: 8px;
   background: var(--card-2);
   padding: 0.65rem 0.8rem;
+  transition:
+    border-color 160ms var(--ease-out),
+    background 160ms var(--ease-out);
+}
+
+.wallet-row:hover {
+  border-color: color-mix(in srgb, var(--brass) 45%, var(--line));
 }
 
 .wallet-info {
@@ -2742,6 +3177,12 @@ html:not(.dark) .board-cell .mark circle {
 
 .wallet-row .chip {
   flex-shrink: 0;
+}
+
+.wallet-row .chip:not(:disabled):hover {
+  color: var(--seal-bright);
+  border-color: color-mix(in srgb, var(--seal-bright) 45%, transparent);
+  background: color-mix(in srgb, var(--seal) 10%, transparent);
 }
 
 .wallet-icon {
@@ -2768,6 +3209,20 @@ html:not(.dark) .board-cell .mark circle {
   font-family: var(--font-bricolage), sans-serif;
   font-weight: 600;
   font-size: 1rem;
+}
+
+/* wallet ledger badge: the same plate, sized to its letter */
+.chain-badge.badge-pill {
+  width: auto;
+  height: auto;
+  padding: 0.4rem 0.8rem;
+  font-size: 15px;
+}
+
+/* compact chip for suggestion trays */
+.chip-sm {
+  padding: 0.32rem 0.65rem;
+  font-size: 0.68rem;
 }
 
 .wallet-actions {
@@ -3295,6 +3750,10 @@ html:not(.dark) .deal-num {
   transform: translateY(-2px);
 }
 
+.docs-grid-card:focus-within {
+  border-color: color-mix(in srgb, var(--brass) 50%, var(--line-page));
+}
+
 .docs-grid-card p.label {
   color: var(--tx-page);
 }
@@ -3523,6 +3982,10 @@ html:not(.dark) .deal-num {
 }
 
 .docs-rung:hover {
+  transform: translateX(4px);
+}
+
+.docs-rung:focus-within {
   transform: translateX(4px);
 }
 
@@ -4019,7 +4482,7 @@ body .wallet-adapter-collapse {
     padding-top: 0;
     padding-left: 0.8rem;
     width: auto;
-    min-width: 140px;
+    min-width: 0;
   }
 
   .arena-head {
@@ -4068,6 +4531,20 @@ body .wallet-adapter-collapse {
     width: 100%;
     max-width: none;
     min-width: 0;
+    flex: 0 0 auto;
+  }
+
+  /* column layout: basis 100% would mean full HEIGHT here — stack plainly */
+  .filters-sub {
+    flex-basis: auto;
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .filters-sub .rooms-count {
+    margin-left: 0;
+    text-align: center;
+    width: 100%;
   }
 
   .filter-chips {
@@ -4111,8 +4588,25 @@ body .wallet-adapter-collapse {
     text-align: center;
   }
 
+  .pf-ghost-group {
+    margin-left: 0;
+    width: 100%;
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .reveal-cards {
+    gap: 0.7rem;
+    padding: 0.9rem 0.7rem;
+    border-radius: 12px;
+  }
+
+  .reveal-card {
+    max-width: none;
+  }
+
   .room-head {
-    flex-wrap: nowrap;
+    flex-wrap: wrap;
     gap: 0.7rem;
   }
 
@@ -4121,8 +4615,13 @@ body .wallet-adapter-collapse {
   }
 
   .room-head-side {
-    flex: 0 0 auto;
-    max-width: 46%;
+    flex: 1 1 100%;
+    max-width: 100%;
+    align-items: flex-start;
+  }
+
+  .room-head-side .room-head-row {
+    justify-content: flex-start;
   }
 
   .tier-strip {
@@ -4156,6 +4655,40 @@ body .wallet-adapter-collapse {
 
   .docs-pager {
     grid-template-columns: 1fr;
+  }
+}
+
+/* ---------- small phones: single-column tiers, flat doc stairs ---------- */
+
+@media (max-width: 520px) {
+  .tier-strip {
+    grid-template-columns: 1fr;
+  }
+
+  .tier-cell {
+    border-left: 0;
+  }
+
+  .tier-cell:nth-child(n + 2) {
+    border-top: 1px solid var(--line-page-soft);
+  }
+
+  .tier-cell:first-child {
+    border-top: 0;
+  }
+
+  .docs-rung:nth-child(2),
+  .docs-rung:nth-child(3),
+  .docs-rung:nth-child(4),
+  .docs-rung:nth-child(5) {
+    margin-left: 0;
+  }
+
+  .hero-table-top {
+    grid-template-columns: 1fr;
+    justify-items: center;
+    padding: 1.6rem 1.2rem;
+    gap: 1rem;
   }
 }
 
@@ -4203,5 +4736,11 @@ body .wallet-adapter-collapse {
   .reveal-card,
   .card-inner {
     transition-duration: 0.01ms !important;
+  }
+
+  /* reduced motion flips instantly: faces settle with it, no half-turn wait */
+  .reveal-card .card-face,
+  .reveal-card .card-back {
+    transition: none !important;
   }
 }

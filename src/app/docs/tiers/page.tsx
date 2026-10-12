@@ -9,6 +9,7 @@ export const metadata: Metadata = {
 };
 
 const RUNGS = [
+  { tier: "TIER 0", range: "Under $100K", locked: false },
   { tier: "TIER I", range: "$100K-$300K", locked: false },
   { tier: "TIER II", range: "$300K-$500K", locked: false },
   { tier: "TIER III", range: "$500K-$1M", locked: false },
@@ -33,12 +34,8 @@ export default function Tiers() {
         }
       />
 
-      <h2 className="docs-h2">The four tiers</h2>
+      <h2 className="docs-h2">The five tiers</h2>
       <div className="docs-ladder">
-        <div className="docs-rung locked">
-          <span className="label">Locked</span>
-          <span className="docs-rung-range">Under $100K, not admitted</span>
-        </div>
         {RUNGS.map((r) => (
           <div className={`docs-rung ${tierEdgeClass(r.tier)}`} key={r.tier}>
             <span className="label" style={{ color: "var(--tx-page)" }}>
@@ -50,8 +47,10 @@ export default function Tiers() {
       </div>
       <p className="fine">
         Tiers are lower bounds. A Tier II badge means &ldquo;at least
-        $300K,&rdquo; whether you hold $310K or $3M short of Tier III.
-        Production thresholds shown; devnet uses lower test values.
+        $300K,&rdquo; whether you hold $310K or $3M short of Tier III. Tier 0
+        is the admitted floor: any proven wallet is a member, and the higher
+        tiers gate the higher tables. Production thresholds shown; devnet uses
+        lower test values.
       </p>
 
       <BandDiagram />

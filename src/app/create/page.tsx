@@ -55,8 +55,12 @@ export default function CreateRoomPage() {
   const [owned, setOwned] = useState<number | null>(null);
   // Your tier caps the minimum tier options. A room can never demand more
   // than you hold (higher options are hidden; the backend enforces the same).
+  // TIER 0 holders get the TIER 0 option — a table open to every verified
+  // wallet.
   const [myTier, setMyTier] = useState<string | null>(null);
-  const allowedTiers = myTier ? TIER_ORDER.slice(0, tierRank(myTier)) : [];
+  const allowedTiers = myTier
+    ? TIER_ORDER.slice(0, tierRank(myTier) + 1)
+    : [];
   const tierOptions = allowedTiers.map((t) => ({ value: t, label: t }));
 
   // Specific, actionable limit message (not the generic create failure).
@@ -75,6 +79,14 @@ export default function CreateRoomPage() {
         .then((p) => {
           setUsername(p.handle ?? `user_${p.id.slice(-4)}`);
           setMyTier(p.eligibility.tier);
+          // The TIER I default may exceed a TIER 0 holder's ceiling: snap
+          // the picked minimum down to the highest tier they hold.
+          setForm((f) =>
+            p.eligibility.tier &&
+            tierRank(f.minTier) > tierRank(p.eligibility.tier)
+              ? { ...f, minTier: p.eligibility.tier }
+              : f,
+          );
         })
         .catch(() => {});
       api<RoomList>("/rooms?limit=1")

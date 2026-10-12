@@ -251,6 +251,7 @@ export default function RoomsPage() {
             </button>
           ))}
         </div>
+        <div className="filters-sub">
         <div className="sortmenu-wrap">
           <SelectMenu
             label="Sort tables"
@@ -264,6 +265,7 @@ export default function RoomsPage() {
               ...(accessFilter !== "invite"
                 ? [
                     { value: "tier", label: "Top tier" },
+                    { value: "only:TIER 0", label: "Tier 0 only" },
                     { value: "only:TIER I", label: "Tier I only" },
                     { value: "only:TIER II", label: "Tier II only" },
                     { value: "only:TIER III", label: "Tier III only" },
@@ -309,6 +311,7 @@ export default function RoomsPage() {
           {total === 1 ? "1 table" : `${total} tables`}, {owned}/
           {MAX_ROOMS_PER_USER} yours
         </span>
+        </div>
       </div>
 
       {loading ? (

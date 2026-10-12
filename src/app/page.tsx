@@ -11,6 +11,7 @@ import Chop, { BlankChop } from "../components/Chop";
 const DIGEST = (process.env.NEXT_PUBLIC_IMAGE_DIGEST ?? "").trim();
 
 const EDGE_LABEL: Record<string, string> = {
+  t0: "TIER 0",
   t1: "TIER I",
   t2: "TIER II",
   t3: "TIER III",

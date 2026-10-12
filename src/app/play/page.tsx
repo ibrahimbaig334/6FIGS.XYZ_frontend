@@ -431,7 +431,8 @@ export default function PlayPage() {
         </button>
         {!tier && (
           <p className="fine" style={{ marginTop: "0.8rem" }}>
-            The tables are gated by tier. Verify your holdings in Profile first.
+            Prove your wallets in Profile first — any verified member can take
+            a seat.
           </p>
         )}
       </div>
@@ -496,7 +497,11 @@ export default function PlayPage() {
                   </p>
                 </div>
                 <div className="friend-side">
-                  <TierTag tier={p.tier} />
+                  {p.visMode === "VISIBLE" ? (
+                    <TierTag tier={p.tier} />
+                  ) : (
+                    <span className="tier-tag none">Hidden</span>
+                  )}
                   {pend ? (
                     <button
                       className="btn-ghost btn-sm"
@@ -509,7 +514,9 @@ export default function PlayPage() {
                       className="btn btn-primary btn-sm"
                       disabled={!tier || !p.online}
                       title={
-                        !tier ? "Verify your tier first" : "Invite to a table"
+                        !tier
+                          ? "Verify your wallets first"
+                          : "Invite to a table"
                       }
                       onClick={() => sendRequest(p)}
                     >

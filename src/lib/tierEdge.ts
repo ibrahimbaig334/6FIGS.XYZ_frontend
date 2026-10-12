@@ -3,6 +3,8 @@
 
 export function tierEdgeClass(tier: string | null | undefined): string {
   switch (tier) {
+    case "TIER 0":
+      return "t0";
     case "TIER I":
       return "t1";
     case "TIER II":

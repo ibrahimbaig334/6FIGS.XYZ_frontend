@@ -113,8 +113,15 @@ export const OPP_RETURN_MS = 30000;
 export const OPP_JOIN_GRACE_MS = 30000;
 
 // Tier ladder (backend: common/tiers.ts). Used to hide room tiers above you.
-export const TIER_ORDER = ["TIER I", "TIER II", "TIER III", "TIER IV"] as const;
+// TIER 0 is the admitted floor: verified wallets below the first threshold.
+export const TIER_ORDER = [
+  "TIER 0",
+  "TIER I",
+  "TIER II",
+  "TIER III",
+  "TIER IV",
+] as const;
 export function tierRank(t: string | null | undefined): number {
   const i = TIER_ORDER.indexOf((t ?? "") as (typeof TIER_ORDER)[number]);
-  return i < 0 ? 0 : i + 1;
+  return i < 0 ? -1 : i;
 }

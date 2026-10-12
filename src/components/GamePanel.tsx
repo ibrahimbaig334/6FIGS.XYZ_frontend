@@ -176,6 +176,15 @@ export default function GamePanel({
     onSend(body);
   }
 
+  // Chart rule (test feature): only the LATEST mentioned token across the
+  // whole thread unfurls a 7d chart — a newer $TICKER moves it. Computed
+  // per render so history loads, live messages, and replacement all agree.
+  let lastTickerKey: string | null = null;
+  msgs.forEach((m) => {
+    const ts = extractTickers(m.body);
+    if (ts.length > 0) lastTickerKey = `${m.id}:${ts[ts.length - 1]}`;
+  });
+
   return (
     <div className={`game-grid${chatOnly ? " chat-only" : ""}`} ref={boardRef}>
       {!chatOnly && (
@@ -316,7 +325,11 @@ export default function GamePanel({
               <span className="who">{m.senderHandle}</span>
               <span className="body">{m.body}</span>
               {extractTickers(m.body).map((t) => (
-                <TokenCard key={t} symbol={t} />
+                <TokenCard
+                  key={t}
+                  symbol={t}
+                  showChart={lastTickerKey === `${m.id}:${t}`}
+                />
               ))}
             </li>
           ))}

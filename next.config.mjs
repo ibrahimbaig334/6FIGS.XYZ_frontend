@@ -28,6 +28,7 @@ const nextConfig = {
     remotePatterns: [
       { protocol: "https", hostname: "assets.coingecko.com" },
       { protocol: "https", hostname: "coin-images.coingecko.com" },
+      { protocol: "https", hostname: "quickchart.io" },
     ],
   },
 };

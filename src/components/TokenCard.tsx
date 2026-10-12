@@ -12,6 +12,7 @@ interface Card {
   mcap?: number | null;
   vol24h?: number | null;
   change24h?: number | null;
+  chartUrl?: string | null;
 }
 
 function compact(n: number | null | undefined): string {
@@ -31,8 +32,16 @@ function price(n: number | null | undefined): string {
 }
 
 /** Live ticker card (CoinGecko, server-cached 5 min). A slim pending line
- *  until data lands. Failed lookups render nothing: the chat line stays. */
-export default function TokenCard({ symbol }: { symbol: string }) {
+ *  until data lands. Failed lookups render nothing: the chat line stays.
+ *  `showChart` renders the 7d chart PNG — only the latest mentioned token
+ *  gets it (the host passes it down). */
+export default function TokenCard({
+  symbol,
+  showChart,
+}: {
+  symbol: string;
+  showChart?: boolean;
+}) {
   const [card, setCard] = useState<Card | null>(null);
   const [imgOk, setImgOk] = useState(true);
 
@@ -89,6 +98,25 @@ export default function TokenCard({ symbol }: { symbol: string }) {
           <strong>{card.vol24h ? "$" + compact(card.vol24h) : "—"}</strong>
         </div>
       </div>
+      {showChart && card.chartUrl && (
+        <div style={{ marginTop: "0.6rem" }}>
+          <span className="fine">7d chart</span>
+          <Image
+            src={card.chartUrl}
+            alt={`${symbol} 7-day price chart`}
+            width={600}
+            height={220}
+            style={{
+              width: "100%",
+              height: "auto",
+              marginTop: "0.3rem",
+              border: "2px solid var(--ink)",
+              background: "var(--paper)",
+            }}
+            unoptimized
+          />
+        </div>
+      )}
     </div>
   );
 }

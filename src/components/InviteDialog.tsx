@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { LockSimple } from "@phosphor-icons/react";
 import { notifyError } from "../lib/notify";
 
@@ -16,6 +16,14 @@ export default function InviteDialog({
   onClose: () => void;
 }) {
   const [code, setCode] = useState("");
+
+  useEffect(() => {
+    const esc = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    document.addEventListener("keydown", esc);
+    return () => document.removeEventListener("keydown", esc);
+  }, [onClose]);
 
   function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -46,15 +54,7 @@ export default function InviteDialog({
           Invite only
         </p>
         <h3>{roomName}</h3>
-        <form
-          onSubmit={submit}
-          style={{
-            display: "flex",
-            gap: "0.5rem",
-            flexDirection: "row",
-            alignItems: "center",
-          }}
-        >
+        <form onSubmit={submit} className="dialog-form-row">
           <input
             className="field"
             value={code}

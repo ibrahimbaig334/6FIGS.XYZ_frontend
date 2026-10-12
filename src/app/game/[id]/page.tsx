@@ -395,7 +395,6 @@ export default function GamePage() {
   return (
     <section
       className="page-enter game-page"
-      style={{ padding: "1.6rem 5vw", maxWidth: "1160px", margin: "0 auto" }}
     >
       <h1 className="vh">The table</h1>
       <div className="game-topbar">

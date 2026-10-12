@@ -330,78 +330,95 @@ function ProfileView({
 
   return (
     <section className="page-enter shell" style={{ flex: 1 }}>
-      <div className="plate">
+      <div className="plate pf-plate">
         <div className="profile-head">
-          <div style={{ display: "flex", gap: "1rem", alignItems: "center" }}>
-            <Chop id={profile.id} size="lg" />
-            <div>
+          <div className="pf-id">
+            <span className={`pf-chop${tierActive ? " on" : ""}`}>
+              <Chop id={profile.id} size="lg" />
+            </span>
+            <div className="pf-id-text">
               <p className="label">Your place</p>
               <h1 className="profile-name">{username}</h1>
+              <p className="fine pf-status">
+                <span
+                  className={`pf-dot${!tee ? "" : tee.verified ? " ok" : " warn"}`}
+                  aria-hidden="true"
+                />
+                <span>
+                  {tee ? (
+                    <>
+                      Band {tee.portfolioBand.toUpperCase()}
+                      {" · "}
+                      {tee.verified
+                        ? `Verified ${new Date(tee.verifiedAt).toLocaleString()}`
+                        : "Unverified — prove below"}
+                      {tee.stale && tee.verified ? " · Rechecking" : ""}
+                    </>
+                  ) : (
+                    "No verified identity yet — prove your wallets below"
+                  )}
+                </span>
+              </p>
             </div>
           </div>
           <TierTag tier={tee?.tier ?? null} />
         </div>
 
         {tee && tee.tier !== null && tee.topAssets.length > 0 ? (
-          <p
-            className="fine num"
-            style={{ marginTop: "0.8rem", fontSize: "0.95rem" }}
-          >
-            {tee.topAssets.join(", ")}
-          </p>
+          <div className="pf-assets" aria-label="Top holdings">
+            {tee.topAssets.map((a) => (
+              <span key={a} className="pf-asset num">
+                {a}
+              </span>
+            ))}
+          </div>
         ) : null}
 
-        <p className="fine" style={{ marginTop: "0.5rem" }}>
-          {tee ? (
-            <>
-              Band {tee.portfolioBand.toUpperCase()}
-              {" · "}
-              {tee.verified
-                ? `verified ${new Date(tee.verifiedAt).toLocaleString()}`
-                : "unverified, prove below."}
-              {tee.stale && tee.verified ? " · rechecking" : ""}
-            </>
-          ) : (
-            "No verified identity yet. Prove your wallets below."
-          )}
-        </p>
+        {banner && (
+          <p className="pf-banner" role="status">
+            {banner}
+          </p>
+        )}
 
-        {banner && <p className="fine">{banner}</p>}
-
-        <div className="profile-fields">
-          <div>
-            <p className="label" style={{ marginBottom: "0.45rem" }}>
-              Handle
-            </p>
-            <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
-              <input
-                className="field"
-                value={handle}
-                onChange={(e) => {
-                  setHandle(e.target.value);
-                }}
-                placeholder="handle, 3 to 24 characters"
-                style={{ maxWidth: "220px" }}
-              />
-              <button
-                className="chip"
-                disabled={savingHandle}
-                onClick={onSaveHandle}
-              >
-                {savingHandle ? "Saving" : "Save"}
-              </button>
-            </div>
+        <div className="pf-section">
+          <p className="label">Handle</p>
+          <div className="pf-handle-row">
+            <input
+              className="field"
+              value={handle}
+              onChange={(e) => {
+                setHandle(e.target.value);
+              }}
+              placeholder="handle, 3 to 24 characters"
+              aria-label="Handle"
+            />
+            <button
+              className="chip"
+              disabled={savingHandle}
+              onClick={onSaveHandle}
+            >
+              {savingHandle ? "Saving" : "Save"}
+            </button>
           </div>
+          <p className="fine pf-hint">
+            Letters, numbers, . and _ — this is the name the room calls you.
+          </p>
         </div>
 
-        <div style={{ marginTop: "1.2rem" }}>
-          <p className="label" style={{ marginBottom: "0.6rem" }}>
-            What friends see
-          </p>
-          <div className="reveal-cards">
+        <div className="pf-section">
+          <div className="pf-section-head">
+            <p className="label" style={{ margin: 0 }}>
+              What friends see
+            </p>
+            <span className="fine">
+              {visMode === "VISIBLE" ? "Tier visible" : "Hidden"}
+            </span>
+          </div>
+          <div className="reveal-cards" role="group" aria-label="Visibility">
             {(["HIDDEN", "VISIBLE"] as const).map((v) => (
               <button
                 key={v}
+                data-vis={v}
                 className={`reveal-card${visMode === v ? " on" : ""}`}
                 onClick={() => onSaveVis(v)}
                 aria-pressed={visMode === v}
@@ -434,27 +451,26 @@ function ProfileView({
               </button>
             ))}
           </div>
-          <p className="fine" style={{ marginTop: "0.7rem" }}>
+          <p className="fine pf-hint">
             Turning your cards: visible shows your tier to connections. No
             amounts are ever shown. Reversible any time.
           </p>
         </div>
 
-        <CredentialsCard profile={profile} onChanged={onCredsChanged} />
+        <div className="pf-section">
+          <CredentialsCard profile={profile} onChanged={onCredsChanged} />
+        </div>
       </div>
 
-      <div className="plate">
+      <div className="plate pf-plate">
         <div className="topline">
           <p className="label">Wallets</p>
-          <span className="fine num">
+          <span className="pf-count num">
             {profile.wallets.length}/{MAX_WALLETS}
           </span>
         </div>
         {profile.wallets.length === 1 && !walletSetDismissed && (
-          <div
-            className="invite-box"
-            style={{ marginTop: "0.7rem", justifyContent: "space-between" }}
-          >
+          <div className="invite-box pf-nudge">
             <span>
               Your tier reflects the one wallet connected so far. Add your other
               wallets. It can only go up.
@@ -514,15 +530,17 @@ function ProfileView({
               Add wallet
             </button>
           )}
-          <button className="btn-ghost" disabled={checking} onClick={onRecheck}>
-            {checking ? "Refreshing" : "Refresh tier"}
-          </button>
-          <button className="btn-ghost" onClick={onDisconnectAll}>
-            Disconnect all
-          </button>
-          <button className="btn-ghost" onClick={onLogout}>
-            Log out
-          </button>
+          <div className="pf-ghost-group">
+            <button className="btn-ghost" disabled={checking} onClick={onRecheck}>
+              {checking ? "Refreshing" : "Refresh tier"}
+            </button>
+            <button className="btn-ghost" onClick={onDisconnectAll}>
+              Disconnect all
+            </button>
+            <button className="btn-ghost" onClick={onLogout}>
+              Log out
+            </button>
+          </div>
         </div>
       </div>
       {proveMode && (
@@ -644,19 +662,10 @@ function CredentialsCard({
 
   const isSet = profile.username != null && profile.username !== "";
   return (
-    <div className="ceremony" style={{ borderColor: "var(--line-soft)" }}>
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: "0.6rem",
-          flexWrap: "wrap",
-        }}
-      >
-        <p className="label" style={{ margin: 0 }}>
-          Device-free sign-in
-        </p>
-        <span className="tier-tag" style={{ marginLeft: "auto" }}>
+    <div className="pf-creds">
+      <div className="pf-creds-head">
+        <p className="label">Device-free sign-in</p>
+        <span className="pf-username-tag">
           {isSet ? `@${profile.username}` : "not set"}
         </span>
       </div>
@@ -667,17 +676,9 @@ function CredentialsCard({
             wallet recovers these if forgotten. The server never sees an
             address, only enclave-sealed proofs.
           </p>
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns:
-                "repeat(auto-fit, minmax(min(200px, 100%), 1fr))",
-              gap: "0.5rem",
-            }}
-          >
+          <div className="pf-creds-grid">
             <input
               className="field"
-              style={{ width: "100%" }}
               placeholder="username, 3 to 24 characters"
               autoComplete="username"
               value={username}
@@ -685,7 +686,6 @@ function CredentialsCard({
             />
             <input
               className="field"
-              style={{ width: "100%" }}
               type="password"
               autoComplete="new-password"
               placeholder="password, 10+ characters"
@@ -705,17 +705,9 @@ function CredentialsCard({
         </>
       ) : (
         <>
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns:
-                "repeat(auto-fit, minmax(min(200px, 100%), 1fr))",
-              gap: "0.5rem",
-            }}
-          >
+          <div className="pf-creds-grid">
             <input
               className="field"
-              style={{ width: "100%" }}
               type="password"
               autoComplete="current-password"
               placeholder="current password"
@@ -724,7 +716,6 @@ function CredentialsCard({
             />
             <input
               className="field"
-              style={{ width: "100%" }}
               type="password"
               autoComplete="new-password"
               placeholder="new password, 10+ characters"
@@ -734,7 +725,7 @@ function CredentialsCard({
           </div>
           <div className="ceremony-actions">
             <button
-              className="btn"
+              className="btn-ghost"
               disabled={busy}
               onClick={() => void change()}
             >

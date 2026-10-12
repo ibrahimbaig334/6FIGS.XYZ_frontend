@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Warning } from "@phosphor-icons/react";
 
 /**
@@ -24,6 +24,14 @@ export default function ConfirmDialog({
 }) {
   const [ack, setAck] = useState(false);
   const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    const esc = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    document.addEventListener("keydown", esc);
+    return () => document.removeEventListener("keydown", esc);
+  }, [onClose]);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();

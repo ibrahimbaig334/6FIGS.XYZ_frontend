@@ -14,8 +14,7 @@ export default function ChatSuggestions({
         <button
           key={s}
           type="button"
-          className="chip"
-          style={{ padding: "0.32rem 0.65rem", fontSize: "0.68rem" }}
+          className="chip chip-sm"
           onClick={() => onPick(s)}
         >
           {s}

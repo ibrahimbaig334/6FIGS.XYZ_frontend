@@ -30,22 +30,9 @@ export default function RecoverPage() {
         placeItems: "center",
       }}
     >
-      <div
-        className="plate"
-        style={{
-          width: "100%",
-          maxWidth: "520px",
-          textAlign: "center",
-          padding: "2.4rem 2rem",
-          display: "flex",
-          flexDirection: "column",
-          gap: "1rem",
-        }}
-      >
+      <div className="plate auth-card">
         <h1 className="label">Sign in without a wallet</h1>
-        <div
-          style={{ display: "flex", gap: "0.5rem", justifyContent: "center" }}
-        >
+        <div className="mode-switch" role="group" aria-label="Sign-in mode">
           {(["signin", "forgot"] as const).map((m) => (
             <button
               key={m}

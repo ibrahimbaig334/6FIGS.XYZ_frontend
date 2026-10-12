@@ -13,11 +13,7 @@ export default function WalletIcon({
   letter: string;
 }) {
   return (
-    <span
-      className="chain-badge sol"
-      title={name}
-      style={{ padding: "0.4rem 0.8rem", fontSize: 15 }}
-    >
+    <span className="chain-badge badge-pill" title={name}>
       {letter}
     </span>
   );

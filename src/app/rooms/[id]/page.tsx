@@ -620,7 +620,7 @@ export default function RoomPage() {
   const chatOnly = (meta?.maxMembers ?? 2) > 2;
 
   return (
-    <section className="page-enter shell" style={{ flex: 1, gap: "1rem" }}>
+    <section className="page-enter shell" style={{ flex: 1 }}>
       <div className="plate">
         <div className="room-head">
           <div className="room-head-info">

@@ -273,6 +273,15 @@ h3 {
   line-height: 1;
 }
 
+/* optical lockup: the chop's box carries ~6px of dead air on its right,
+   and a full mark-width of space reads as two words instead of one.
+   The pull-in is scoped to the wordmark — the gap still breathes
+   before the .XYZ suffix. The nudge seats the bowl on the x-height. */
+.wordmark .chop {
+  margin-right: -0.4rem;
+  transform: translateY(2px);
+}
+
 .wordmark .xyz {
   font-family: var(--font-space), monospace;
   font-weight: 400;
@@ -1494,6 +1503,11 @@ html:not(.dark) .mini-cell.mark-o svg circle {
   height: 3px;
   background: var(--edge, transparent);
   transition: filter 200ms var(--ease-out);
+}
+
+/* TIER 0 carries the floor's plain edge, quieter than TIER I's cut line */
+.table-card.t0 {
+  --edge: color-mix(in srgb, var(--tx-page-dim) 40%, transparent);
 }
 
 .table-card.t1 {

@@ -35,7 +35,7 @@ export default function EmojiPicker({
     <div ref={ref} style={{ position: "relative", flex: "none" }}>
       <button
         type="button"
-        className="chip"
+        className="chip emoji-trigger"
         aria-label="Pick an emoji"
         aria-expanded={open}
         onClick={() => setOpen(!open)}
@@ -44,38 +44,17 @@ export default function EmojiPicker({
         <Smiley size={15} aria-hidden="true" />
       </button>
       {open && (
-        <div
-          className="menu menu-up"
-          role="menu"
-          style={{
-            bottom: "110%",
-            right: 0,
-            padding: "0.5rem",
-            display: "grid",
-            gridTemplateColumns: "repeat(6, 1fr)",
-            gap: "0.15rem",
-            width: "max-content",
-            maxWidth: "90vw",
-          }}
-        >
+        <div className="menu menu-up emoji-grid" role="menu">
           {CHAT_EMOJIS.map((e) => (
             <button
               key={e}
               type="button"
               role="menuitem"
+              className="emoji-cell"
               aria-label={`emoji ${e}`}
               onClick={() => {
                 onPick(e);
                 setOpen(false);
-              }}
-              style={{
-                border: 0,
-                background: "none",
-                borderRadius: "4px",
-                fontSize: "1.25rem",
-                lineHeight: 1,
-                padding: "0.4rem",
-                cursor: "pointer",
               }}
             >
               {e}

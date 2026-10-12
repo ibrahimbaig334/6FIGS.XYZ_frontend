@@ -251,10 +251,7 @@ export default function Home() {
           <div className="plate feature-plate">
             <h3>The floor</h3>
             <div className={locked ? "veil-locked" : undefined}>
-              <div
-                className={locked ? "veiled" : undefined}
-                aria-hidden={locked}
-              >
+              <div className="veiled" aria-hidden={locked}>
                 <div className="mini-dir">
                   <span>
                     <i className="dot on" aria-hidden="true" />
@@ -290,10 +287,7 @@ export default function Home() {
           <div className="plate feature-plate">
             <h3>The game</h3>
             <div className={locked ? "veil-locked" : undefined}>
-              <div
-                className={locked ? "veiled" : undefined}
-                aria-hidden={locked}
-              >
+              <div className="veiled" aria-hidden={locked}>
                 <div className="mini-board" aria-hidden="true">
                   {["x", "o", "", "o", "x", "", "", "x", "o"].map((c, i) => (
                     <span

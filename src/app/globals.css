@@ -1368,12 +1368,12 @@ html.dark .hero-plate {
 .feature-plate .btn-primary,
 .feature-plate .btn-ghost {
   align-self: flex-start;
+  margin-top: auto;
 }
 
 .mini-dir {
   display: flex;
   flex-direction: column;
-  gap: 0.65rem;
   min-width: 0;
   width: 100%;
 }
@@ -1387,6 +1387,12 @@ html.dark .hero-plate {
   color: var(--tx-dim);
   white-space: nowrap;
   overflow: hidden;
+  padding: 0.55rem 0;
+}
+
+/* the ledger rules itself off: one hairline between sittings */
+.mini-dir > span + span {
+  border-top: 1px solid var(--line-soft);
 }
 
 .mini-dir .dot {
@@ -1418,6 +1424,7 @@ html.dark .hero-plate {
   border: 1px solid var(--line);
   border-radius: 6px;
   overflow: hidden;
+  box-shadow: var(--shadow-card);
 }
 
 .mini-cell {

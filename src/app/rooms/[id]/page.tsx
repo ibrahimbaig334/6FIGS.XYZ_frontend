@@ -727,6 +727,7 @@ export default function RoomPage() {
         onSend={send}
         rematchPending={rematchPending}
         chatOnly={chatOnly}
+        pinnedSymbol={meta?.minToken ?? null}
         header={
           <p className="label">{chatOnly ? "Group talk" : "The table"}</p>
         }

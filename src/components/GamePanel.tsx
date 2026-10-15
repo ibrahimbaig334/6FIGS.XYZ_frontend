@@ -96,6 +96,7 @@ export default function GamePanel({
   waiting,
   rematchPending,
   chatOnly,
+  pinnedSymbol,
 }: {
   game: GameState | null;
   me: Profile | null;
@@ -108,6 +109,8 @@ export default function GamePanel({
   waiting?: React.ReactNode;
   rematchPending?: boolean;
   chatOnly?: boolean;
+  /** Room's required token (room.minToken): the chart locks to it. */
+  pinnedSymbol?: string | null;
 }) {
   const [draft, setDraft] = useState("");
   const chatRef = useChatScroll(msgs.length);
@@ -177,15 +180,19 @@ export default function GamePanel({
     onSend(body);
   }
 
-  // GROUP CHATS ONLY: every $TICKER mentioned in chat feeds the full
-  // TradingView panel below (outside the chatbox). Deduped in first-seen
-  // order; the chart follows the latest mention. 1v1 / random / bot tables
-  // never render it.
+  // GROUP CHATS ONLY: $TICKERs mentioned in chat feed the full
+  // TradingView panel below (outside the chatbox). Unique symbols ordered
+  // by most recent mention last — re-discussing a token moves it to the
+  // front, so the chart always switches to the newly discussed token.
+  // 1v1 / random / bot tables never render it. The panel itself decides
+  // what to show: pinned room token wins, else the latest mention.
   const chartSymbols = useMemo(() => {
     const out: string[] = [];
     for (const m of msgs) {
       for (const t of extractTickers(m.body)) {
-        if (!out.includes(t)) out.push(t);
+        const at = out.indexOf(t);
+        if (at >= 0) out.splice(at, 1);
+        out.push(t);
       }
     }
     return out;
@@ -375,7 +382,9 @@ export default function GamePanel({
           </form>
         </aside>
       </div>
-      {chatOnly && <TradingChart symbols={chartSymbols} />}
+      {chatOnly && (
+        <TradingChart symbols={chartSymbols} pinnedSymbol={pinnedSymbol} />
+      )}
     </div>
   );
 }

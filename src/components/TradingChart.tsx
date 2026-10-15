@@ -14,16 +14,25 @@ function toTvSymbol(sym: string): string {
 }
 
 /**
- * Full TradingView advanced chart for tokens mentioned in chat ($TICKER).
+ * Full TradingView advanced chart for the room's token.
  * GROUP CHATS ONLY — the host renders this outside the chatbox as a
  * full-width panel below the talk (never in 1v1 / random / bot tables).
- * The active token follows the latest mention; chips flip between every
- * mentioned token. Responsive: full-bleed height scales down on phones.
- * Follows the app theme (documentElement "dark" class, localStorage
- * "sixfigs-theme") — light or dark widget to match.
+ *
+ * - Room has a required token (`pinnedSymbol`, e.g. BTC): the chart is
+ *   locked to it, no matter what else is discussed in chat.
+ * - Room allows any token: the chart follows the LATEST discussed $TICKER
+ *   only — no switcher, no other-token views.
+ *
+ * Responsive: full-bleed height scales down on phones. Follows the app
+ * theme (documentElement "dark" class, localStorage "sixfigs-theme").
  */
-export default function TradingChart({ symbols }: { symbols: string[] }) {
-  const [manual, setManual] = useState<string | null>(null);
+export default function TradingChart({
+  symbols,
+  pinnedSymbol,
+}: {
+  symbols: string[];
+  pinnedSymbol?: string | null;
+}) {
   // App default is dark (see layout THEME_SCRIPT) — match it pre-hydration
   // so the first paint already loads the dark widget for most users.
   const [dark, setDark] = useState(true);
@@ -42,18 +51,18 @@ export default function TradingChart({ symbols }: { symbols: string[] }) {
     return () => obs.disconnect();
   }, []);
 
-  // Active token: the user's manual pick while it is still mentioned, else
-  // the latest mention. Derived during render (not via effect) so the chart
-  // paints on the very first frame symbols exist — no placeholder flash,
-  // no missed update.
+  // Active token, derived during render so the chart paints on the very
+  // first frame — no placeholder flash, no missed update:
+  // pinned room token wins outright, otherwise the latest mention.
+  const pinned =
+    pinnedSymbol
+      ?.trim()
+      .toUpperCase()
+      .replace(/[^A-Z0-9]/g, "") || null;
   const active =
-    manual && symbols.includes(manual)
-      ? manual
-      : symbols.length
-        ? symbols[symbols.length - 1]
-        : null;
+    pinned ?? (symbols.length ? symbols[symbols.length - 1] : null);
 
-  if (!symbols.length || !active) {
+  if (!active) {
     return (
       <div className="plate tv-wrap">
         <p className="label">Live market — no token yet</p>
@@ -82,21 +91,6 @@ export default function TradingChart({ symbols }: { symbols: string[] }) {
         <p className="label" style={{ margin: 0 }}>
           Live market · ${active}
         </p>
-        {symbols.length > 1 && (
-          <div className="tv-tabs" role="tablist" aria-label="Chart token">
-            {symbols.map((s) => (
-              <button
-                key={s}
-                role="tab"
-                aria-selected={s === active}
-                className={s === active ? "chip active" : "chip"}
-                onClick={() => setManual(s)}
-              >
-                ${s}
-              </button>
-            ))}
-          </div>
-        )}
       </div>
       <div className="tv-frame">
         <iframe

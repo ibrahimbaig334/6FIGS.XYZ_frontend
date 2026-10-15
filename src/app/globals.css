@@ -1141,7 +1141,6 @@ html.dark .hero-plate {
 
 /* place cards: cream, the member's identity, dealt onto the felt */
 .place-card {
-  width: 100px;
   aspect-ratio: 5 / 7;
   background: var(--card);
   color: var(--tx);
@@ -2102,9 +2101,9 @@ html:not(.dark) .board-cell .mark circle {
   color: var(--card);
 }
 
-.msg.me .who {
+/* .msg.me .who {
   color: color-mix(in srgb, var(--card) 70%, transparent);
-}
+} */
 
 .msg.sys {
   align-self: center;

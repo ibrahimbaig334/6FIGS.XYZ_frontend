@@ -531,7 +531,11 @@ function ProfileView({
             </button>
           )}
           <div className="pf-ghost-group">
-            <button className="btn-ghost" disabled={checking} onClick={onRecheck}>
+            <button
+              className="btn-ghost"
+              disabled={checking}
+              onClick={onRecheck}
+            >
               {checking ? "Refreshing" : "Refresh tier"}
             </button>
             <button className="btn-ghost" onClick={onDisconnectAll}>

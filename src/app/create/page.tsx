@@ -58,9 +58,7 @@ export default function CreateRoomPage() {
   // TIER 0 holders get the TIER 0 option — a table open to every verified
   // wallet.
   const [myTier, setMyTier] = useState<string | null>(null);
-  const allowedTiers = myTier
-    ? TIER_ORDER.slice(0, tierRank(myTier) + 1)
-    : [];
+  const allowedTiers = myTier ? TIER_ORDER.slice(0, tierRank(myTier) + 1) : [];
   const tierOptions = allowedTiers.map((t) => ({ value: t, label: t }));
 
   // Specific, actionable limit message (not the generic create failure).

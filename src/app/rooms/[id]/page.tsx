@@ -330,14 +330,27 @@ export default function RoomPage() {
 
   function rematch() {
     // Offer flow: the opponent gets an accept/decline toast. The board
-    // resets only on accept (the server enforces it too).
+    // resets only on accept (the server enforces it too). House-bot games
+    // reset instantly: the ack carries the fresh state, no pending toast.
     if (!game || rematchPending) return;
     sock.current?.emit(
       "rematchOffer",
       { gameId: game.id },
-      (ack: { error?: string }) => {
+      (ack: { error?: string; state?: GameState }) => {
         if (ack?.error) notifyError(ack.error);
-        else setRematchPending(true);
+        else if (ack?.state) {
+          const st = ack.state;
+          setGame((g) =>
+            g
+              ? {
+                  ...st,
+                  youAre: g.youAre,
+                  oppId: g.oppId,
+                  opponent: g.opponent,
+                }
+              : st,
+          );
+        } else setRematchPending(true);
       },
     );
   }

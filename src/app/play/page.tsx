@@ -285,6 +285,21 @@ export default function PlayPage() {
     }
   }
 
+  /** Skip the 30s random wait and seat the house bot immediately. */
+  async function playWithBot() {
+    try {
+      const r = await api<{ gameId: string }>("/play/queue/bot", {
+        method: "POST",
+      });
+      searchingRef.current = false;
+      setSearching(false);
+      router.push(`/game/${r.gameId}`);
+    } catch (e) {
+      console.error("bot queue failed", e);
+      notifyError(errMsg(e, "Couldn't seat the bot. Try again."));
+    }
+  }
+
   function clearRequestTimer(id: string) {
     const t = reqTimers.current.get(id);
     if (t) clearTimeout(t);
@@ -431,8 +446,8 @@ export default function PlayPage() {
         </button>
         {!tier && (
           <p className="fine" style={{ marginTop: "0.8rem" }}>
-            Prove your wallets in Profile first — any verified member can take
-            a seat.
+            Prove your wallets in Profile first — any verified member can take a
+            seat.
           </p>
         )}
       </div>
@@ -644,9 +659,21 @@ export default function PlayPage() {
             </p>
           )}
           {!joining && (
-            <button className="btn-ghost" onClick={cancelSearch}>
-              Leave the floor
-            </button>
+            <div
+              style={{
+                display: "flex",
+                gap: "0.6rem",
+                flexWrap: "wrap",
+                justifyContent: "center",
+              }}
+            >
+              <button className="btn btn-primary" onClick={playWithBot}>
+                Play the bot now
+              </button>
+              <button className="btn-ghost" onClick={cancelSearch}>
+                Leave the floor
+              </button>
+            </div>
           )}
         </div>
       )}

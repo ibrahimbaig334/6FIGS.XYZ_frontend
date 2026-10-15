@@ -252,65 +252,65 @@ export default function RoomsPage() {
           ))}
         </div>
         <div className="filters-sub">
-        <div className="sortmenu-wrap">
-          <SelectMenu
-            label="Sort tables"
-            value={sort}
-            onChange={pickSort}
-            options={[
-              { value: "created", label: "Newest" },
-              { value: "members", label: "Most members" },
-              { value: "mine", label: "My tables" },
-              // Invite rooms carry no tier, so no tier options under invite-only.
-              ...(accessFilter !== "invite"
-                ? [
-                    { value: "tier", label: "Top tier" },
-                    { value: "only:TIER 0", label: "Tier 0 only" },
-                    { value: "only:TIER I", label: "Tier I only" },
-                    { value: "only:TIER II", label: "Tier II only" },
-                    { value: "only:TIER III", label: "Tier III only" },
-                    { value: "only:TIER IV", label: "Tier IV only" },
-                  ]
-                : []),
-            ]}
-          />
-        </div>
-        {accessFilter !== "invite" && (
           <div className="sortmenu-wrap">
             <SelectMenu
-              label="Token gate"
-              value={tokenFilter}
-              onChange={(v) => {
-                setTokenFilter(v);
-                setPage(1);
-              }}
+              label="Sort tables"
+              value={sort}
+              onChange={pickSort}
               options={[
-                { value: "", label: "Any token" },
-                ...TOKEN_OPTIONS.map((t) => ({ value: t, label: t })),
+                { value: "created", label: "Newest" },
+                { value: "members", label: "Most members" },
+                { value: "mine", label: "My tables" },
+                // Invite rooms carry no tier, so no tier options under invite-only.
+                ...(accessFilter !== "invite"
+                  ? [
+                      { value: "tier", label: "Top tier" },
+                      { value: "only:TIER 0", label: "Tier 0 only" },
+                      { value: "only:TIER I", label: "Tier I only" },
+                      { value: "only:TIER II", label: "Tier II only" },
+                      { value: "only:TIER III", label: "Tier III only" },
+                      { value: "only:TIER IV", label: "Tier IV only" },
+                    ]
+                  : []),
               ]}
             />
           </div>
-        )}
-        <div className="sortmenu-wrap">
-          <SelectMenu
-            label="Table size"
-            value={sizeFilter}
-            onChange={(v) => {
-              setSizeFilter(v);
-              setPage(1);
-            }}
-            options={[
-              { value: "", label: "All sizes" },
-              { value: "duo", label: "Duel (2 seats)" },
-              { value: "small", label: "Small group (3–10)" },
-              { value: "large", label: "Large (11+)" },
-            ]}
-          />
-        </div>
-        <span className="fine num rooms-count">
-          {total === 1 ? "1 table" : `${total} tables`}, {owned}/
-          {MAX_ROOMS_PER_USER} yours
-        </span>
+          {accessFilter !== "invite" && (
+            <div className="sortmenu-wrap">
+              <SelectMenu
+                label="Token gate"
+                value={tokenFilter}
+                onChange={(v) => {
+                  setTokenFilter(v);
+                  setPage(1);
+                }}
+                options={[
+                  { value: "", label: "Any token" },
+                  ...TOKEN_OPTIONS.map((t) => ({ value: t, label: t })),
+                ]}
+              />
+            </div>
+          )}
+          <div className="sortmenu-wrap">
+            <SelectMenu
+              label="Table size"
+              value={sizeFilter}
+              onChange={(v) => {
+                setSizeFilter(v);
+                setPage(1);
+              }}
+              options={[
+                { value: "", label: "All sizes" },
+                { value: "duo", label: "Duel (2 seats)" },
+                { value: "small", label: "Small group (3–10)" },
+                { value: "large", label: "Large (11+)" },
+              ]}
+            />
+          </div>
+          <span className="fine num rooms-count">
+            {total === 1 ? "1 table" : `${total} tables`}, {owned}/
+            {MAX_ROOMS_PER_USER} yours
+          </span>
         </div>
       </div>
 

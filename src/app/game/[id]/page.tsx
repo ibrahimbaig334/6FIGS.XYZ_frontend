@@ -279,13 +279,16 @@ export default function GamePage() {
 
   function rematch() {
     // Offer flow: the opponent gets an accept/decline toast. The board
-    // resets only on accept (the server enforces it too).
+    // resets only on accept (the server enforces it too). House-bot games
+    // reset instantly: the ack carries the fresh state, no pending toast.
     if (!game || rematchPending) return;
     sock.current?.emit(
       "rematchOffer",
       { gameId: id },
-      (ack: { error?: string }) => {
+      (ack: { error?: string; state?: GameState }) => {
         if (ack?.error) notifyError(ack.error);
+        else if (ack?.state)
+          setGame((g) => mergeState(g, ack.state as GameState));
         else setRematchPending(true);
       },
     );
@@ -393,9 +396,7 @@ export default function GamePage() {
   }
 
   return (
-    <section
-      className="page-enter game-page"
-    >
+    <section className="page-enter game-page">
       <h1 className="vh">The table</h1>
       <div className="game-topbar">
         <TierTag tier={me?.eligibility.tier ?? null} />

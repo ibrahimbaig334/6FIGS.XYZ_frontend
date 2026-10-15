@@ -1,12 +1,13 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import gsap from "gsap";
 import { ChatMessage, extractTickers, GameState, Profile } from "../lib/api";
 import { useChatScroll } from "../lib/useChatScroll";
 import { MSG_MAX_LEN } from "../lib/constants";
 import { clampGraphemes } from "../lib/validate";
 import TokenCard from "./TokenCard";
+import TradingChart from "./TradingChart";
 import ChatSuggestions from "./ChatSuggestions";
 import EmojiPicker from "./EmojiPicker";
 import Chop from "./Chop";
@@ -78,11 +79,11 @@ function Mark({ cell, index }: { cell: string; index: number }) {
  * emoji. `header` and `waiting` are mode-specific slots.
  *
  * `chatOnly` drops the board entirely (group tables seat 3+: talk, no duel).
- *
- * The handshake: when a fresh board arrives (a match just made), the table
- * assembles - the frame sets, the grid draws itself, the two place cards
- * slide in, the lamp turns to the move. A rematch re-runs it.
  */
+//  * The handshake: when a fresh board arrives (a match just made), the table
+//  * assembles - the frame sets, the grid draws itself, the two place cards
+//  * slide in, the lamp turns to the move. A rematch re-runs it.
+//  */
 export default function GamePanel({
   game,
   me,
@@ -176,189 +177,205 @@ export default function GamePanel({
     onSend(body);
   }
 
-  // Chart rule (test feature): only the LATEST mentioned token across the
-  // whole thread unfurls a 7d chart — a newer $TICKER moves it. Computed
-  // per render so history loads, live messages, and replacement all agree.
-  let lastTickerKey: string | null = null;
-  msgs.forEach((m) => {
-    const ts = extractTickers(m.body);
-    if (ts.length > 0) lastTickerKey = `${m.id}:${ts[ts.length - 1]}`;
-  });
+  // GROUP CHATS ONLY: every $TICKER mentioned in chat feeds the full
+  // TradingView panel below (outside the chatbox). Deduped in first-seen
+  // order; the chart follows the latest mention. 1v1 / random / bot tables
+  // never render it.
+  const chartSymbols = useMemo(() => {
+    const out: string[] = [];
+    for (const m of msgs) {
+      for (const t of extractTickers(m.body)) {
+        if (!out.includes(t)) out.push(t);
+      }
+    }
+    return out;
+  }, [msgs]);
 
   return (
-    <div className={`game-grid${chatOnly ? " chat-only" : ""}`} ref={boardRef}>
-      {!chatOnly && (
-        <div className="plate game-main">
-          {header}
-          {game ? (
-            <>
-              <div className="arena-head">
-                <div
-                  className={`seat-card${game.turn === game.youAre && game.status === "open" && !oppAway ? " seat-on" : ""}`}
-                >
-                  <span className="seat-id">
-                    {me && <Chop id={me.id} size="sm" />}
-                    <span>
-                      <span className="seat-role">You</span>
-                      <span className="seat-name">{me?.handle ?? "You"}</span>
-                    </span>
-                  </span>
-                  <span className="seat-mark" aria-hidden="true">
-                    {game.youAre}
-                  </span>
-                </div>
-                <span className="arena-vs" aria-hidden="true">
-                  vs
-                </span>
-                <div
-                  className={`seat-card${game.turn !== game.youAre && game.status === "open" && !oppAway ? " seat-on" : ""}`}
-                >
-                  <span className="seat-id">
-                    {game.opponent && <Chop id={game.opponent.id} size="sm" />}
-                    <span>
-                      <span className="seat-role">
-                        <span className={oppOnline ? "dot on" : "dot"} />
-                        Stranger
-                      </span>
-                      <span className="seat-name">
-                        {oppAway
-                          ? "away"
-                          : (game.opponent?.handle ?? "waiting")}
-                      </span>
-                    </span>
-                  </span>
-                  <span className="seat-mark" aria-hidden="true">
-                    {oppMark}
-                  </span>
-                </div>
-              </div>
-
-              <div className="arena-status">
-                <p className="fine" style={{ margin: 0, fontSize: "0.84rem" }}>
-                  {oppAway ? "Waiting for your stranger." : statusLine(game)}
-                </p>
-                {game.status !== "open" && (
-                  <button
-                    className="btn btn-primary btn-sm"
-                    onClick={onRematch}
-                    disabled={!!rematchPending}
+    <div className="game-stack" ref={boardRef}>
+      <div className={`game-grid${chatOnly ? " chat-only" : ""}`}>
+        {!chatOnly && (
+          <div className="plate game-main">
+            {header}
+            {game ? (
+              <>
+                <div className="arena-head">
+                  <div
+                    className={`seat-card${game.turn === game.youAre && game.status === "open" && !oppAway ? " seat-on" : ""}`}
                   >
-                    {rematchPending ? "Offer sent" : "Rematch"}
-                  </button>
-                )}
-              </div>
-
-              <div className="board-frame">
-                <div className="table-frame">
-                  <div className="board-grid">
-                    <svg
-                      className="board-lines"
-                      viewBox="0 0 300 300"
-                      aria-hidden="true"
-                    >
-                      {[
-                        [100, 8, 100, 292],
-                        [200, 8, 200, 292],
-                        [8, 100, 292, 100],
-                        [8, 200, 292, 200],
-                      ].map(([x1, y1, x2, y2], i) => (
-                        <line
-                          key={i}
-                          className="grid"
-                          x1={x1}
-                          y1={y1}
-                          x2={x2}
-                          y2={y2}
-                          pathLength={1}
-                          strokeDasharray={1}
-                          strokeDashoffset={fresh ? 1 : 0}
-                        />
-                      ))}
-                      {line && (
-                        <line
-                          className="win-line"
-                          x1={line[0][0]}
-                          y1={line[0][1]}
-                          x2={line[1][0]}
-                          y2={line[1][1]}
-                          pathLength={1}
-                          strokeDasharray={1}
-                        />
+                    <span className="seat-id">
+                      {me && <Chop id={me.id} size="sm" />}
+                      <span>
+                        <span className="seat-role">You</span>
+                        <span className="seat-name">{me?.handle ?? "You"}</span>
+                      </span>
+                    </span>
+                    <span className="seat-mark" aria-hidden="true">
+                      {game.youAre}
+                    </span>
+                  </div>
+                  <span className="arena-vs" aria-hidden="true">
+                    vs
+                  </span>
+                  <div
+                    className={`seat-card${game.turn !== game.youAre && game.status === "open" && !oppAway ? " seat-on" : ""}`}
+                  >
+                    <span className="seat-id">
+                      {game.opponent && (
+                        <Chop id={game.opponent.id} size="sm" />
                       )}
-                    </svg>
-                    <div className="board-cells">
-                      {game.board.split("").map((cell, i) => (
-                        <button
-                          key={i}
-                          className={`board-cell${won.has(i) ? " win" : ""}${cell === "O" ? " mark-o" : ""}`}
-                          onClick={() => onMove(i)}
-                          disabled={
-                            cell !== "." || game.status !== "open" || oppAway
-                          }
-                          aria-label={`square ${i + 1}`}
-                        >
-                          <Mark cell={cell} index={i} />
-                        </button>
-                      ))}
-                    </div>
-                    <div className="lamp-pool" aria-hidden="true" />
+                      <span>
+                        <span className="seat-role">
+                          <span className={oppOnline ? "dot on" : "dot"} />
+                          Stranger
+                        </span>
+                        <span className="seat-name">
+                          {oppAway
+                            ? "away"
+                            : (game.opponent?.handle ?? "waiting")}
+                        </span>
+                      </span>
+                    </span>
+                    <span className="seat-mark" aria-hidden="true">
+                      {oppMark}
+                    </span>
                   </div>
                 </div>
-              </div>
-            </>
-          ) : (
-            <div className="board-idle">
-              {waiting ?? <p className="fine">Waiting for your stranger.</p>}
-            </div>
-          )}
-        </div>
-      )}
 
-      <aside className="plate game-chat">
-        <p className="label">Table talk</p>
-        <ol className="chat-log" ref={chatRef}>
-          {msgs.length === 0 && (
-            <li className="msg sys">Say hello. Type $BTC to unfurl a card.</li>
-          )}
-          {msgs.map((m) => (
-            <li key={m.id} className={m.senderId === me?.id ? "msg me" : "msg"}>
-              <span className="who">{m.senderHandle}</span>
-              <span className="body">{m.body}</span>
-              {extractTickers(m.body).map((t) => (
-                <TokenCard
-                  key={t}
-                  symbol={t}
-                  showChart={lastTickerKey === `${m.id}:${t}`}
-                />
-              ))}
-            </li>
-          ))}
-        </ol>
-        <ChatSuggestions
-          onPick={(t) => {
-            // Tap-to-send: suggestions go straight out, no drafting.
-            const body = t.trim();
-            if (body) onSend(clampGraphemes(body, MSG_MAX_LEN));
-          }}
-        />
-        <form onSubmit={send} className="chat-send">
-          <input
-            className="field"
-            value={draft}
-            onChange={(e) =>
-              setDraft(clampGraphemes(e.target.value, MSG_MAX_LEN))
-            }
-            placeholder="Say something, or $BTC"
-            aria-label="Message"
+                <div className="arena-status">
+                  <p
+                    className="fine"
+                    style={{ margin: 0, fontSize: "0.84rem" }}
+                  >
+                    {oppAway ? "Waiting for your stranger." : statusLine(game)}
+                  </p>
+                  {game.status !== "open" && (
+                    <button
+                      className="btn btn-primary btn-sm"
+                      onClick={onRematch}
+                      disabled={!!rematchPending}
+                    >
+                      {rematchPending ? "Offer sent" : "Rematch"}
+                    </button>
+                  )}
+                </div>
+
+                <div className="board-frame">
+                  <div className="table-frame">
+                    <div className="board-grid">
+                      <svg
+                        className="board-lines"
+                        viewBox="0 0 300 300"
+                        aria-hidden="true"
+                      >
+                        {[
+                          [100, 8, 100, 292],
+                          [200, 8, 200, 292],
+                          [8, 100, 292, 100],
+                          [8, 200, 292, 200],
+                        ].map(([x1, y1, x2, y2], i) => (
+                          <line
+                            key={i}
+                            className="grid"
+                            x1={x1}
+                            y1={y1}
+                            x2={x2}
+                            y2={y2}
+                            pathLength={1}
+                            strokeDasharray={1}
+                            strokeDashoffset={fresh ? 1 : 0}
+                          />
+                        ))}
+                        {line && (
+                          <line
+                            className="win-line"
+                            x1={line[0][0]}
+                            y1={line[0][1]}
+                            x2={line[1][0]}
+                            y2={line[1][1]}
+                            pathLength={1}
+                            strokeDasharray={1}
+                          />
+                        )}
+                      </svg>
+                      <div className="board-cells">
+                        {game.board.split("").map((cell, i) => (
+                          <button
+                            key={i}
+                            className={`board-cell${won.has(i) ? " win" : ""}${cell === "O" ? " mark-o" : ""}`}
+                            onClick={() => onMove(i)}
+                            disabled={
+                              cell !== "." || game.status !== "open" || oppAway
+                            }
+                            aria-label={`square ${i + 1}`}
+                          >
+                            <Mark cell={cell} index={i} />
+                          </button>
+                        ))}
+                      </div>
+                      <div className="lamp-pool" aria-hidden="true" />
+                    </div>
+                  </div>
+                </div>
+              </>
+            ) : (
+              <div className="board-idle">
+                {waiting ?? <p className="fine">Waiting for your stranger.</p>}
+              </div>
+            )}
+          </div>
+        )}
+
+        <aside className="plate game-chat">
+          <p className="label">Table talk</p>
+          <ol className="chat-log" ref={chatRef}>
+            {msgs.length === 0 && (
+              <li className="msg sys">
+                Say hello. Type $BTC to unfurl a card.
+              </li>
+            )}
+            {msgs.map((m) => (
+              <li
+                key={m.id}
+                className={m.senderId === me?.id ? "msg me" : "msg"}
+              >
+                <span className="who">{m.senderHandle}</span>
+                <span className="body">{m.body}</span>
+                {extractTickers(m.body).map((t) => (
+                  <TokenCard key={t} symbol={t} />
+                ))}
+              </li>
+            ))}
+          </ol>
+          <ChatSuggestions
+            onPick={(t) => {
+              // Tap-to-send: suggestions go straight out, no drafting.
+              const body = t.trim();
+              if (body) onSend(clampGraphemes(body, MSG_MAX_LEN));
+            }}
           />
-          <EmojiPicker
-            onPick={(e) => setDraft((d) => clampGraphemes(d + e, MSG_MAX_LEN))}
-          />
-          <button className="btn btn-primary" type="submit">
-            Send
-          </button>
-        </form>
-      </aside>
+          <form onSubmit={send} className="chat-send">
+            <input
+              className="field"
+              value={draft}
+              onChange={(e) =>
+                setDraft(clampGraphemes(e.target.value, MSG_MAX_LEN))
+              }
+              placeholder="Say something, or $BTC"
+              aria-label="Message"
+            />
+            <EmojiPicker
+              onPick={(e) =>
+                setDraft((d) => clampGraphemes(d + e, MSG_MAX_LEN))
+              }
+            />
+            <button className="btn btn-primary" type="submit">
+              Send
+            </button>
+          </form>
+        </aside>
+      </div>
+      {chatOnly && <TradingChart symbols={chartSymbols} />}
     </div>
   );
 }

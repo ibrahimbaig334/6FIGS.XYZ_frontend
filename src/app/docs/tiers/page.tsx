@@ -47,10 +47,10 @@ export default function Tiers() {
       </div>
       <p className="fine">
         Tiers are lower bounds. A Tier II badge means &ldquo;at least
-        $300K,&rdquo; whether you hold $310K or $3M short of Tier III. Tier 0
-        is the admitted floor: any proven wallet is a member, and the higher
-        tiers gate the higher tables. Production thresholds shown; devnet uses
-        lower test values.
+        $300K,&rdquo; whether you hold $310K or $3M short of Tier III. Tier 0 is
+        the admitted floor: any proven wallet is a member, and the higher tiers
+        gate the higher tables. Production thresholds shown; devnet uses lower
+        test values.
       </p>
 
       <BandDiagram />

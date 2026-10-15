@@ -39,7 +39,11 @@ export default function EmojiPicker({
         aria-label="Pick an emoji"
         aria-expanded={open}
         onClick={() => setOpen(!open)}
-        style={{ padding: "0.55rem 0.7rem", color: "var(--tx)" }}
+        style={{
+          padding: "0.55rem 0.7rem",
+          color: "var(--tx)",
+          marginTop: "10px",
+        }}
       >
         <Smiley size={15} aria-hidden="true" />
       </button>

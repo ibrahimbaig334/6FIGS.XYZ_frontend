@@ -3598,7 +3598,6 @@ html.dark .token-chg.up {
   font-size: 0.92rem;
   line-height: 1.75;
   overflow-wrap: break-word;
-  max-width: 76ch;
 }
 
 .docs-card {
@@ -3676,7 +3675,6 @@ html:not(.dark) .deal-num {
   margin: 0;
   font-size: 0.92rem;
   line-height: 1.75;
-  max-width: 76ch;
 }
 
 .docs-callout p:not(.label) + p:not(.label) {
@@ -3882,7 +3880,6 @@ html:not(.dark) .deal-num {
   font-size: 0.68rem;
   line-height: 1.5;
   color: var(--tx-page-dim);
-  max-width: 76ch;
 }
 
 .doc-diagram .doc-note {

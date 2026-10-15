@@ -1789,7 +1789,7 @@ html.dark .hero-table-top {
 
 .game-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 380px);
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: 1.2rem;
   align-items: start;
 }
@@ -4772,6 +4772,7 @@ body .wallet-adapter-collapse {
 
 .tv-wrap {
   width: 100%;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   gap: 0.7rem;

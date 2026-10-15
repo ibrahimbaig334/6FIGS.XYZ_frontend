@@ -200,8 +200,10 @@ export default function GamePanel({
 
   return (
     <div className="game-stack" ref={boardRef}>
-      <div className={`game-grid${chatOnly ? " chat-only" : ""}`}>
-        {!chatOnly && (
+      <div className="game-grid">
+        {chatOnly ? (
+          <TradingChart symbols={chartSymbols} pinnedSymbol={pinnedSymbol} />
+        ) : (
           <div className="plate game-main">
             {header}
             {game ? (
@@ -382,9 +384,6 @@ export default function GamePanel({
           </form>
         </aside>
       </div>
-      {chatOnly && (
-        <TradingChart symbols={chartSymbols} pinnedSymbol={pinnedSymbol} />
-      )}
     </div>
   );
 }
